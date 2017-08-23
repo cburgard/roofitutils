@@ -1,0 +1,19 @@
+#!/bin/bash
+
+RCPACKAGENAME=RooFitUtils
+ECHO="echo -e"
+
+PKGPATH=${PWD%/*}
+
+DEFINITIONS=$PKGPATH/Root/definitions.h
+
+echo "//this -*- c++ -*- file was generated automatically" >> $DEFINITIONS
+
+if [ ! -f $DEFINITIONS ]; then
+    $ECHO '#include <RooStarMomentMorph.h>' | g++ -xc++ -E $(root-config --cflags) - &>/dev/null
+    if [ $? -eq 0 ]; then
+        echo "#define HAS_ROOSTARMOMENTMORPH 1" >> $DEFINITIONS
+    fi
+fi
+
+
