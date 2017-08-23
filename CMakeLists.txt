@@ -4,6 +4,9 @@
 cmake_minimum_required(VERSION 2.8)
 project( RooFitUtils )
 
+set(HAS_RooFitUtils 1 PARENT_SCOPE)
+set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
+
 IF(NOT WITHOUT_ASG)
   # register this as a package to ASG
   atlas_subdir( RooFitUtils )
