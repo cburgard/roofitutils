@@ -172,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root")
     parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt")
     parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[])
-    parser.add_argument( "--scan"          , nargs=4,      dest="scan"                       , help="POI range to scan the Nll.", metavar="POI n min max", default=None)
+    parser.add_argument( "--scan"          , nargs=4,      dest="scan"                       , help="POI range to scan the Nll.", metavar=("POI","n","min","max"), default=None)
     parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None)
     parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" )
     parser.add_argument( "--makeSnapshots" , type=bool,    dest="makeParameterSnapshots"     , help="Make parameter snapshots.", default=True )
