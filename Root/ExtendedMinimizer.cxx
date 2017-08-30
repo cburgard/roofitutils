@@ -673,12 +673,13 @@ void ExtendedMinimizer::scan(Result* r, const std::vector<std::string>& parnames
     if(min.ok()){
       std::vector<double> vals(params.size());
       for(size_t i=0; i<params.size(); ++i){
-	vals[i] = params[i]->getVal();
+				vals[i] = params[i]->getVal();
       }
       scan.add(vals,min.nll);
     }
   }
-r->scans.push_back(scan);
+	if(scan.nllValues.size()>0)
+		r->scans.push_back(scan);
 }
 
 

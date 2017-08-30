@@ -151,10 +151,6 @@ def main(args):
             with open(args.outFileName,'w') as out:
                 for p in result.parameters:
                     out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))        
-                    for p in poilist:
-                        out.write(p.GetName())
-                        out.write(" ")
-                        out.write("nll\n")
                 for scan in result.scans:
                     out.write((" ".join(scan.parNames)) + " nll\n")
                     for i in range(0,len(scan.nllValues)):
