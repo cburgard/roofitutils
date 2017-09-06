@@ -344,13 +344,14 @@ RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer() {
 }
 
 // ____________________________________________________________________________|__________
-// Minimize function with iterative retry strategy adopted, simplified and
-// extended from RooAbsPdf::fitTo()
+
 int RooFitUtils::ExtendedMinimizer::minimize(
     const RooCmdArg &arg1, const RooCmdArg &arg2, const RooCmdArg &arg3,
     const RooCmdArg &arg4, const RooCmdArg &arg5, const RooCmdArg &arg6,
     const RooCmdArg &arg7, const RooCmdArg &arg8, const RooCmdArg &arg9,
     const RooCmdArg &arg10, const RooCmdArg &arg11, const RooCmdArg &arg12) {
+  // Minimize function with iterative retry strategy adopted, simplified and
+  // extended from RooAbsPdf::fitTo()
   RooLinkedList *l = makeList(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
                               arg9, arg10, arg11, arg12);
   int status = minimize(*l);
@@ -361,6 +362,7 @@ int RooFitUtils::ExtendedMinimizer::minimize(
 // ____________________________________________________________________________|__________
 
 void RooFitUtils::ExtendedMinimizer::setup() {
+  // initialization
   if (!fPdf) {
     throw std::runtime_error("[Error] ExtendedMinimizer::setup: No Pdf set!");
   }
@@ -432,6 +434,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
 
 template <class A>
 int RooFitUtils::ExtendedMinimizer::parseConfig(const A &cmdList) {
+  // parse the configuration
   RooCmdConfig pc(Form("ExtendedMinimizer::parseConfig(%s)", GetName()));
   pc.allowUndefined();
 
@@ -506,6 +509,7 @@ int RooFitUtils::ExtendedMinimizer::parseConfig(const A &cmdList) {
 // ____________________________________________________________________________|__________
 RooFitUtils::ExtendedMinimizer::Result::Eigen *
 RooFitUtils::ExtendedMinimizer::eigenAnalysis(const TMatrixDSym &hesse) {
+  // perform an eigenvector decomposition of the hesse matrix
   int n = hesse.GetNrows();
 
   // Construct reduced Hessian matrix
@@ -525,9 +529,10 @@ RooFitUtils::ExtendedMinimizer::eigenAnalysis(const TMatrixDSym &hesse) {
 }
 
 // ____________________________________________________________________________|__________
-// Robust minimization, using a iterative retry strategy
+
 RooFitUtils::ExtendedMinimizer::Result::Minimization
 RooFitUtils::ExtendedMinimizer::robustMinimize() {
+  // Robust minimization, using an iterative retry strategy
   if (!fMinimizer)
     throw std::runtime_error("no minimizer set!");
   int strategy = fDefaultStrategy;
