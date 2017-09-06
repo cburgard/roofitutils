@@ -579,7 +579,15 @@ ExtendedMinimizer::Result* ExtendedMinimizer::run(){
   if (fScan) {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName << "): Running Scan" << std::endl;
     findSigma(r,*fScanSet);
+  } else {
+    RooArgSet* vars = fNll->getVariables();
+    for (RooLinkedListIter it = vars->iterator(); RooRealVar* v = dynamic_cast<RooRealVar*>(it.Next());) {
+      Result::Parameter poi(v->GetName(),v->getVal(),v->getErrorHi(),v->getErrorLo());
+      r->parameters.push_back(poi);
+    }
   }
+
+
 
   // Return fit result
   if (fSave) {

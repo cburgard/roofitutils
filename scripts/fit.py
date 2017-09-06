@@ -115,7 +115,10 @@ def main(args):
     if args.fit:
         start = time()
         if not args.dummy:
-            minimizer.minimize(ROOT.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
+            if args.findSigma:
+                minimizer.minimize(ROOT.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
+            else:
+                minimizer.minimize(ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
         
         end = time()
         print("Fitting time: " + printtime(end-start))
@@ -149,8 +152,10 @@ def main(args):
     if result:
         if args.outFileName:
             with open(args.outFileName,'w') as out:
-                for p in result.parameters:
-                    out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))        
+                if result.min.nll:
+                    out.write("Minimization: minNll = {0:g}\n".format(result.min.nll))
+                    for p in result.parameters:
+                        out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
                 for scan in result.scans:
                     out.write((" ".join(scan.parNames)) + " nll\n")
                     for i in range(0,len(scan.nllValues)):
@@ -174,6 +179,8 @@ if __name__ == "__main__":
     parser.add_argument( "--makeSnapshots" , type=bool,    dest="makeParameterSnapshots"     , help="Make parameter snapshots.", default=True )
     parser.add_argument('--fit',                           dest='fit', action='store_true'   , help="Actually run the fit.", default=True )
     parser.add_argument('--no-fit',                        dest='fit', action='store_false'  , help="Do not run the fit.", default=True )
+    parser.add_argument('--findSigma',                     dest='findSigma', action='store_true' , help="Search for crossings to identify the 1-sigma-band.", default=True )
+    parser.add_argument('--no-findSigma',                  dest='findSigma', action='store_false', help="Do not Search for crossings.", default=True )
     parser.add_argument('--dummy',                         dest='dummy', action='store_true' , help="Perform a dummy run.", default=False )
     parser.set_defaults(fit=True)
     parser.add_argument( "--folder"        , type=str,     dest="folder"                     , help="Output folder.", default="test" )
