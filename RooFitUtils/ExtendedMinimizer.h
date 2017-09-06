@@ -1,21 +1,21 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef EXTENDEDMINIMIZER
 #define EXTENDEDMINIMIZER
 
 #include <string>
 #include <vector>
-#include <iostream>
-#include <sstream>
 
 #include "TNamed.h"
-#include "Math/MinimizerOptions.h"
 
 #include "RooMinimizer.h"
+class TGraph;
 
 #include "TVectorD.h"
 #include "TMatrixD.h"
 
 #include <map>
 
+namespace RooFitUtils {
 class ExtendedMinimizer : public TNamed {
 public:
 
@@ -112,8 +112,6 @@ public:
   static RooCmdArg ReuseMinimizer(Bool_t flag = kFALSE) { return RooCmdArg("ReuseMinimizer",flag,0,0,0,0,0,0,0); }
   static RooCmdArg ReuseNLL(Bool_t flag = kTRUE) { return RooCmdArg("ReuseNLL",flag,0,0,0,0,0,0,0); }
 
-  static RooLinkedList* makeList( const RooCmdArg& arg1 = RooCmdArg::none(), const RooCmdArg& arg2 = RooCmdArg::none(), const RooCmdArg& arg3 = RooCmdArg::none(), const RooCmdArg& arg4 = RooCmdArg::none(), const RooCmdArg& arg5 = RooCmdArg::none(), const RooCmdArg& arg6 = RooCmdArg::none(), const RooCmdArg& arg7 = RooCmdArg::none(), const RooCmdArg& arg8 = RooCmdArg::none(), const RooCmdArg& arg9 = RooCmdArg::none(), const RooCmdArg& arg10 = RooCmdArg::none(), const RooCmdArg& arg11 = RooCmdArg::none(), const RooCmdArg& arg12 = RooCmdArg::none() , const RooCmdArg& arg13 = RooCmdArg::none(), const RooCmdArg& arg14 = RooCmdArg::none() , const RooCmdArg& arg15 = RooCmdArg::none() , const RooCmdArg& arg16 = RooCmdArg::none() , const RooCmdArg& arg17 = RooCmdArg::none() , const RooCmdArg& arg18 = RooCmdArg::none() , const RooCmdArg& arg19 = RooCmdArg::none(), const RooCmdArg& arg20 = RooCmdArg::none() );
-  
 // ____________________________________________________________________________|__________
 protected:
 
@@ -173,5 +171,7 @@ protected:
   ClassDefOverride(ExtendedMinimizer, 0)
 
 };
+
+}
 
 #endif

@@ -1,7 +1,10 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef _ROOFITUTILS_LOG_
 #define _ROOFITUTILS_LOG_
 #include <string>
 #include <sstream>
+
+namespace RooFitUtils {
 
 enum LogLevel {logERROR, logWARNING, logINFO, logDEBUG};
 
@@ -26,3 +29,5 @@ typedef Log LOG;
   else Log(_loglevel)
 
 #endif
+
+}

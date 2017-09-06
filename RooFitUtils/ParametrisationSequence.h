@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef PARAMETRISATIONSEQUENCE
 #define PARAMETRISATIONSEQUENCE
 
@@ -12,16 +13,14 @@
 
 #include "ParametrisationScheme.h"
 
-using namespace std;
-using namespace RooFit;
+namespace RooFitUtils {
 
 class ParametrisationSequence : public TNamed {
 
-// ____________________________________________________________________________|__________
 public:
 
   // Constructor and destructor
-  ParametrisationSequence( std::string SequenceName = "", std::string ParametersOfInterest = "" );
+  ParametrisationSequence( const std::string& SequenceName = "", const std::string& ParametersOfInterest = "" );
   ~ParametrisationSequence();
 
   // Accessors
@@ -35,17 +34,17 @@ public:
   // Steering
   void AddScheme( ParametrisationScheme& Scheme );
 
-// ____________________________________________________________________________|__________
 private:
 
   std::list< ParametrisationScheme > fSequence;
   std::string fParametersOfInterest;
 
-// ____________________________________________________________________________|__________
 protected:
 
   ClassDefOverride(ParametrisationSequence, 1)
 
 };
+
+}
 
 #endif

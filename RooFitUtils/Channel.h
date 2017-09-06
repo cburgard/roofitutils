@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef CHANNEL
 #define CHANNEL
 
@@ -21,12 +22,9 @@
 
 #include "RooFitUtils/RenamingMap.h"
 
-using namespace std;
-using namespace RooFit;
-
+namespace RooFitUtils {
 class Channel : public TNamed {
 
-// ____________________________________________________________________________|__________
 public:
 
   // Constructor and destructor
@@ -61,7 +59,6 @@ public:
   // Steering
   void RegulariseChannel();
 
-// ____________________________________________________________________________|__________
 private:
 
   RooWorkspace* fWorkSpace;
@@ -74,11 +71,12 @@ private:
   RooArgSet* fObservables;
   RooArgSet* fGlobalObservables;
 
-// ____________________________________________________________________________|__________
 protected:
 
   ClassDefOverride(Channel, 1)
 
 };
+
+}
 
 #endif

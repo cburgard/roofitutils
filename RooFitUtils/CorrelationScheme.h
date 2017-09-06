@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef CORRELATIONSCHEME
 #define CORRELATIONSCHEME
 
@@ -18,10 +19,8 @@
 
 #include "RooFitUtils/RenamingMap.h"
 
-using namespace std;
-using namespace RooFit;
-
-class CorrelationScheme : public TNamed {
+namespace RooFitUtils {
+  class CorrelationScheme : public TNamed {
 
 // ____________________________________________________________________________|__________
 public:
@@ -76,5 +75,7 @@ protected:
   ClassDefOverride(CorrelationScheme, 1)
 
 };
+
+}
 
 #endif

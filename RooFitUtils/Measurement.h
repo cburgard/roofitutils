@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef MEASUREMENT
 #define MEASUREMENT
 
@@ -30,6 +31,8 @@
 #include "RooFitUtils/AbsMeasurement.h"
 #include "RooFitUtils/Channel.h"
 #include "RooFitUtils/RenamingMap.h"
+
+namespace RooFitUtils {
 
 class Measurement : public AbsMeasurement {
 
@@ -95,5 +98,7 @@ protected:
   ClassDefOverride(Measurement, 1)
 
 };
+
+}
 
 #endif

@@ -1,7 +1,4 @@
-//=====================================================================-*-C++-*-
-// File: $Id$
-//==============================================================================
-
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef WildcardList_h
 #define WildcardList_h
 
@@ -11,6 +8,8 @@
 #include "TRegexp.h"
 #include "TObjArray.h"
 #include "TObjString.h"
+
+namespace RooFitUtils {
 
 class WildcardList {
 public:
@@ -128,5 +127,7 @@ private:
   WildcardList (const WildcardList&);               // copy not implemented
   WildcardList& operator= (const WildcardList&);    // copy not implemented
 };
+
+}
 
 #endif

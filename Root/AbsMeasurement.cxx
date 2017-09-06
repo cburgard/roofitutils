@@ -12,24 +12,31 @@
 #include "RooRealVar.h"
 #include "RooBinning.h"
 
-// ____________________________________________________________________________|__________
-// Constructor
+#include "RooStats/ModelConfig.h"
 
-AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, RooWorkspace* ws, const std::string& ModelConfigName, const std::string& DataName )
+// ____________________________________________________________________________|__________
+
+RooFitUtils::AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, RooWorkspace* ws, const std::string& ModelConfigName, const std::string& DataName )
   :
   AbsMeasurement(MeasurementName,ws ? ws->GetName() : "",ModelConfigName,DataName)
 {
+  // Constructor
   fWorkSpace=ws;
 }
 
-AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
+// ____________________________________________________________________________|__________
+
+RooFitUtils::AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
   :
   AbsMeasurement(MeasurementName,WorkspaceName,ModelConfigName,DataName)
 {
+  // Constructor
   fFileName=FileName;
 }
 
-AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
+// ____________________________________________________________________________|__________
+
+RooFitUtils::AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
   :
   TNamed( MeasurementName.c_str(), MeasurementName.c_str() ),
   fWorkspaceName( WorkspaceName ),
@@ -44,13 +51,14 @@ AbsMeasurement::AbsMeasurement( const std::string& MeasurementName, const std::s
 }
 
 // ____________________________________________________________________________|__________
-// Destructor
-AbsMeasurement::~AbsMeasurement()
+
+RooFitUtils::AbsMeasurement::~AbsMeasurement()
 {
-  // TODO
+  // Destructor
 }
 
 // ____________________________________________________________________________|__________
+
 void AbsMeasurement::enablePruning( const std::string& poi, const std::string& filter, const std::string& weight, const std::string& threshold, int additionalDigit )
 {
   coutP(InputArguments) << "AbsMeasurement::enablePruning(" << fName <<") pruning enabled" << std::endl;
@@ -71,7 +79,8 @@ void AbsMeasurement::enablePruning( const std::string& poi, const std::string& f
 }
 
 // ____________________________________________________________________________|__________
-void AbsMeasurement::SetPrunedNuisanceParameters( std::string parameters )
+
+void RooFitUtils::AbsMeasurement::SetPrunedNuisanceParameters( std::string parameters )
 {
   TString allParameters = parameters;
   allParameters.ReplaceAll(" ", "");
@@ -84,7 +93,8 @@ void AbsMeasurement::SetPrunedNuisanceParameters( std::string parameters )
 }
 
 // ____________________________________________________________________________|__________
-void AbsMeasurement::PruneNuisanceParameters()
+
+void  RooFitUtils::AbsMeasurement::PruneNuisanceParameters()
 {
   coutP(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName << ") performing fit to compute Hesse matrix for pruning." << std::endl;
 
@@ -120,13 +130,15 @@ void AbsMeasurement::PruneNuisanceParameters()
 }
 
 // ____________________________________________________________________________|__________
+
+std::list< std::string >  RooFitUtils::AbsMeasurement::PruneNuisanceParameters( const TMatrixDSym chesse, RooFitResult* fitresult, const std::string& poi, const std::string& filter, const std::string& weight, const std::string& threshold, int additionalDigit, std::list< std::string > prePrunedParameters )
+{
 // Ranking/pruning function. Compute symmetric uncertainty on POIs using the
 // Hessian matrix. Remove iteratively a single NP and compare uncertainty from
 // reduced Hessian matrix to initial one. Multiple POIs are combined by computing
 // the weighted average and propagating the partial uncertainties and taking the
 // OR of the individual rankings.
-std::list< std::string > AbsMeasurement::PruneNuisanceParameters( const TMatrixDSym chesse, RooFitResult* fitresult, const std::string& poi, const std::string& filter, const std::string& weight, const std::string& threshold, int additionalDigit, std::list< std::string > prePrunedParameters )
-{
+
   // Decompose POI names and associated weights and thresholds
   TString allPoi = poi;
   TString allWeight = weight;
@@ -483,9 +495,10 @@ std::list< std::string > AbsMeasurement::PruneNuisanceParameters( const TMatrixD
 }
 
 // ____________________________________________________________________________|__________
-// Remove a set of parameters from a matrix and thus reduce it
-void AbsMeasurement::RemoveParameter( TMatrixDSym& hes, RooArgList& pars, std::list<std::string> names )
+
+void  RooFitUtils::AbsMeasurement::RemoveParameter( TMatrixDSym& hes, RooArgList& pars, std::list<std::string> names )
 {
+  // Remove a set of parameters from a matrix and thus reduce it
   // Find rows and columns to keep and remove
   std::set<int> removeRows;
   std::vector<int> keepRows;
@@ -521,9 +534,10 @@ void AbsMeasurement::RemoveParameter( TMatrixDSym& hes, RooArgList& pars, std::l
 }
 
 // ____________________________________________________________________________|__________
-// Print ranking, which is stored in a (ordered) set
-void AbsMeasurement::PrintRanking( std::set< std::pair< double, std::string > > uncerts, double initTotalError )
+
+void  RooFitUtils::AbsMeasurement::PrintRanking( std::set< std::pair< double, std::string > > uncerts, double initTotalError )
 {
+  // Print ranking, which is stored in a (ordered) set
   for (std::set< std::pair< double, std::string> >::reverse_iterator itr = uncerts.rbegin(); itr != uncerts.rend(); ++itr) {
     std::string varName(itr->second);
     double uncert(itr->first);
@@ -538,10 +552,12 @@ void AbsMeasurement::PrintRanking( std::set< std::pair< double, std::string > > 
 }
 
 // ____________________________________________________________________________|__________
-// Given a value and an error, round and format them according to the PDG rules
-// for significant digits
-std::pair< double, double > AbsMeasurement::PDGrounding( double value, double error, int additionalDigit )
+
+std::pair< double, double >  RooFitUtils::AbsMeasurement::PDGrounding( double value, double error, int additionalDigit )
 {
+  // Given a value and an error, round and format them according to the PDG rules
+  // for significant digits
+
   int threeDigits = GetThreeDigits(error);
   int nSignificantDigits = GetNSigDigits(threeDigits);
   nSignificantDigits += additionalDigit;
@@ -564,8 +580,8 @@ std::pair< double, double > AbsMeasurement::PDGrounding( double value, double er
 }
 
 // ____________________________________________________________________________|__________
-// Get three digits
-int AbsMeasurement::GetThreeDigits( double error )
+
+int  RooFitUtils::AbsMeasurement::GetThreeDigits( double error )
 {
   // Extract the three most significant digits and return them as an integer
   std::ostringstream stream;
@@ -582,8 +598,8 @@ int AbsMeasurement::GetThreeDigits( double error )
 }
 
 // ____________________________________________________________________________|__________
-// Get the number of significant digits
-int AbsMeasurement::GetNSigDigits( int threeDigits )
+
+int  RooFitUtils::AbsMeasurement::GetNSigDigits( int threeDigits )
 {
   // Find the number of significant digits
   assert(threeDigits < 1000);
@@ -597,9 +613,10 @@ int AbsMeasurement::GetNSigDigits( int threeDigits )
 }
 
 // ____________________________________________________________________________|__________
-// Convert a number to mantissa + exponent representation in base 10
-double AbsMeasurement::frexp10( double x, int* exp )
+
+double  RooFitUtils::AbsMeasurement::frexp10( double x, int* exp )
 {
+  // Convert a number to mantissa + exponent representation in base 10
   double mantissa = .0 > x ? - x : x;
   *exp = 0;
 
@@ -615,9 +632,10 @@ double AbsMeasurement::frexp10( double x, int* exp )
 }
 
 // ____________________________________________________________________________|__________
-// Format a value correctly and remove not needed digits
-double AbsMeasurement::FormatValue( double value, int exponent, int nDigits, int extraRound )
+
+double RooFitUtils::AbsMeasurement::FormatValue( double value, int exponent, int nDigits, int extraRound )
 {
+  // Format a value correctly and remove not needed digits
   int roundAt = nDigits - 1 - exponent - extraRound;
   int nDec;
   if (exponent < nDigits) nDec = roundAt;
@@ -633,8 +651,6 @@ double AbsMeasurement::FormatValue( double value, int exponent, int nDigits, int
 }
 
 namespace {
-  // ____________________________________________________________________________|__________
-  // Compare two floating point numbers, see http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
   union MyFloat_t
   {
     MyFloat_t(float num = 0.0f) : f(num) {}
@@ -649,7 +665,7 @@ namespace {
   };
 }
 
-bool AbsMeasurement::AlmostEqualUlpsAndAbs( float A, float B, float maxDiff, int maxUlpsDiff )
+bool RooFitUtils::AbsMeasurement::AlmostEqualUlpsAndAbs( float A, float B, float maxDiff, int maxUlpsDiff )
 {
   // Check if the numbers are really close -- needed  when comparing numbers near zero.
   float absDiff = fabs(A - B);
@@ -672,28 +688,31 @@ bool AbsMeasurement::AlmostEqualUlpsAndAbs( float A, float B, float maxDiff, int
 }
 
 // ____________________________________________________________________________|__________
-// Save the measurement
-void AbsMeasurement::writeToFile()
+
+void RooFitUtils::AbsMeasurement::writeToFile()
 {
+  // Save the measurement
   coutP(ObjectHandling) << "AbsMeasurement::writeToFile(" << fName << ") saving measurement as " << fFileName << std::endl;
   fWorkSpace->writeToFile(fFileName.c_str());
 }
 
 // ____________________________________________________________________________|__________
-// Save the measurement
-void AbsMeasurement::writeToFile( const char *fileName )
+
+void RooFitUtils::AbsMeasurement::writeToFile( const char *fileName )
 {
+  // Save the measurement
   fFileName = std::string(fileName);
   this->writeToFile();
 }
 
 // ____________________________________________________________________________|__________
-// Parse configuration for binning data
-void AbsMeasurement::SetDatasetBinning ( Int_t setNbins, const char* generateBinnedTag,
+
+void RooFitUtils::AbsMeasurement::SetDatasetBinning ( Int_t setNbins, const char* generateBinnedTag,
                                          const char*   binnedCategories,
                                          const char* unbinnedCategories,
                                          const char* weightVarName )
 {
+  // Parse configuration for binning data
   fSetBinning = kTRUE;
   fSetNbins = setNbins;
   fGenerateBinnedTag = generateBinnedTag;
@@ -703,9 +722,11 @@ void AbsMeasurement::SetDatasetBinning ( Int_t setNbins, const char* generateBin
 }
 
 // ____________________________________________________________________________|__________
+
 // Generate binned data
 // Method adapted from Tim Adye <T.J.Adye@rl.ac.uk>
 // Originally implemented in https://svnweb.cern.ch/trac/atlasoff/browser/PhysicsAnalysis/HiggsPhys/CombinationTools/RooStatTools/trunk/StandardHypoTestInv/WorkspaceCalculator.cxx
+
 TOwnedList::TOwnedList() : TList() { SetOwner(); }
 TOwnedList::~TOwnedList()          { Clear(); }
 void TOwnedList::Clear(Option_t *option)
@@ -718,7 +739,9 @@ void TOwnedList::Clear(Option_t *option)
   TList::Clear("nodelete");
 }
 
-RooDataSet* AbsMeasurement::SetDatasetBinning( const RooAbsPdf* pdfIn, const RooAbsData* data,
+// ____________________________________________________________________________|__________
+
+RooDataSet* RooFitUtils::AbsMeasurement::SetDatasetBinning( const RooAbsPdf* pdfIn, const RooAbsData* data,
                                                Int_t setNbins, const char* generateBinnedTag,
                                                const char*   binnedCategories,
                                                const char* unbinnedCategories,

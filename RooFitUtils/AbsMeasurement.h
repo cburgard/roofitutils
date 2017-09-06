@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef ABSMEASUREMENT
 #define ABSMEASUREMENT
 
@@ -14,21 +15,28 @@
 
 #include "RooAbsPdf.h"
 #include "RooDataSet.h"
-#include "RooProdPdf.h"
 #include "RooArgSet.h"
 #include "RooWorkspace.h"
 #include "RooAbsArg.h"
 #include "RooLinkedListIter.h"
 #include "RooSimultaneous.h"
 #include "RooCategory.h"
-#include "RooProdPdf.h"
 #include "RooArgList.h"
 #include "RooMsgService.h"
 #include "RooRealSumPdf.h"
 
-#include "RooStats/ModelConfig.h"
-
 #include "RooFitUtils/WildcardList.h"
+
+namespace RooStats {
+  class ModelConfig;
+}
+
+namespace RooFitUtils {
+  class Measurement;
+  class Channel;
+  class AbsMeasurement;
+  class CombinedMeasurement;
+}
 
 struct TOwnedList : public TList {
   // A collection class for keeping TObjects for deletion.
@@ -40,8 +48,8 @@ struct TOwnedList : public TList {
   ClassDefOverride(TOwnedList,0)
 };
 
-
-class AbsMeasurement : public TNamed {
+namespace RooFitUtils {
+  class AbsMeasurement : public TNamed {
 
 // ____________________________________________________________________________|__________
 public:
@@ -136,8 +144,8 @@ protected:
 // ____________________________________________________________________________|__________
 protected:
 
-  friend class Measurement;
-  friend class CombinedMeasurement;
+  friend class ::Measurement;
+  friend class ::CombinedMeasurement;
 
 // ____________________________________________________________________________|__________
 private:
@@ -188,5 +196,7 @@ protected:
   ClassDefOverride(AbsMeasurement, 1)
 
 };
+
+}
 
 #endif

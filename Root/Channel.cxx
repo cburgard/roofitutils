@@ -2,7 +2,7 @@
 
 // ____________________________________________________________________________|__________
 // Constructor
-Channel::Channel( std::string ChannelName, RooAbsPdf* Pdf, RooAbsData* Data, std::string ParentName )
+RooFitUtils::Channel::Channel( std::string ChannelName, RooAbsPdf* Pdf, RooAbsData* Data, std::string ParentName )
   :
   TNamed( ChannelName.c_str(), ChannelName.c_str() ),
   fPdf( Pdf ),
@@ -19,7 +19,7 @@ Channel::Channel( std::string ChannelName, RooAbsPdf* Pdf, RooAbsData* Data, std
 
 // ____________________________________________________________________________|__________
 // Destructor
-Channel::~Channel()
+RooFitUtils::Channel::~Channel()
 {
   coutI(InputArguments) << "Channel::~Channel(" << fName << ") cleaning up" << endl;
   // TODO
@@ -27,7 +27,7 @@ Channel::~Channel()
 
 // ____________________________________________________________________________|__________
 // Edit the pdf and parameters according to renaming scheme
-void Channel::RegulariseChannel()
+void RooFitUtils::Channel::RegulariseChannel()
 {
   std::map< std::string, std::string > thisRenamingMap = fRenamingMap.GetRenamingMap();
   std::map< std::string, std::pair< TString, TMatrixDSym > > thisCorrelationFactors = fCorrelationFactors;

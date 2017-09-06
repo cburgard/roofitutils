@@ -9,7 +9,7 @@
 
 // ____________________________________________________________________________|__________
 // Constructor
-CombinedMeasurement::CombinedMeasurement( const std::string& CombinedMeasurementName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
+RooFitUtils::CombinedMeasurement::CombinedMeasurement( const std::string& CombinedMeasurementName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
   :
   AbsMeasurement( CombinedMeasurementName, WorkspaceName, ModelConfigName, DataName )
 {
@@ -30,7 +30,7 @@ CombinedMeasurement::CombinedMeasurement( const std::string& CombinedMeasurement
 
 // ____________________________________________________________________________|__________
 // Constructor to load existing (regularised measurement)
-CombinedMeasurement::CombinedMeasurement( const std::string& CombinedMeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
+RooFitUtils::CombinedMeasurement::CombinedMeasurement( const std::string& CombinedMeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName )
   :
   AbsMeasurement( CombinedMeasurementName, FileName, WorkspaceName, ModelConfigName, DataName )
 {
@@ -58,7 +58,7 @@ CombinedMeasurement::CombinedMeasurement( const std::string& CombinedMeasurement
 
 // ____________________________________________________________________________|__________
 // Destructor
-CombinedMeasurement::~CombinedMeasurement()
+RooFitUtils::CombinedMeasurement::~CombinedMeasurement()
 {
   coutI(InputArguments) << "CombinedMeasurement::~CombinedMeasurement(" << fName << ") cleaning up" << endl;
 
@@ -77,14 +77,14 @@ CombinedMeasurement::~CombinedMeasurement()
 
 // ____________________________________________________________________________|__________
 // Initialisation
-void CombinedMeasurement::initialise()
+void RooFitUtils::CombinedMeasurement::initialise()
 {
   fIsInitialised = kTRUE;
 }
 
 // ____________________________________________________________________________|__________
 // Collect all measurement after regularising their individual channels
-void CombinedMeasurement::CollectMeasurements()
+void RooFitUtils::CombinedMeasurement::CollectMeasurements()
 {
   // initialise the measurements and get nuisance parameters from individual measurements
   // to possibly add to correlation scheme
@@ -116,7 +116,7 @@ void CombinedMeasurement::CollectMeasurements()
 // Current implementation works only for Gaussian and Poisson constrained
 // nuisance parameters.
 // TODO implementation for other constraint types.
-void CombinedMeasurement::DetermineAutoCorrelations( std::map< std::string, RooArgSet* >& tmpAllNuisanceParameters )
+void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations( std::map< std::string, RooArgSet* >& tmpAllNuisanceParameters )
 {
   bool enableAutoCorrelation = fCorrelationScheme->GetAutoCorrelation();
   std::map< std::string, std::set< std::string > > tmpAllNuisanceParameterMap;
@@ -191,7 +191,7 @@ void CombinedMeasurement::DetermineAutoCorrelations( std::map< std::string, RooA
 
 // ____________________________________________________________________________|__________
 // Build a new combined workspace from the regularised channels and measurements
-void CombinedMeasurement::CombineMeasurements()
+void RooFitUtils::CombinedMeasurement::CombineMeasurements()
 {
   std::map< std::string, RooDataSet* > datasetMap;
   std::map< std::string, RooAbsPdf* > pdfMap;
@@ -284,7 +284,7 @@ void CombinedMeasurement::CombineMeasurements()
 
 // ____________________________________________________________________________|__________
 // Re-parametrise a (combined) measurement
-void CombinedMeasurement::ParametriseMeasurements()
+void RooFitUtils::CombinedMeasurement::ParametriseMeasurements()
 {
   coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() trying to re-parametrise the model according to " << fParametrisationSequence->GetName() << endl;
 
@@ -354,7 +354,7 @@ void CombinedMeasurement::ParametriseMeasurements()
 
 // ____________________________________________________________________________|__________
 // Set parameters of interest for the combined model
-void CombinedMeasurement::DefineParametersOfInterest( std::string ParametersOfInterest, ModelConfig* tmpModelConfig )
+void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest( std::string ParametersOfInterest, ModelConfig* tmpModelConfig )
 {
   TString allParametersOfInterest = ParametersOfInterest;
   TObjArray* allParametersOfInterestArray = allParametersOfInterest.Tokenize(",");
@@ -398,7 +398,7 @@ void CombinedMeasurement::DefineParametersOfInterest( std::string ParametersOfIn
 
 // ____________________________________________________________________________|__________
 // Clean the workspace
-void CombinedMeasurement::MakeCleanWorkspace()
+void RooFitUtils::CombinedMeasurement::MakeCleanWorkspace()
 {
   coutP(ObjectHandling) << "CombinedMeasurement::MakeCleanWorkspace(" << fName << ") Building clean workspace" << endl;
 
@@ -447,14 +447,14 @@ void CombinedMeasurement::MakeCleanWorkspace()
 
 // ____________________________________________________________________________|__________
 // Interface to add Asimov data
-void CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileGenerateAt )
+void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileGenerateAt )
 {
   MakeAsimovData(Conditional, profileGenerateAt, profileGenerateAt);
 }
 
 // ____________________________________________________________________________|__________
 // Interface to add Asimov data
-void CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileAt, CombinedMeasurement::SnapshotName generateAt )
+void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileAt, CombinedMeasurement::SnapshotName generateAt )
 {
   coutP(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") adding " << (!Conditional?"unconditional":"conditional") << " Asimov data, profile at " << profileAt << ", generate at " << generateAt  << endl;
 
@@ -525,7 +525,7 @@ void CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement:
 
 // ____________________________________________________________________________|__________
 // Unfold constraints, needed for snapshot making
-void CombinedMeasurement::UnfoldConstraints( RooArgSet& initial, RooArgSet& final, RooArgSet& obs, RooArgSet& nuis, int& counter )
+void RooFitUtils::CombinedMeasurement::UnfoldConstraints( RooArgSet& initial, RooArgSet& final, RooArgSet& obs, RooArgSet& nuis, int& counter )
 {
   if (counter > 50) {
     coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") failed to unfold constraints! Details given below." << endl;
@@ -554,7 +554,7 @@ void CombinedMeasurement::UnfoldConstraints( RooArgSet& initial, RooArgSet& fina
 
 // ____________________________________________________________________________|__________
 // Add snapshots to the workspace
-void CombinedMeasurement::MakeSnapshots( CombinedMeasurement::SnapshotName Snapshot, bool Conditional )
+void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::SnapshotName Snapshot, bool Conditional )
 {
   coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") making snapshots." << endl;
 
@@ -726,7 +726,7 @@ void CombinedMeasurement::MakeSnapshots( CombinedMeasurement::SnapshotName Snaps
 
 // ____________________________________________________________________________|__________
 // Add multiple snapshots to the workspace
-void CombinedMeasurement::MakeSnapshots( std::set<CombinedMeasurement::SnapshotName> Snapshots, bool Conditional )
+void RooFitUtils::CombinedMeasurement::MakeSnapshots( std::set<CombinedMeasurement::SnapshotName> Snapshots, bool Conditional )
 {
   for (std::set<CombinedMeasurement::SnapshotName>::iterator itr = Snapshots.begin(); itr != Snapshots.end(); ++itr) {
     MakeSnapshots(*itr, Conditional);
@@ -735,7 +735,7 @@ void CombinedMeasurement::MakeSnapshots( std::set<CombinedMeasurement::SnapshotN
 
 // ____________________________________________________________________________|__________
 // Print information of the combined measurement
-void CombinedMeasurement::Print()
+void RooFitUtils::CombinedMeasurement::Print()
 {
   coutI(ObjectHandling) << "CombinedMeasurement::Print(" << fName << ") printing information about the comined measurement\n" << endl;
 
@@ -754,7 +754,7 @@ void CombinedMeasurement::Print()
 
   std::set<std::string> inputMeasurements;
   for (std::map< std::string, Measurement* >::iterator measItr = fMeasurements.begin(); measItr != fMeasurements.end(); ++measItr) {
-    Measurement* meas = measItr->second;
+    RooFitUtils::Measurement* meas = measItr->second;
     inputMeasurements.insert(meas->GetName());
   }
 
@@ -763,7 +763,7 @@ void CombinedMeasurement::Print()
 
 // ____________________________________________________________________________|__________
 // Print collection, map name to title (to be used as description)
-void CombinedMeasurement::PrintCollection(RooAbsCollection* collection)
+void RooFitUtils::CombinedMeasurement::PrintCollection(RooAbsCollection* collection)
 {
   int nrColumns = 1;
   string* header = new string[nrColumns];
@@ -795,7 +795,7 @@ void CombinedMeasurement::PrintCollection(RooAbsCollection* collection)
     irow++;
   }
 
-  CorrelationScheme::PrintTable(firstCol, matrix, NULL, header, nrEntries, nrColumns, 0, cout, "    ");
+  RooFitUtils::CorrelationScheme::PrintTable(firstCol, matrix, NULL, header, nrEntries, nrColumns, 0, cout, "    ");
 
   delete[] header;
   delete[] firstCol;

@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef __ROOCUSTOMIZERENHANCED__
 #define __ROOCUSTOMIZERENHANCED__
 
@@ -12,6 +13,8 @@
 #include "RooRealConstant.h"
 
 //_____________________________________________________________________________
+
+namespace RooFitUtils {
 
 class RooCustomizerEnhanced : public TNamed, public RooPrintable {
 
@@ -95,5 +98,7 @@ protected:
 
   ClassDefOverride(RooCustomizerEnhanced,0) // Editing tool for RooAbsArg composite object expressions
 } ;
+
+}
 
 #endif

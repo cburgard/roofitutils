@@ -30,7 +30,7 @@ ClassImp(ExtendedMinimizer)
 
 // #define coutP(x) std::cout
 
-ExtendedMinimizer::Result::Result() :
+RooFitUtils::ExtendedMinimizer::Result::Result() :
   eigen(NULL),
   fit(NULL),
   hesse(NULL)
@@ -38,7 +38,7 @@ ExtendedMinimizer::Result::Result() :
   // nothing here
 }
 
-ExtendedMinimizer::Result::Minimization::Minimization() :
+RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization() :
   status(-1),
   strategy(-1),
   nll(nan)
@@ -46,14 +46,14 @@ ExtendedMinimizer::Result::Minimization::Minimization() :
   // nothing here
 }
 
-bool ExtendedMinimizer::Result::Minimization::ok(int status){
+bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok(int status){
   return (status == 0 || status == 1);
 }
-bool ExtendedMinimizer::Result::Minimization::ok(){
+bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok(){
   return ExtendedMinimizer::Result::Minimization::ok(this->status);
 }
 
-ExtendedMinimizer::Result::Parameter::Parameter(const std::string& n,double v,double eH, double eL) :
+RooFitUtils::ExtendedMinimizer::Result::Parameter::Parameter(const std::string& n,double v,double eH, double eL) :
   name(n),
   value(v),
   errHi(eH),
@@ -62,20 +62,20 @@ ExtendedMinimizer::Result::Parameter::Parameter(const std::string& n,double v,do
   // nothing here
 }
 
-ExtendedMinimizer::Result::Eigen::Eigen(const TVectorD& vals, const TMatrixD& vecs) :
+RooFitUtils::ExtendedMinimizer::Result::Eigen::Eigen(const TVectorD& vals, const TMatrixD& vecs) :
   values(vals),
   vectors(vecs)
 {
   // nothing here
 }
 
-ExtendedMinimizer::Result::Scan::Scan(const std::vector<std::string>& parnames) : 
+RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(const std::vector<std::string>& parnames) : 
   parNames(parnames)
 {
   // nothing here
 }
 
-void ExtendedMinimizer::Result::Scan::add(const std::vector<double>& parvals, double nllval){
+void RooFitUtils::ExtendedMinimizer::Result::Scan::add(const std::vector<double>& parvals, double nllval){
   if(parvals.size() != this->parNames.size()){
     throw std::runtime_error("cannot add parameter list with wrong length!");
   }
@@ -83,7 +83,7 @@ void ExtendedMinimizer::Result::Scan::add(const std::vector<double>& parvals, do
   this->nllValues.push_back(nllval);
 }
 
-void ExtendedMinimizer::Result::Scan::printTable(){
+void RooFitUtils::ExtendedMinimizer::Result::Scan::printTable(){
   auto prec = std::cout.precision();
   std::cout.precision(15);
   for(size_t i=0; i<this->parNames.size(); ++i){
@@ -99,28 +99,52 @@ void ExtendedMinimizer::Result::Scan::printTable(){
   std::cout.precision(prec);
 }
 
-ExtendedMinimizer::Result* ExtendedMinimizer::getResult(bool make){
+RooFitUtils::ExtendedMinimizer::Result* ExtendedMinimizer::getResult(bool make){
   if(!this->fResult && make){
     this->fResult = new ExtendedMinimizer::Result();
   }
   return this->fResult;
 }
 
-RooFitResult* ExtendedMinimizer::GetFitResult(){
+RooFitResult* RooFitUtils::ExtendedMinimizer::GetFitResult(){
   if(this->fResult) return this->fResult->fit;
   return NULL;
 }
-TMatrixDSym ExtendedMinimizer::GetHesseMatrix(){
+TMatrixDSym RooFitUtils::ExtendedMinimizer::GetHesseMatrix(){
   if(this->fResult && this->fResult->hesse) return *(this->fResult->hesse);
   return TMatrixDSym();
 }
-double ExtendedMinimizer::GetMinNll(){
+double RooFitUtils::ExtendedMinimizer::GetMinNll(){
   if(this->fResult) return this->fResult->min.nll;
   return nan;
 }
 
 
 namespace {
+
+// ____________________________________________________________________________|__________
+RooLinkedList* makeList( const RooCmdArg& arg1, const RooCmdArg& arg2, const RooCmdArg& arg3, const RooCmdArg& arg4,
+					    const RooCmdArg& arg5, const RooCmdArg& arg6, const RooCmdArg& arg7, const RooCmdArg& arg8,
+					    const RooCmdArg& arg9, const RooCmdArg& arg10, const RooCmdArg& arg11, const RooCmdArg& arg12,
+					    const RooCmdArg& arg13, const RooCmdArg& arg14, const RooCmdArg& arg15, const RooCmdArg& arg16,
+					    const RooCmdArg& arg17, const RooCmdArg& arg18, const RooCmdArg& arg19, const RooCmdArg& arg20){
+  // helper function
+  RooLinkedList* l = new RooLinkedList();
+  l->SetName("CmdList");
+  l->Add( arg1.Clone());  l->Add( arg2.Clone());
+  l->Add( arg3.Clone());  l->Add( arg4.Clone());
+  l->Add( arg5.Clone());  l->Add( arg6.Clone());
+  l->Add( arg7.Clone());  l->Add( arg8.Clone());
+  l->Add( arg9.Clone());  l->Add(arg10.Clone());
+  l->Add(arg11.Clone());  l->Add(arg12.Clone());
+  l->Add(arg13.Clone());  l->Add(arg14.Clone());
+  l->Add(arg15.Clone());  l->Add(arg16.Clone());
+  l->Add(arg17.Clone());  l->Add(arg18.Clone());
+  l->Add(arg19.Clone());  l->Add(arg20.Clone());
+  return l;
+}
+
+
 
   inline const double* getAry(const std::vector<double>& numbers) {
     return &numbers[0];
@@ -193,7 +217,7 @@ namespace {
 
 // ____________________________________________________________________________|__________
 // Constructor
-ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf, RooAbsData* data, RooWorkspace* workspace, const RooLinkedList& argList )  :
+RooFitUtils::ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf, RooAbsData* data, RooWorkspace* workspace, const RooLinkedList& argList )  :
   ExtendedMinimizer(minimizerName,pdf,data,workspace)
 {
   parseConfig(argList);
@@ -201,7 +225,7 @@ ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf,
 
 // ____________________________________________________________________________|__________
 // Constructor
-ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf, RooAbsData* data, RooWorkspace* workspace )  :
+RooFitUtils::ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf, RooAbsData* data, RooWorkspace* workspace )  :
   TNamed( minimizerName, minimizerName ),
   fWorkspace( workspace ),
   fPdf( pdf ),
@@ -247,34 +271,12 @@ ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf,
 }
 
 // ____________________________________________________________________________|__________
-// Destructor
-ExtendedMinimizer::~ExtendedMinimizer()
+
+RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer()
 {
-  // TODO
+  // Destructor
 }
 
-
-// ____________________________________________________________________________|__________
-// helper function
-RooLinkedList* ExtendedMinimizer::makeList( const RooCmdArg& arg1, const RooCmdArg& arg2, const RooCmdArg& arg3, const RooCmdArg& arg4,
-					    const RooCmdArg& arg5, const RooCmdArg& arg6, const RooCmdArg& arg7, const RooCmdArg& arg8,
-					    const RooCmdArg& arg9, const RooCmdArg& arg10, const RooCmdArg& arg11, const RooCmdArg& arg12,
-					    const RooCmdArg& arg13, const RooCmdArg& arg14, const RooCmdArg& arg15, const RooCmdArg& arg16,
-					    const RooCmdArg& arg17, const RooCmdArg& arg18, const RooCmdArg& arg19, const RooCmdArg& arg20){
-  RooLinkedList* l = new RooLinkedList();
-  l->SetName("CmdList");
-  l->Add( arg1.Clone());  l->Add( arg2.Clone());
-  l->Add( arg3.Clone());  l->Add( arg4.Clone());
-  l->Add( arg5.Clone());  l->Add( arg6.Clone());
-  l->Add( arg7.Clone());  l->Add( arg8.Clone());
-  l->Add( arg9.Clone());  l->Add(arg10.Clone());
-  l->Add(arg11.Clone());  l->Add(arg12.Clone());
-  l->Add(arg13.Clone());  l->Add(arg14.Clone());
-  l->Add(arg15.Clone());  l->Add(arg16.Clone());
-  l->Add(arg17.Clone());  l->Add(arg18.Clone());
-  l->Add(arg19.Clone());  l->Add(arg20.Clone());
-  return l;
-}
 
 // ____________________________________________________________________________|__________
 // Minimize function with iterative retry strategy adopted, simplified and

@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef PARAMETRISATIONSCHEME
 #define PARAMETRISATIONSCHEME
 
@@ -10,16 +11,14 @@
 
 #include "RooMsgService.h"
 
-using namespace std;
-using namespace RooFit;
-
+namespace RooFitUtils { 
 class ParametrisationScheme : public TNamed {
 
 // ____________________________________________________________________________|__________
 public:
 
   // Constructor and destructor
-  ParametrisationScheme( std::string SchemeName = "" );
+  ParametrisationScheme( const std::string& SchemeName = "" );
   ~ParametrisationScheme();
 
   // Accessors
@@ -33,9 +32,9 @@ public:
   std::list< std::string > GetNewGlobalObservables() { return fNewGlobalObservables; }
 
   // Steering
-  void AddExpression( std::string Expression );
-  void AddNewNuisanceParameters( std::string NewNuisanceParameters );
-  void AddNewGlobalObservable( std::string NewGlobalObservable );
+  void AddExpression( const std::string& Expression );
+  void AddNewNuisanceParameters( const std::string& NewNuisanceParameters );
+  void AddNewGlobalObservable( const std::string& NewGlobalObservable );
 
 // ____________________________________________________________________________|__________
 private:
@@ -50,5 +49,7 @@ protected:
   ClassDefOverride(ParametrisationScheme, 1)
 
 };
+
+}
 
 #endif

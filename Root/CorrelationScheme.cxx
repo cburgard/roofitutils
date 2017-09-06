@@ -2,7 +2,7 @@
 
 // ____________________________________________________________________________|__________
 // Constructor
-CorrelationScheme::CorrelationScheme( std::string SchemeName, std::string ParametersOfInterest, bool AutoCorrelation )
+RooFitUtils::CorrelationScheme::CorrelationScheme( std::string SchemeName, std::string ParametersOfInterest, bool AutoCorrelation )
   :
   TNamed(SchemeName.c_str(), SchemeName.c_str()),
   fParametersOfInterest(ParametersOfInterest),
@@ -22,14 +22,14 @@ CorrelationScheme::CorrelationScheme( std::string SchemeName, std::string Parame
 
 // ____________________________________________________________________________|__________
 // Destructor
-CorrelationScheme::~CorrelationScheme()
+RooFitUtils::CorrelationScheme::~CorrelationScheme()
 {
   {}
 }
 
 // ____________________________________________________________________________|__________
 // Enable automatic correlation, print warning, as potentially dangerous
-void CorrelationScheme::SetAutoCorrelation( bool setting )
+void RooFitUtils::CorrelationScheme::SetAutoCorrelation( bool setting )
 {
   fAutoCorrelation = setting;
 
@@ -47,7 +47,7 @@ void CorrelationScheme::SetAutoCorrelation( bool setting )
 // ____________________________________________________________________________|__________
 // Interface to add fully correlated parameters among different channels,
 // constraint terms will be determined automatically if not specified otherwise
-void CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, RenamingMap::ConstraintType thisConstraintType )
+void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, RenamingMap::ConstraintType thisConstraintType )
 {
   TString allOldParameterNamePlusMeasurement = OldParameterNamePlusMeasurement;
   TObjArray* allOldParameterNamePlusMeasurementArray = allOldParameterNamePlusMeasurement.Tokenize(",");
@@ -84,7 +84,7 @@ void CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeas
 
 // ____________________________________________________________________________|__________
 // Rename a parameter without correlating it
-void CorrelationScheme::RenameParameter( const char* MeasurementName, const char* OldParameterName, const char* NewParameterName, RenamingMap::ConstraintType thisConstraintType )
+void RooFitUtils::CorrelationScheme::RenameParameter( const char* MeasurementName, const char* OldParameterName, const char* NewParameterName, RenamingMap::ConstraintType thisConstraintType )
 {
   std::string thisOldParameterName         = string(OldParameterName);
   std::string thisOldConstraintName        = "";
@@ -166,7 +166,7 @@ void CorrelationScheme::RenameParameter( const char* MeasurementName, const char
 // Determine explicit names of constraint terms, observables and global observables
 // as well as their ranges. The input format specified by the user should be
 // ConstraintName(Observable[ObservableRange],GlobalObservable[GlobalObservableRange])
-void CorrelationScheme::ParseInputs( std::string& InputName, std::string& InputConstraintName, std::string& InputObservableName, std::string& InputObservableRange, std::string& InputGlobalObservableName, std::string& InputGlobalObservableRange, std::string& InputSigmaName, std::string& InputSigmaRange )
+void RooFitUtils::CorrelationScheme::ParseInputs( std::string& InputName, std::string& InputConstraintName, std::string& InputObservableName, std::string& InputObservableRange, std::string& InputGlobalObservableName, std::string& InputGlobalObservableRange, std::string& InputSigmaName, std::string& InputSigmaRange )
 {
   TString thisInputName = InputName.c_str();
 
@@ -222,7 +222,7 @@ void CorrelationScheme::ParseInputs( std::string& InputName, std::string& InputC
 
 // ____________________________________________________________________________|__________
 // Decompose a factory like variable term into its name and range if specified
-void CorrelationScheme::DecomposeVariable( std::string& InputName, std::string& InputVariableName, std::string& InputVariableRange )
+void RooFitUtils::CorrelationScheme::DecomposeVariable( std::string& InputName, std::string& InputVariableName, std::string& InputVariableRange )
 {
   TString thisInputName = InputName.c_str();
 
@@ -259,7 +259,7 @@ void CorrelationScheme::DecomposeVariable( std::string& InputName, std::string& 
 
 // ____________________________________________________________________________|__________
 // Interface to add partly correlated parameters among 2 channels
-void CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, double rho )
+void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, double rho )
 {
   // if parameters are fully correlated, use existing function
   if (rho == 1.0) {
@@ -292,7 +292,7 @@ void CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeas
 
 // ____________________________________________________________________________|__________
 // Interface to add partly correlated parameters among multiple channels
-void CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, TMatrixDSym cov )
+void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, TMatrixDSym cov )
 {
   // check dimensions
   if (cov.GetNcols() != cov.GetNrows()) {
@@ -356,7 +356,7 @@ void CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeas
 
 // ____________________________________________________________________________|__________
 // Interface for specifying a parameter that should be renamed and correlated partially to others
-void CorrelationScheme::IntroduceCorrelation( const char* MeasurementName, std::vector<TString> NewParameterNames, TMatrixDSym cov )
+void RooFitUtils::CorrelationScheme::IntroduceCorrelation( const char* MeasurementName, std::vector<TString> NewParameterNames, TMatrixDSym cov )
 {
   unsigned int nDim = NewParameterNames.size();
 

@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef RENAMINGMAP
 #define RENAMINGMAP
 
@@ -19,10 +20,7 @@
 
 #include "RooStats/ModelConfig.h"
 
-using namespace std;
-using namespace RooFit;
-using namespace RooStats;
-
+namespace RooFitUtils { 
 class RenamingMap : public TNamed {
 
 // ____________________________________________________________________________|__________
@@ -65,5 +63,7 @@ protected:
   ClassDefOverride(RenamingMap, 1)
 
 };
+
+}
 
 #endif

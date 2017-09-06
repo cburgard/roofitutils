@@ -1,3 +1,4 @@
+//this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef COMBINEDMEASUREMENT
 #define COMBINEDMEASUREMENT
 
@@ -37,6 +38,8 @@
 #include "RooFitUtils/Measurement.h"
 #include "RooFitUtils/CorrelationScheme.h"
 #include "RooFitUtils/ParametrisationSequence.h"
+
+namespace RooFitUtils {
 
 class CombinedMeasurement : public AbsMeasurement {
 
@@ -97,5 +100,7 @@ protected:
   ClassDefOverride(CombinedMeasurement, 1)
 
 };
+
+}
 
 #endif

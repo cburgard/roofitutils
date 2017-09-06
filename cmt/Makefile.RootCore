@@ -3,7 +3,7 @@
 PACKAGE          = RooFitUtils
 PACKAGE_PEDANTIC = 1
 PACKAGE_PRELOAD = RooFitCore RooFit HistFactory RooStats
-PACKAGE_CXXFLAGS = -Wno-unused-variable -Wno-unused-parameter -Wno-type-limits --std=c++11 -Wno-comment -Werror=return-type -Wno-misleading-indentation -g
+PACKAGE_CXXFLAGS = -fPIC -Wno-unused-variable -Wno-unused-parameter -Wno-type-limits --std=c++11 -Wno-comment -Werror=return-type -Wno-misleading-indentation -g
 PACKAGE_TRYDEP   = Asg_Boost
 PACKAGE_BINFLAGS =$$(if echo $$(rc package_list) | grep -w Asg_Boost > /dev/null; then echo "-lboost_program_options"; fi)
 
