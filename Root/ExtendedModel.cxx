@@ -34,8 +34,8 @@ using namespace RooStats;
 ClassImp(ExtendedModel)
 
 // _____________________________________________________________________________
-// Constructor
-ExtendedModel::ExtendedModel( const std::string& ModelName, const std::string& FileName, const std::string& WsName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool binnedLikelihood, const std::string& TagAsMeasurement, bool FixCache, bool FixMulti )
+
+RooFitUtils::ExtendedModel::ExtendedModel( const std::string& ModelName, const std::string& FileName, const std::string& WsName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool binnedLikelihood, const std::string& TagAsMeasurement, bool FixCache, bool FixMulti )
   :
   TNamed( ModelName.c_str(), ModelName.c_str() ),
   fFileName( FileName ),
@@ -46,23 +46,24 @@ ExtendedModel::ExtendedModel( const std::string& ModelName, const std::string& F
   fBinnedLikelihood( binnedLikelihood ),
   fTagAsMeasurement( TagAsMeasurement )
 {
-
+  // Constructor
   initialise(FixCache,FixMulti);
 
   coutP(InputArguments) << "ExtendedModel::ExtendedModel(" << fName <<") created" << endl;
 }
 
 // _____________________________________________________________________________
-// Destructor
-ExtendedModel::~ExtendedModel()
+
+RooFitUtils::ExtendedModel::~ExtendedModel()
 {
-  // TODO
+  // Destructor
 }
 
 // _____________________________________________________________________________
-// Load all model information from specified file
-void ExtendedModel::initialise(bool fixCache, bool fixMulti)
+
+void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti)
 {
+  // Load all model information from specified file
   coutP(InputArguments) << "Opening file " << fFileName << endl;
   fFile = TFile::Open(fFileName.c_str());
   if(!fFile || !fFile->IsOpen()){
@@ -207,9 +208,10 @@ void ExtendedModel::initialise(bool fixCache, bool fixMulti)
 }
 
 // _____________________________________________________________________________
-// Fix all nuisance parameters
-void ExtendedModel::fixNuisanceParameters()
+
+void RooFitUtils::ExtendedModel::fixNuisanceParameters()
 {
+  // Fix all nuisance parameters
   for (RooLinkedListIter it = fNuis->iterator(); RooRealVar* v = dynamic_cast<RooRealVar*>(it.Next());) {
     Double_t value = v->getVal();
     string name = v->GetName();
@@ -219,9 +221,10 @@ void ExtendedModel::fixNuisanceParameters()
 }
 
 // _____________________________________________________________________________
-// Fix all parameters of interest
-void ExtendedModel::fixParametersOfInterest()
+
+void RooFitUtils::ExtendedModel::fixParametersOfInterest()
 {
+  // Fix all parameters of interest
   for (RooLinkedListIter it = fPOIs->iterator(); RooRealVar* v = dynamic_cast<RooRealVar*>(it.Next());) {
     Double_t value = v->getVal();
     string name = v->GetName();
@@ -231,17 +234,18 @@ void ExtendedModel::fixParametersOfInterest()
 }
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::fixNuisanceParameters( const std::string& fixName )
+
+void RooFitUtils::ExtendedModel::fixNuisanceParameters( const std::string& fixName )
 {
+  // Fix a subset of the nuisance parameters at the specified values
   fixNuisanceParameters(parseString(fixName, ","));
 }
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parsed )
+
+void RooFitUtils::ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parsed )
 {
-  
+  // Fix a subset of the nuisance parameters at the specified values  
   for (size_t i = 0; i < parsed.size(); i++) {
      TString thisName = parsed[i].c_str();
      TString thisVal;
@@ -272,13 +276,17 @@ void ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parse
 }
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::profileParameters( const std::string& profileName )
+
+void RooFitUtils::ExtendedModel::profileParameters( const std::string& profileName )
 {
+  // Fix a subset of the nuisance parameters at the specified values
   profileParameters(parseString(profileName, ","));
 }
 
-RooRealVar* ExtendedModel::configureParameter(const std::string& pname){
+// _____________________________________________________________________________
+
+RooRealVar* RooFitUtils::ExtendedModel::configureParameter(const std::string& pname){
+  // Fix a subset of the nuisance parameters at the specified values
   TString thisName(pname.c_str());
     TString range;
     TString boundary;
@@ -374,9 +382,10 @@ RooRealVar* ExtendedModel::configureParameter(const std::string& pname){
 
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::profileParameters( const std::vector<std::string>& parsed )
+
+void RooFitUtils::ExtendedModel::profileParameters( const std::vector<std::string>& parsed )
 {
+  // Fix a subset of the nuisance parameters at the specified values
   for (size_t i = 0; i < parsed.size(); i++) {
     RooRealVar* thisPoi = this->configureParameter(parsed[i]);
     if(thisPoi){
@@ -387,9 +396,10 @@ void ExtendedModel::profileParameters( const std::vector<std::string>& parsed )
 
 
 // _____________________________________________________________________________
-// Set initial errors of model parameters depending on constraint terms
-void ExtendedModel::setInitialErrors()
+
+void RooFitUtils::ExtendedModel::setInitialErrors()
 {
+  // Set initial errors of model parameters depending on constraint terms
   RooArgSet* AllConstraints = new RooArgSet();
 
   if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(), RooNameSet(*fData->get()).content()))) {

@@ -2,7 +2,7 @@
 
 // ____________________________________________________________________________|__________
 // Constructor
-ParametrisationSequence::ParametrisationSequence( std::string SchemeName, std::string ParametersOfInterest )
+RooFitUtils::ParametrisationSequence::ParametrisationSequence( const std::string& SchemeName, const std::string& ParametersOfInterest )
   :
   TNamed( SchemeName.c_str(), SchemeName.c_str() ),
   fParametersOfInterest( ParametersOfInterest )
@@ -12,14 +12,14 @@ ParametrisationSequence::ParametrisationSequence( std::string SchemeName, std::s
 
 // ____________________________________________________________________________|__________
 // Destructor
-ParametrisationSequence::~ParametrisationSequence()
+RooFitUtils::ParametrisationSequence::~ParametrisationSequence()
 {
 
 }
 
 // ____________________________________________________________________________|__________
 // Interface to add expressions for the re-parametrisation
-void ParametrisationSequence::AddScheme( ParametrisationScheme& Scheme )
+void RooFitUtils::ParametrisationSequence::AddScheme( ParametrisationScheme& Scheme )
 {
   coutP(InputArguments) << "ParametrisationSequence::AddScheme(" << fName <<") adding expression " << Scheme.GetName() << endl;
   fSequence.push_back(Scheme);

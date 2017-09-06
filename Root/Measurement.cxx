@@ -7,33 +7,35 @@
 #include <stdexcept>
 
 // ____________________________________________________________________________|__________
-// Constructor
-Measurement::Measurement( const std::string& MeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
+
+RooFitUtils::Measurement::Measurement( const std::string& MeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
   :
   AbsMeasurement( MeasurementName, FileName, WorkspaceName, ModelConfigName, DataName ),
   fSnapshotName ( SnapshotName ),
   fBinnedLikelihood( BinnedLikelihood )
 {
+  // Constructor
   coutP(InputArguments) << "Measurement::Measurement(" << fName <<") created" << endl;
 }
 
 // ____________________________________________________________________________|__________
-// Constructor
-Measurement::Measurement( const std::string& MeasurementName, RooWorkspace* ws, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
+
+RooFitUtils::Measurement::Measurement( const std::string& MeasurementName, RooWorkspace* ws, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
   :
   AbsMeasurement( MeasurementName, ws, ModelConfigName, DataName ),
   fSnapshotName ( SnapshotName ),
   fBinnedLikelihood( BinnedLikelihood )
 {
+  // Constructor
   coutP(InputArguments) << "Measurement::Measurement(" << fName <<") created" << endl;
 }
 
 // ____________________________________________________________________________|__________
-// Destructor
-Measurement::~Measurement()
+
+RooFitUtils::Measurement::~Measurement()
 {
+  // Destructor
   coutI(InputArguments) << "Measurement::~Measurement(" << fName << ") cleaning up" << endl;
-  // TODO
 
   if (fIsInitialised) {
     fNuisanceParameters->Delete();
@@ -50,9 +52,10 @@ Measurement::~Measurement()
 }
 
 // ____________________________________________________________________________|__________
-// Import a model for a specific channel
-void Measurement::initialise()
+
+void RooFitUtils::Measurement::initialise()
 {
+  // Import a model for a specific channel
   if(!fWorkSpace){
     // Initialisation
     fFile = TFile::Open(fFileName.c_str());
@@ -201,9 +204,10 @@ void Measurement::initialise()
 }
 
 // ____________________________________________________________________________|__________
-// Collect all measurement after regularising their individual channels
-void Measurement::CollectChannels()
+
+void RooFitUtils::Measurement::CollectChannels()
 {
+  // Collect all measurement after regularising their individual channels
   if (!fIsInitialised) {
     initialise();
   }
@@ -358,9 +362,10 @@ void Measurement::CollectChannels()
 }
 
 // ____________________________________________________________________________|__________
-// Find all unique components of a RooProdPdf
-void Measurement::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
+
+void RooFitUtils::Measurement::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
 {
+  // Find all unique components of a RooProdPdf
   static int counter = 0;
   counter++;
 
@@ -391,8 +396,8 @@ void Measurement::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Componen
 }
 
 // ____________________________________________________________________________|__________
-//
-RenamingMap::ConstraintType Measurement::DetermineConstraintType( RooRealVar* Parameter )
+
+RooFitUtils::RenamingMap::ConstraintType RooFitUtils::Measurement::DetermineConstraintType( RooRealVar* Parameter )
 {
   std::string tmpConstraintType = "unconstrained";
   TIterator* ConstraintItr = fConstraints->createIterator();
@@ -415,9 +420,10 @@ RenamingMap::ConstraintType Measurement::DetermineConstraintType( RooRealVar* Pa
 }
 
 // ____________________________________________________________________________|__________
-// Print information about the measurement
-void Measurement::Print()
+
+void RooFitUtils::Measurement::Print()
 {
+  // Print information about the measurement
   cout << "== MEASUREMENT SUMMARY ==== " << endl;
   cout << "Measurement           : " << fName << endl;
   cout << "\nChannels              : " << fChannels.size() << endl;
@@ -452,8 +458,9 @@ void Measurement::Print()
 }
 
 // ____________________________________________________________________________|__________
-void Measurement::TagPrunableParameters()
+void RooFitUtils::Measurement::TagPrunableParameters()
 {
+  // Print information about the measurement
   std::map< std::string, std::string > thisRenamingMap = fRenamingMap.GetRenamingMap();
 
   for (std::list< std::string >::const_iterator pruneItr = fPrunedNuisanceParameters.begin(), end = fPrunedNuisanceParameters.end(); pruneItr != end; ++pruneItr) {
@@ -487,10 +494,11 @@ void Measurement::TagPrunableParameters()
 }
 
 // ____________________________________________________________________________|__________
-// Convert a RooDataHist to a RooDataSet incl. weights.
-// Courtesy of Hongtao Yang <Hongtao.Yang@cern.ch>.
-void Measurement::hist2dataset( RooSimultaneous* thisSim, RooCategory* cat )
+
+void RooFitUtils::Measurement::hist2dataset( RooSimultaneous* thisSim, RooCategory* cat )
 {
+  // Convert a RooDataHist to a RooDataSet incl. weights.
+  // Courtesy of Hongtao Yang <Hongtao.Yang@cern.ch>.
     RooRealVar* x[500], *w[500];
     RooDataSet* data[500];
     std::map<std::string, RooDataSet*> datasetMap;

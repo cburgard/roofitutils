@@ -17,38 +17,40 @@ namespace {
 
 
 // _____________________________________________________________________________
-Log::Log(LogLevel _loglevel){
+
+RooFitUtils::Log::Log(RooFitUtils::LogLevel _loglevel){
   _os << "- " << GetTime();
   _os << " " << ToString(_loglevel) << ": ";
   _os << std::string(_loglevel > logDEBUG ? (_loglevel - logDEBUG) : 0, '\t');
 }
 
 // _____________________________________________________________________________
-Log::~Log(){
+
+RooFitUtils::Log::~Log(){
   _os << std::endl;
   std::cout << _os.str();
 }
 
-static LogLevel reportingLevel = logDEBUG;
+static RooFitUtils::LogLevel reportingLevel = RooFitUtils::logDEBUG;
 
 // _____________________________________________________________________________
-LogLevel& Log::ReportingLevel(){
+RooFitUtils::LogLevel& RooFitUtils::Log::ReportingLevel(){
   return reportingLevel;
 }
 
 // _____________________________________________________________________________
-void Log::SetReportingLevel(LogLevel lvl){
+void RooFitUtils::Log::SetReportingLevel(RooFitUtils::LogLevel lvl){
   reportingLevel = lvl;
 }
 
 // _____________________________________________________________________________
-std::string Log::ToString(LogLevel _loglevel){
+std::string RooFitUtils::Log::ToString(RooFitUtils::LogLevel _loglevel){
   static const char* const buffer[] = {"ERROR", "WARNING", "INFO", "DEBUG"};
   return buffer[_loglevel];
 }
 
 // _____________________________________________________________________________
-LogLevel Log::FromString(const std::string& _loglevel){
+RooFitUtils::LogLevel RooFitUtils::Log::FromString(const std::string& _loglevel){
   if (_loglevel == "DEBUG") return logDEBUG;
   if (_loglevel == "INFO") return logINFO;
   if (_loglevel == "WARNING") return logWARNING;
