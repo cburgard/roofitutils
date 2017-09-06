@@ -39,7 +39,10 @@ namespace {
 #ifdef HAS_ROOSTARMOMENTMORPH
 #include "RooStarMomentMorph.h"
 #endif
-int fixRooStarMomentMorph(RooWorkspace* workspace){
+
+// _____________________________________________________________________________
+
+int RooFitUtils::fixRooStarMomentMorph(RooWorkspace* workspace){
   int retval = 0;
 #ifdef HAS_ROOSTARMOMENTMORPH
   RooFIter iter(workspace->components().fwdIterator());
@@ -55,8 +58,9 @@ int fixRooStarMomentMorph(RooWorkspace* workspace){
   return retval;
 }
 
+// _____________________________________________________________________________
 
-bool AlmostEqualUlpsAndAbs(float A, float B, float maxDiff, int maxUlpsDiff) {
+bool RooFitUtils::AlmostEqualUlpsAndAbs(float A, float B, float maxDiff, int maxUlpsDiff) {
   // Check if the numbers are really close -- needed  when comparing numbers
   // near zero.
   float absDiff = fabs(A - B);
@@ -76,24 +80,26 @@ bool AlmostEqualUlpsAndAbs(float A, float B, float maxDiff, int maxUlpsDiff) {
 }
 
 // _____________________________________________________________________________
+
+void RooFitUtils::PrintResourcesUsed(const TTime& progStart)
+{
 // Print used resources
 // Courtesy of Tim Adye <T.J.Adye@rl.ac.uk>.
-void PrintResourcesUsed(const TTime& progStart)
-{
   ProcInfo_t info;
   if (gSystem->GetProcInfo(&info)<0) return;
   Long_t cput= TMath::CeilNint(info.fCpuUser);
   Long_t wall= Long64_t(gSystem->Now()-progStart+TTime(500))/Long64_t(1000);
-  LOG(logINFO) << Form("resources used: cput=%02ld:%02ld:%02ld, mem=%ldkb, vmem=%ldkb, walltime=%02ld:%02ld:%02ld",
+  LOG(RooFitUtils::logINFO) << Form("resources used: cput=%02ld:%02ld:%02ld, mem=%ldkb, vmem=%ldkb, walltime=%02ld:%02ld:%02ld",
                        cput/3600, (cput/60)%60, cput%60,
                        info.fMemResident, info.fMemVirtual,
                        wall/3600, (wall/60)%60, wall%60);
 }
 
 // _____________________________________________________________________________
-// Split strings according to separator
-std::vector<std::string> parseString(const std::string& str, const std::string& sep)
+
+std::vector<std::string> RooFitUtils::parseString(const std::string& str, const std::string& sep)
 {
+  // Split strings according to separator
   std::vector<std::string> parsed;
   int pos = 0;
   bool first = true;
@@ -120,20 +126,21 @@ std::vector<std::string> parseString(const std::string& str, const std::string& 
 }
 
 // _____________________________________________________________________________
-// Split a RooProdPdf into its components
-void FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
+
+void RooFitUtils::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
 {
+  // Split a RooProdPdf into its components
   static int counter = 0;
   counter++;
 
   if (counter > 50) {
-    LOG(logERROR) << "FindUniqueProdComponents detected infinite loop. Please check.";
+    LOG(RooFitUtils::logERROR) << "FindUniqueProdComponents detected infinite loop. Please check.";
     exit(1);
   }
 
   RooArgList pdfList = Pdf->pdfList();
   if (pdfList.getSize() == 1) {
-    LOG(logINFO) << "FindUniqueProdComponents " << pdfList.at(0)->GetName() << " is fundamental.";
+    LOG(RooFitUtils::logINFO) << "FindUniqueProdComponents " << pdfList.at(0)->GetName() << " is fundamental.";
     Components.add(pdfList);
   } else {
     TIterator* pdfItr = pdfList.createIterator();
@@ -141,7 +148,7 @@ void FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
     while ((nextArg = (RooAbsArg*)pdfItr->Next())) {
       RooProdPdf* Pdf = (RooProdPdf*)nextArg;
       if (std::string(Pdf->ClassName()) != "RooProdPdf") {
-        LOG(logINFO) << "FindUniqueProdComponents " << Pdf->GetName() << " is no RooProdPdf. Adding it.";
+        LOG(RooFitUtils::logINFO) << "FindUniqueProdComponents " << Pdf->GetName() << " is no RooProdPdf. Adding it.";
         Components.add(*Pdf);
         continue;
       }
@@ -152,7 +159,9 @@ void FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
   counter = 0;
 }
 
-bool ensureDirectory(const TString& path) {
+// _____________________________________________________________________________
+
+bool RooFitUtils::ensureDirectory(const TString& path) {
   // ensure that the directory with the given path exists
   // check if directory <path> exists
   Long_t flags = 0;
@@ -166,9 +175,119 @@ bool ensureDirectory(const TString& path) {
   else return false;
 }
 
-bool ensureDirectoryForFile(const TString& file) {
+// _____________________________________________________________________________
+
+bool RooFitUtils::ensureDirectoryForFile(const TString& file) {
   // ensure that the directory for the given file exists
   Ssiz_t pos = file.Last('/');
   if(pos == kNPOS) return false;
   return ensureDirectory(file(0,pos));
 }
+
+// _____________________________________________________________________________
+
+void RooFitUtils::PrintTable(std::string* firstCol, std::string** matrix, std::string** matrixErr, std::string* header, int nrRows, int nrCols, int nSigFig, std::ostream& ost, std::string indent, std::string delim, std::string ending)
+{
+  // Helper function to print latex tables nicely
+  int** lmatrix = new int*[nrRows];
+  int** lmatrix_pm = new int*[nrRows];
+
+  for (int i = 0; i < nrRows; i++) {
+    lmatrix[i] = new int[nrCols];
+    lmatrix_pm[i] = new int[nrCols];
+  }
+
+  int maxLfirst = 0;
+  for (int i = 0; i < nrRows+1; i++)  {
+    maxLfirst = int(std::max(double(maxLfirst), double(firstCol[i].size())));
+  }
+
+  std::string pm = " $\\pm$ ";
+
+  int* maxLength = new int[nrCols];
+  int* maxLength_pm = new int[nrCols];
+
+  for (int j = 0; j < nrCols; j++) {
+    if (header) maxLength[j] = header[j].size();
+    else maxLength[j] = 0;
+    maxLength_pm[j] = 0;
+  }
+
+  for (int i = 0; i < nrRows; i++) {
+    for (int j = 0; j < nrCols;j++) {
+      std::stringstream str;
+      str << std::setprecision(nSigFig);
+      str << matrix[i][j];
+
+      lmatrix[i][j] = str.str().size();
+      maxLength[j] = int(std::max(double(maxLength[j]), double(lmatrix[i][j])));
+
+      std::stringstream str2;
+      str2 << std::setprecision(nSigFig);
+      if (/*j != 0 && */matrixErr) str2 << pm << matrixErr[i][j];
+
+      lmatrix_pm[i][j] = str2.str().size();
+      maxLength_pm[j] = int(std::max(double(maxLength_pm[j]), double(lmatrix_pm[i][j])));
+    }
+  }
+
+  if (header) {
+    ost << indent;
+    ost << firstCol[0];
+    for (int j = firstCol[0].size(); j < maxLfirst; j++) ost << " ";
+    ost << " & ";
+    for (int i = 0; i < nrCols; i++) {
+      ost << header[i];
+
+      for (int k = header[i].size(); k < maxLength[i] + maxLength_pm[i]; k++) {
+        ost << " ";
+      }
+      if (i < nrCols-1) {
+        if (delim != "") ost << delim;
+      } else  {
+        if (ending != "") ost << ending;
+        ost << "\n" << indent << "\\hline\n";
+      }
+    }
+  }
+
+  for (int i = 0; i < nrRows; i++) {
+    ost << indent;
+    ost << firstCol[i+1];
+    for (int j = firstCol[i+1].size(); j < maxLfirst; j++) ost << " ";
+    ost << " & ";
+    for (int j=0;j<nrCols;j++) {
+      ost << std::setprecision(nSigFig);
+      ost << matrix[i][j];
+      for (int k = lmatrix[i][j]; k < maxLength[j]; k++) {
+        ost << " ";
+      }
+
+      if (/*j != 0 && */matrixErr) {
+        ost << pm << matrixErr[i][j];
+        for (int k = lmatrix_pm[i][j]; k < maxLength_pm[j]; k++) {
+          ost << " ";
+        }
+      }
+
+      if (j < nrCols-1) {
+        if (delim != "") ost << delim;
+      } else {
+        if (ending != "") ost << ending;
+        ost << "\n";
+      }
+    }
+  }
+
+  delete[] maxLength;
+  delete[] maxLength_pm;
+
+  for (int i = 0; i < nrRows;i++) {
+    delete[] lmatrix[i];
+    delete[] lmatrix_pm[i];
+  }
+
+  delete[] lmatrix;
+  delete[] lmatrix_pm;
+}
+

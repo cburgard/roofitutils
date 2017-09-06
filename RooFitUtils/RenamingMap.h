@@ -23,7 +23,6 @@
 namespace RooFitUtils { 
 class RenamingMap : public TNamed {
 
-// ____________________________________________________________________________|__________
 public:
 
   // Constructor and destructor
@@ -36,28 +35,26 @@ public:
   static const std::string ConstraintTypeNames[];
 
   // Accessors
-  void SetAttribute( std::string ParameterName, Attribute thisAttribute, std::string AttributeValue, MeasurementType thisMeasurementType );
-  std::string GetAttribute( std::string ParameterName, Attribute thisAttribute, MeasurementType thisMeasurementType );
-  void AddAttributes( ModelConfig* tmpModelConfig );
+  void SetAttribute( const std::string& ParameterName, Attribute thisAttribute, const std::string& AttributeValue, MeasurementType thisMeasurementType );
+  std::string GetAttribute( const std::string& ParameterName, Attribute thisAttribute, MeasurementType thisMeasurementType );
+  void AddAttributes( RooStats::ModelConfig* tmpModelConfig );
 
   std::map< std::string, std::string > GetRenamingMap() { return fRenamingMap; }
   void SetRenamingMap( std::map< std::string, std::string > RenamingMap) { fRenamingMap = RenamingMap; }
 
   // Steering
-  void RenameParameter( std::string OldParameterName, std::string NewParameterName );
-  std::string FactoryExpression( std::string ParameterName, MeasurementType  );
+  void RenameParameter( const std::string& OldParameterName, const std::string& NewParameterName );
+  std::string FactoryExpression( const std::string& ParameterName, MeasurementType  );
   void FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components );
   using TNamed::Print;
   void Print();
 
-// ____________________________________________________________________________|__________
 private:
 
   std::map< std::string /* OldParameterName */, std::string /* NewParameterName */ > fRenamingMap;
   std::map< std::string /* OldParameterName */, std::map< Attribute /* obs, globs, pdf, ... */, std::string /* values */ > > fOldParameterMap;
   std::map< std::string /* NewParameterName */, std::map< Attribute /* obs, globs, pdf, ... */, std::string /* values */ > > fNewParameterMap;
 
-// ____________________________________________________________________________|__________
 protected:
 
   ClassDefOverride(RenamingMap, 1)

@@ -26,9 +26,9 @@
 #define nan std::numeric_limits<double>::quiet_NaN()
 #define inf std::numeric_limits<double>::infinity()
 
-ClassImp(ExtendedMinimizer)
+ClassImp(RooFitUtils::ExtendedMinimizer)
 
-// #define coutP(x) std::cout
+// ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Result() :
   eigen(NULL),
@@ -38,6 +38,8 @@ RooFitUtils::ExtendedMinimizer::Result::Result() :
   // nothing here
 }
 
+// ____________________________________________________________________________|__________
+
 RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization() :
   status(-1),
   strategy(-1),
@@ -46,12 +48,21 @@ RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization() :
   // nothing here
 }
 
+// ____________________________________________________________________________|__________
+
 bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok(int status){
+  // return true if status is 0 or 1, false otherwise
   return (status == 0 || status == 1);
 }
+
+// ____________________________________________________________________________|__________
+
 bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok(){
+  // return status of minization
   return ExtendedMinimizer::Result::Minimization::ok(this->status);
 }
+
+// ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Parameter::Parameter(const std::string& n,double v,double eH, double eL) :
   name(n),
@@ -62,6 +73,8 @@ RooFitUtils::ExtendedMinimizer::Result::Parameter::Parameter(const std::string& 
   // nothing here
 }
 
+// ____________________________________________________________________________|__________
+
 RooFitUtils::ExtendedMinimizer::Result::Eigen::Eigen(const TVectorD& vals, const TMatrixD& vecs) :
   values(vals),
   vectors(vecs)
@@ -69,13 +82,18 @@ RooFitUtils::ExtendedMinimizer::Result::Eigen::Eigen(const TVectorD& vals, const
   // nothing here
 }
 
+// ____________________________________________________________________________|__________
+
 RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(const std::vector<std::string>& parnames) : 
   parNames(parnames)
 {
   // nothing here
 }
 
+// ____________________________________________________________________________|__________
+
 void RooFitUtils::ExtendedMinimizer::Result::Scan::add(const std::vector<double>& parvals, double nllval){
+  // add a new entry to a scan
   if(parvals.size() != this->parNames.size()){
     throw std::runtime_error("cannot add parameter list with wrong length!");
   }
@@ -83,7 +101,10 @@ void RooFitUtils::ExtendedMinimizer::Result::Scan::add(const std::vector<double>
   this->nllValues.push_back(nllval);
 }
 
+// ____________________________________________________________________________|__________
+
 void RooFitUtils::ExtendedMinimizer::Result::Scan::printTable(){
+  // print the scan values as a table
   auto prec = std::cout.precision();
   std::cout.precision(15);
   for(size_t i=0; i<this->parNames.size(); ++i){
@@ -99,35 +120,51 @@ void RooFitUtils::ExtendedMinimizer::Result::Scan::printTable(){
   std::cout.precision(prec);
 }
 
-RooFitUtils::ExtendedMinimizer::Result* ExtendedMinimizer::getResult(bool make){
+// ____________________________________________________________________________|__________
+
+RooFitUtils::ExtendedMinimizer::Result* RooFitUtils::ExtendedMinimizer::getResult(bool make){
+  // obtain the result from the minimizer
   if(!this->fResult && make){
     this->fResult = new ExtendedMinimizer::Result();
   }
   return this->fResult;
 }
 
+// ____________________________________________________________________________|__________
+
 RooFitResult* RooFitUtils::ExtendedMinimizer::GetFitResult(){
+  // obtain the fit result from the minimizer
   if(this->fResult) return this->fResult->fit;
   return NULL;
 }
+
+// ____________________________________________________________________________|__________
+
 TMatrixDSym RooFitUtils::ExtendedMinimizer::GetHesseMatrix(){
+  // obtain the hesse matrix from the minimizer
   if(this->fResult && this->fResult->hesse) return *(this->fResult->hesse);
   return TMatrixDSym();
 }
+
+// ____________________________________________________________________________|__________
+
 double RooFitUtils::ExtendedMinimizer::GetMinNll(){
+  // obtain the Nll minimum from the minimizer
   if(this->fResult) return this->fResult->min.nll;
   return nan;
 }
 
+// ____________________________________________________________________________|__________
 
 namespace {
 
 // ____________________________________________________________________________|__________
-RooLinkedList* makeList( const RooCmdArg& arg1, const RooCmdArg& arg2, const RooCmdArg& arg3, const RooCmdArg& arg4,
-					    const RooCmdArg& arg5, const RooCmdArg& arg6, const RooCmdArg& arg7, const RooCmdArg& arg8,
-					    const RooCmdArg& arg9, const RooCmdArg& arg10, const RooCmdArg& arg11, const RooCmdArg& arg12,
-					    const RooCmdArg& arg13, const RooCmdArg& arg14, const RooCmdArg& arg15, const RooCmdArg& arg16,
-					    const RooCmdArg& arg17, const RooCmdArg& arg18, const RooCmdArg& arg19, const RooCmdArg& arg20){
+
+RooLinkedList* makeList( const RooCmdArg&  arg1= RooCmdArg::none(), const RooCmdArg&  arg2= RooCmdArg::none(), const RooCmdArg&  arg3= RooCmdArg::none(), const RooCmdArg&  arg4= RooCmdArg::none(),
+			 const RooCmdArg&  arg5= RooCmdArg::none(), const RooCmdArg&  arg6= RooCmdArg::none(), const RooCmdArg&  arg7= RooCmdArg::none(), const RooCmdArg&  arg8= RooCmdArg::none(),
+			 const RooCmdArg&  arg9= RooCmdArg::none(), const RooCmdArg& arg10= RooCmdArg::none(), const RooCmdArg& arg11= RooCmdArg::none(), const RooCmdArg& arg12= RooCmdArg::none(),
+			 const RooCmdArg& arg13= RooCmdArg::none(), const RooCmdArg& arg14= RooCmdArg::none(), const RooCmdArg& arg15= RooCmdArg::none(), const RooCmdArg& arg16= RooCmdArg::none(),
+			 const RooCmdArg& arg17= RooCmdArg::none(), const RooCmdArg& arg18= RooCmdArg::none(), const RooCmdArg& arg19= RooCmdArg::none(), const RooCmdArg& arg20= RooCmdArg::none()){
   // helper function
   RooLinkedList* l = new RooLinkedList();
   l->SetName("CmdList");
@@ -148,6 +185,17 @@ RooLinkedList* makeList( const RooCmdArg& arg1, const RooCmdArg& arg2, const Roo
 
   inline const double* getAry(const std::vector<double>& numbers) {
     return &numbers[0];
+  }
+
+  inline void addAllPoints(std::vector<std::vector<double> >& points, const std::vector<std::string>& parnames, const std::map<const std::string, std::vector<double> >& params, std::vector<double>& currentvals, size_t idx){
+    if(idx < parnames.size()){
+      for(auto val:params.at(parnames[idx])){
+	currentvals[idx] = val;
+	addAllPoints(points,parnames,params,currentvals,idx+1);
+      }
+    } else {
+      points.push_back(currentvals);
+    }
   }
 
   inline int addAllArgs(const RooLinkedList& orig, RooLinkedList& target){
@@ -204,7 +252,7 @@ RooLinkedList* makeList( const RooCmdArg& arg1, const RooCmdArg& arg2, const Roo
       }
     }
   }
-  // ____________________________________________________________________________|__________
+
   Double_t useLimits(const RooRealVar* par, Double_t val){
     if (val < par->getMin()) {
       return par->getMin();
@@ -216,16 +264,18 @@ RooLinkedList* makeList( const RooCmdArg& arg1, const RooCmdArg& arg2, const Roo
 }
 
 // ____________________________________________________________________________|__________
-// Constructor
+
 RooFitUtils::ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf, RooAbsData* data, RooWorkspace* workspace, const RooLinkedList& argList )  :
   ExtendedMinimizer(minimizerName,pdf,data,workspace)
 {
+  // Constructor
   parseConfig(argList);
 }
 
 // ____________________________________________________________________________|__________
-// Constructor
+
 RooFitUtils::ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, RooAbsPdf* pdf, RooAbsData* data, RooWorkspace* workspace )  :
+  // Constructor
   TNamed( minimizerName, minimizerName ),
   fWorkspace( workspace ),
   fPdf( pdf ),
@@ -248,14 +298,13 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer( const char* minimizerName, Ro
   fReuseMinimizer( 0 ),
   fReuseNLL( 0 ),
   fEps( 1.0 ),
-  // fNsigma( 1.959591794 ), // 1dof 95%
-  // fNsigma( 2.44744765 ), // 2dof 95%
   fNsigma( 1 ), // 1sigma 1dof
   fPrecision( 0.005 ),
   
   fMinimizerType( "Minuit2" ),
   fMinimizerAlgo( "Migrad" )
 {
+  // Constructor
   fMinosSet = NULL;
   fCondSet  = NULL;
   fScanSet  = NULL;
@@ -281,7 +330,7 @@ RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer()
 // ____________________________________________________________________________|__________
 // Minimize function with iterative retry strategy adopted, simplified and
 // extended from RooAbsPdf::fitTo()
-int ExtendedMinimizer::minimize( const RooCmdArg& arg1, const RooCmdArg& arg2, const RooCmdArg& arg3, const RooCmdArg& arg4,
+int RooFitUtils::ExtendedMinimizer::minimize( const RooCmdArg& arg1, const RooCmdArg& arg2, const RooCmdArg& arg3, const RooCmdArg& arg4,
                                  const RooCmdArg& arg5, const RooCmdArg& arg6, const RooCmdArg& arg7, const RooCmdArg& arg8,
                                  const RooCmdArg& arg9, const RooCmdArg& arg10, const RooCmdArg& arg11, const RooCmdArg& arg12 )
 {
@@ -292,22 +341,8 @@ int ExtendedMinimizer::minimize( const RooCmdArg& arg1, const RooCmdArg& arg2, c
 }
 
 // ____________________________________________________________________________|__________
-/*
-//for testing purposes only, needs some additional safeguards to prevent crashes
-bool ExtendedMinimizer::createNll() {
-  // Force the creation of Nll at this point, needs to be combined with 
-  // 'ReuseNLL' to have an effect.
-  if (!fData) return false;
-  
-  //if (fNll) delete fNll;
-  fNll = fPdf->createNLL(*fData, fNllCmdList);
-  return true;
-}
-*/
 
-// ____________________________________________________________________________|__________
-void ExtendedMinimizer::setup()
-{
+void RooFitUtils::ExtendedMinimizer::setup(){
   if(!fPdf){
     throw std::runtime_error("[Error] ExtendedMinimizer::setup: No Pdf set!");
   }
@@ -362,7 +397,8 @@ void ExtendedMinimizer::setup()
 }
 
 // ____________________________________________________________________________|__________
-template <class A> int ExtendedMinimizer::parseConfig( const A& cmdList )
+
+template <class A> int RooFitUtils::ExtendedMinimizer::parseConfig( const A& cmdList )
 {
   RooCmdConfig pc(Form("ExtendedMinimizer::parseConfig(%s)", GetName()));
   pc.allowUndefined();
@@ -434,7 +470,7 @@ template <class A> int ExtendedMinimizer::parseConfig( const A& cmdList )
 }
 
 // ____________________________________________________________________________|__________
-ExtendedMinimizer::Result::Eigen* ExtendedMinimizer::eigenAnalysis(const TMatrixDSym& hesse){
+RooFitUtils::ExtendedMinimizer::Result::Eigen* RooFitUtils::ExtendedMinimizer::eigenAnalysis(const TMatrixDSym& hesse){
   int n = hesse.GetNrows();
 
   // Construct reduced Hessian matrix
@@ -456,7 +492,7 @@ ExtendedMinimizer::Result::Eigen* ExtendedMinimizer::eigenAnalysis(const TMatrix
 
 // ____________________________________________________________________________|__________
 // Robust minimization, using a iterative retry strategy
-ExtendedMinimizer::Result::Minimization ExtendedMinimizer::robustMinimize(){
+RooFitUtils::ExtendedMinimizer::Result::Minimization RooFitUtils::ExtendedMinimizer::robustMinimize(){
   if(!fMinimizer) throw std::runtime_error("no minimizer set!");
   int strategy = fDefaultStrategy;
   int retry = fRetry;
@@ -504,25 +540,28 @@ ExtendedMinimizer::Result::Minimization ExtendedMinimizer::robustMinimize(){
 }
 
 // ____________________________________________________________________________|__________
-// apply all pre-minimization settings
-void ExtendedMinimizer::initialize(){
+
+void RooFitUtils::ExtendedMinimizer::initialize(){
+  // apply all pre-minimization settings
   if (fCondSet) {
     setVals(*fNll->getVariables(),fCondSet,true);
   }
 }
 
 // ____________________________________________________________________________|__________
-// Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-int ExtendedMinimizer::minimize( const RooLinkedList& cmdList )
+
+int RooFitUtils::ExtendedMinimizer::minimize( const RooLinkedList& cmdList )
 {
+  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
   parseConfig(cmdList);
 
   return minimize();
 }
 
 // ____________________________________________________________________________|__________
-// Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-int ExtendedMinimizer::minimize(){
+
+int RooFitUtils::ExtendedMinimizer::minimize(){
+  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
   initialize();
 
   setup();
@@ -533,8 +572,9 @@ int ExtendedMinimizer::minimize(){
 }
 
 // ____________________________________________________________________________|__________
-// Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-ExtendedMinimizer::Result* ExtendedMinimizer::run(){
+
+RooFitUtils::ExtendedMinimizer::Result* RooFitUtils::ExtendedMinimizer::run(){
+  // run the actual minimization
   Result* r = new Result();
 
   r->min = robustMinimize();
@@ -621,29 +661,22 @@ ExtendedMinimizer::Result* ExtendedMinimizer::run(){
 
 // ____________________________________________________________________________|__________
 
-namespace {
-  void addAllPoints(std::vector<std::vector<double> >& points, const std::vector<std::string>& parnames, const std::map<const std::string, std::vector<double> >& params, std::vector<double>& currentvals, size_t idx){
-    if(idx < parnames.size()){
-      for(auto val:params.at(parnames[idx])){
-	currentvals[idx] = val;
-	addAllPoints(points,parnames,params,currentvals,idx+1);
-      }
-    } else {
-      points.push_back(currentvals);
-    }
-  }
-}
-
-void ExtendedMinimizer::scan(const std::map<const std::string, std::vector<double> >& params){  
+void RooFitUtils::ExtendedMinimizer::scan(const std::map<const std::string, std::vector<double> >& params){  
+  // perform a scan over the given set of points
   this->scan(this->getResult(true),params);
 }
-void ExtendedMinimizer::scan(const std::vector<std::string>& parnames, const std::vector<std::vector<double> >& points){
+
+// ____________________________________________________________________________|__________
+
+void RooFitUtils::ExtendedMinimizer::scan(const std::vector<std::string>& parnames, const std::vector<std::vector<double> >& points){
+  // perform a scan over the given set of points
   this->scan(this->getResult(true),parnames,points);
 }
 
 // ____________________________________________________________________________|__________
 
-void ExtendedMinimizer::scan(Result* r, const std::map<const std::string, std::vector<double> >& params){  
+void RooFitUtils::ExtendedMinimizer::scan(Result* r, const std::map<const std::string, std::vector<double> >& params){  
+  // perform a scan over the given set of points
   std::vector<std::string> parnames;
   std::vector<std::vector<double> > parvalues;
   for(auto parit:params){
@@ -657,7 +690,8 @@ void ExtendedMinimizer::scan(Result* r, const std::map<const std::string, std::v
 
 // ____________________________________________________________________________|__________
 
-void ExtendedMinimizer::scan(Result* r, const std::vector<std::string>& parnames, const std::vector<std::vector<double> >& points){
+void RooFitUtils::ExtendedMinimizer::scan(Result* r, const std::vector<std::string>& parnames, const std::vector<std::vector<double> >& points){
+  // perform a scan over the given set of points
   this->setup();
   RooArgSet* attachedSet = fNll->getVariables();
   
@@ -695,7 +729,9 @@ void ExtendedMinimizer::scan(Result* r, const std::vector<std::string>& parnames
 
 
 // ____________________________________________________________________________|__________
-void ExtendedMinimizer::findSigma(){
+
+void RooFitUtils::ExtendedMinimizer::findSigma(){
+  // run an iterative algorithm to find the 1-sigma-band
   if(!fNll){
     throw std::runtime_error("invalid Nll!");
   }
@@ -709,7 +745,9 @@ void ExtendedMinimizer::findSigma(){
 }
 
 // ____________________________________________________________________________|__________
-void ExtendedMinimizer::findSigma(const std::vector<std::string>& pars){
+
+void RooFitUtils::ExtendedMinimizer::findSigma(const std::vector<std::string>& pars){
+  // run an iterative algorithm to find the 1-sigma-band
   if(!fNll){
     throw std::runtime_error("invalid Nll!");
   }
@@ -725,7 +763,9 @@ void ExtendedMinimizer::findSigma(const std::vector<std::string>& pars){
 }
 
 // ____________________________________________________________________________|__________
-void ExtendedMinimizer::findSigma(Result* r,const RooAbsCollection& scanSet){
+
+void RooFitUtils::ExtendedMinimizer::findSigma(Result* r,const RooAbsCollection& scanSet){
+  // run an iterative algorithm to find the 1-sigma-band
   if(!r->min.ok()){
     coutW(ObjectHandling) << "ExtendedMinimizer::findSigma(): no previous minimization detected, geneating new minimum " << std::endl;
     r->min = robustMinimize();
@@ -766,11 +806,13 @@ void ExtendedMinimizer::findSigma(Result* r,const RooAbsCollection& scanSet){
 }
 
 // ____________________________________________________________________________|__________
-// Find the value of sigma evaluated at a specified nsigma, assuming NLL -2logL is roughly parabolic in par.
-// The precision is specified as a fraction of the error, or based on the Minuit default tolerance.
-// Based on https://svnweb.cern.ch/trac/atlasoff/browser/PhysicsAnalysis/HiggsPhys/HSG3/WWDileptonAnalysisCode/HWWStatisticsCode/trunk/macros/findSigma.C
-// by Aaron Armbruster <aaron.james.armbruster@cern.ch> and adopted by Tim Adye <T.J.Adye@rl.ac.uk>.
-Double_t ExtendedMinimizer::findSigma(ExtendedMinimizer::Result* result, const double guessval, const double val_mle, RooRealVar* par, const double nsigma,const int maxiter){
+
+Double_t RooFitUtils::ExtendedMinimizer::findSigma(RooFitUtils::ExtendedMinimizer::Result* result, const double guessval, const double val_mle, RooRealVar* par, const double nsigma,const int maxiter){
+  // Find the value of sigma evaluated at a specified nsigma, assuming NLL -2logL is roughly parabolic in par.
+  // The precision is specified as a fraction of the error, or based on the Minuit default tolerance.
+  // Based on https://svnweb.cern.ch/trac/atlasoff/browser/PhysicsAnalysis/HiggsPhys/HSG3/WWDileptonAnalysisCode/HWWStatisticsCode/trunk/macros/findSigma.C
+  // by Aaron Armbruster <aaron.james.armbruster@cern.ch> and adopted by Tim Adye <T.J.Adye@rl.ac.uk>.
+
   if(!result) throw std::runtime_error("cannot scan without previous result!");
   double precision = fPrecision;
   const double fitTol = fEps;
@@ -861,7 +903,8 @@ Double_t ExtendedMinimizer::findSigma(ExtendedMinimizer::Result* result, const d
 
  // _____________________________________________________________________________
 
- ExtendedMinimizer::ValueMap ExtendedMinimizer::createProfileValues(RooRealVar* var, double lo, double hi, int nbins){
+ RooFitUtils::ExtendedMinimizer::ValueMap RooFitUtils::ExtendedMinimizer::createProfileValues(RooRealVar* var, double lo, double hi, int nbins){
+   // perform a scan over the given set of points
   ExtendedMinimizer::ValueMap map_poi2nll;
  
    ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(-1);
@@ -893,16 +936,18 @@ Double_t ExtendedMinimizer::findSigma(ExtendedMinimizer::Result* result, const d
 
  // _____________________________________________________________________________
 
-ExtendedMinimizer::GraphPair ExtendedMinimizer::createProfile(RooRealVar* var, double lo, double hi, int nbins){
+RooFitUtils::ExtendedMinimizer::GraphPair RooFitUtils::ExtendedMinimizer::createProfile(RooRealVar* var, double lo, double hi, int nbins){
+  // perform a scan over a single parameter within the given bounds
   ExtendedMinimizer::ValueMap map_poi2nll = this->createProfileValues(var,lo,hi,nbins);
   ExtendedMinimizer::GraphPair graphs = prepareProfile(map_poi2nll);
   return graphs;
 }
 
  // _____________________________________________________________________________
- // Prepare 1d profile likelhood
-ExtendedMinimizer::GraphPair ExtendedMinimizer::prepareProfile(ExtendedMinimizer::ValueMap map_poi2nll) {
-   std::vector<double> x, y;
+
+RooFitUtils::ExtendedMinimizer::GraphPair RooFitUtils::ExtendedMinimizer::prepareProfile(ExtendedMinimizer::ValueMap map_poi2nll) {
+  // plot a 1d profile likelhood
+  std::vector<double> x, y;
    int nbins = map_poi2nll.size() - 1;
  
    double xlo =  std::numeric_limits<double>::infinity();

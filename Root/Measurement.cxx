@@ -7,33 +7,35 @@
 #include <stdexcept>
 
 // ____________________________________________________________________________|__________
-// Constructor
-Measurement::Measurement( const std::string& MeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
+
+RooFitUtils::Measurement::Measurement( const std::string& MeasurementName, const std::string& FileName, const std::string& WorkspaceName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
   :
   AbsMeasurement( MeasurementName, FileName, WorkspaceName, ModelConfigName, DataName ),
   fSnapshotName ( SnapshotName ),
   fBinnedLikelihood( BinnedLikelihood )
 {
-  coutP(InputArguments) << "Measurement::Measurement(" << fName <<") created" << endl;
+  // Constructor
+  coutP(InputArguments) << "Measurement::Measurement(" << fName <<") created" << std::endl;
 }
 
 // ____________________________________________________________________________|__________
-// Constructor
-Measurement::Measurement( const std::string& MeasurementName, RooWorkspace* ws, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
+
+RooFitUtils::Measurement::Measurement( const std::string& MeasurementName, RooWorkspace* ws, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool BinnedLikelihood )
   :
   AbsMeasurement( MeasurementName, ws, ModelConfigName, DataName ),
   fSnapshotName ( SnapshotName ),
   fBinnedLikelihood( BinnedLikelihood )
 {
-  coutP(InputArguments) << "Measurement::Measurement(" << fName <<") created" << endl;
+  // Constructor
+  coutP(InputArguments) << "Measurement::Measurement(" << fName <<") created" << std::endl;
 }
 
 // ____________________________________________________________________________|__________
-// Destructor
-Measurement::~Measurement()
+
+RooFitUtils::Measurement::~Measurement()
 {
-  coutI(InputArguments) << "Measurement::~Measurement(" << fName << ") cleaning up" << endl;
-  // TODO
+  // Destructor
+  coutI(InputArguments) << "Measurement::~Measurement(" << fName << ") cleaning up" << std::endl;
 
   if (fIsInitialised) {
     fNuisanceParameters->Delete();
@@ -50,27 +52,28 @@ Measurement::~Measurement()
 }
 
 // ____________________________________________________________________________|__________
-// Import a model for a specific channel
-void Measurement::initialise()
+
+void RooFitUtils::Measurement::initialise()
 {
+  // Import a model for a specific channel
   if(!fWorkSpace){
     // Initialisation
     fFile = TFile::Open(fFileName.c_str());
     if (!fFile) {
-      coutF(InputArguments) << "Measurement::initialise(" << fName << ") could not open file " << fFileName << endl;
+      coutF(InputArguments) << "Measurement::initialise(" << fName << ") could not open file " << fFileName << std::endl;
       exit(-1);
     } else {
-      coutP(InputArguments) << "Measurement::initialise(" << fName << ") opened file " << fFileName << endl;
+      coutP(InputArguments) << "Measurement::initialise(" << fName << ") opened file " << fFileName << std::endl;
     }
     
     fWorkSpace = (RooWorkspace*) fFile->Get(fWorkspaceName.c_str());
   }
 
   if (!fWorkSpace) {
-    coutF(InputArguments) << "Measurement::initialise(" << fName << ") could not find workspace " << fWorkspaceName << endl;
+    coutF(InputArguments) << "Measurement::initialise(" << fName << ") could not find workspace " << fWorkspaceName << std::endl;
     exit(-1);
   } else {
-    coutP(InputArguments) << "Measurement::initialise(" << fName << ") using workspace " << fWorkspaceName << endl;
+    coutP(InputArguments) << "Measurement::initialise(" << fName << ") using workspace " << fWorkspaceName << std::endl;
   }
 
   if (fBinnedLikelihood) {
@@ -80,32 +83,32 @@ void Measurement::initialise()
     while((arg = iter.next())) {
       if (arg->IsA() == RooRealSumPdf::Class()) {
         arg->setAttribute("BinnedLikelihood");
-        coutP(InputArguments) << "Measurement::initialise(" << fName << ") activating BinnedLikelihood for " << arg->GetName() << endl;
+        coutP(InputArguments) << "Measurement::initialise(" << fName << ") activating BinnedLikelihood for " << arg->GetName() << std::endl;
       }
     }
   }
 
-  fModelConfig = (ModelConfig*)fWorkSpace->obj(fModelConfigName.c_str());
+  fModelConfig = (RooStats::ModelConfig*)fWorkSpace->obj(fModelConfigName.c_str());
   if (!fModelConfig) {
-    coutE(InputArguments) << "Measurement::initialise(" << fName << ") could not find ModelConfig " << fModelConfigName << endl;
+    coutE(InputArguments) << "Measurement::initialise(" << fName << ") could not find ModelConfig " << fModelConfigName << std::endl;
     exit(-1);
   } else {
-    coutP(InputArguments) << "Measurement::initialise(" << fName << ") using ModelConfig " << fModelConfigName << endl;
+    coutP(InputArguments) << "Measurement::initialise(" << fName << ") using ModelConfig " << fModelConfigName << std::endl;
   }
 
   fData = (RooAbsData*) fWorkSpace->obj(fDataName.c_str());
   if (!fData) {
-    coutF(InputArguments) << "Measurement::initialise(" << fName << ") could not find data " << fDataName << endl;
+    coutF(InputArguments) << "Measurement::initialise(" << fName << ") could not find data " << fDataName << std::endl;
     throw std::runtime_error(TString::Format("unable to find data with name '%s'",fDataName.c_str()).Data());
   } else {
-    coutP(InputArguments) << "Measurement::initialise(" << fName << ") using data " << fDataName << endl;
+    coutP(InputArguments) << "Measurement::initialise(" << fName << ") using data " << fDataName << std::endl;
   }
 
   // fix POIs at their nominal values, set nuisance parameters to their nominal values
   fWorkSpace->loadSnapshot(fSnapshotName.c_str());
   const RooArgSet* pois = fModelConfig->GetParametersOfInterest();
   if(!pois){
-    coutE(InputArguments) << "Measurement::initialise(" << fName << ") could not find list of POIs " << endl;
+    coutE(InputArguments) << "Measurement::initialise(" << fName << ") could not find list of POIs " << std::endl;
   } else {
     for (RooLinkedListIter it = pois->iterator(); RooRealVar* v = dynamic_cast<RooRealVar*>(it.Next());) {
       // v->setVal(1.0);
@@ -119,20 +122,20 @@ void Measurement::initialise()
   fPdf = fModelConfig->GetPdf();
   RooSimultaneous* thisSim = NULL;
   if(!fPdf){
-    coutF(InputArguments) << "Measurement::initialise(" << fName << ") Did not find a Pdf in ModelConfig." << endl;
+    coutF(InputArguments) << "Measurement::initialise(" << fName << ") Did not find a Pdf in ModelConfig." << std::endl;
     throw std::runtime_error("unable to find Pdf in ModelConfig");
   } else if (fPdf->IsA() == RooSimultaneous::Class()) {
    thisSim = (RooSimultaneous*)fPdf;
   } else if (fPdf->IsA() == RooProdPdf::Class()) {
-    coutI(InputArguments) << "Measurement::initialise(" << fName << ") Found a RooProdPdf, expected a RooSimultaneous." << endl;
-    coutI(InputArguments) << "Measurement::initialise(" << fName << ") Trying to find top-level RooSimultaneous." << endl;
+    coutI(InputArguments) << "Measurement::initialise(" << fName << ") Found a RooProdPdf, expected a RooSimultaneous." << std::endl;
+    coutI(InputArguments) << "Measurement::initialise(" << fName << ") Trying to find top-level RooSimultaneous." << std::endl;
 
     RooArgList pdfList = ((RooProdPdf*)fPdf)->pdfList();
     TIterator* pdfItr = pdfList.createIterator();
     RooAbsArg* nextArg;
     while ((nextArg = (RooAbsArg*)pdfItr->Next())) {
       if (nextArg->IsA() == RooSimultaneous::Class()) {
-        coutI(InputArguments) << "Measurement::initialise(" << fName << ") Found RooSimultaneous " << nextArg->GetName() << endl;
+        coutI(InputArguments) << "Measurement::initialise(" << fName << ") Found RooSimultaneous " << nextArg->GetName() << std::endl;
         thisSim = (RooSimultaneous*)nextArg;
         thisSim->SetName(fPdf->GetName());
         thisSim->SetTitle(fPdf->GetTitle());
@@ -141,7 +144,7 @@ void Measurement::initialise()
     }
     delete pdfItr;
   } else {
-    coutF(InputArguments) << "Measurement::initialise(" << fName << ") Did not find a RooSimultaneous." << endl;
+    coutF(InputArguments) << "Measurement::initialise(" << fName << ") Did not find a RooSimultaneous." << std::endl;
     throw std::runtime_error("unable to find RooSimultaneous Pdf");
   }
 
@@ -163,7 +166,7 @@ void Measurement::initialise()
 
   // Fix for non-binned data
   if (fData->IsA() == RooDataHist::Class()) {
-    coutW(InputArguments) << "Measurement::initialise(" << fName << ") data " << fDataName << " is a RooDataHist. Transform it to a RooDataSet." << endl;
+    coutW(InputArguments) << "Measurement::initialise(" << fName << ") data " << fDataName << " is a RooDataHist. Transform it to a RooDataSet." << std::endl;
     hist2dataset(thisSim, cat);
   }
 
@@ -201,9 +204,10 @@ void Measurement::initialise()
 }
 
 // ____________________________________________________________________________|__________
-// Collect all measurement after regularising their individual channels
-void Measurement::CollectChannels()
+
+void RooFitUtils::Measurement::CollectChannels()
 {
+  // Collect all measurement after regularising their individual channels
   if (!fIsInitialised) {
     initialise();
   }
@@ -252,20 +256,20 @@ void Measurement::CollectChannels()
     }
 
     if (!useChannel) {
-      coutW(ObjectHandling) << "Measurement::CollectChannels(" << fName << ") not using channel" << thisChannelName << endl;
+      coutW(ObjectHandling) << "Measurement::CollectChannels(" << fName << ") not using channel" << thisChannelName << std::endl;
       fExcludedChannels.push_back(thisChannelName);
       continue;
     }
 
     // Weight the dataset in case it is not already
     if (!ds->isWeighted()) {
-      coutW(ObjectHandling) << "Measurement::CollectChannels(" << fName << ") dataset " << ds->GetName() << "is not weighted. Adding weight 1." << endl;
+      coutW(ObjectHandling) << "Measurement::CollectChannels(" << fName << ") dataset " << ds->GetName() << "is not weighted. Adding weight 1." << std::endl;
       RooRealVar* weightVar = new RooRealVar( "weightVar", "", 1., -1e10, 1e10 );
       ((RooDataSet*)ds)->addColumn(*weightVar);
       RooArgSet* obs_cat_weight = new RooArgSet();
       obs_cat_weight->add(*fObservables);
       obs_cat_weight->add(*weightVar);
-      RooDataSet* tmpDs = new RooDataSet(ds->GetName(), ds->GetTitle(), *obs_cat_weight, Import(*(RooDataSet*)ds), WeightVar("weightVar"));
+      RooDataSet* tmpDs = new RooDataSet(ds->GetName(), ds->GetTitle(), *obs_cat_weight, RooFit::Import(*(RooDataSet*)ds),  RooFit::WeightVar("weightVar"));
       ds = tmpDs;
     }
 
@@ -292,7 +296,7 @@ void Measurement::CollectChannels()
       while ((nextNuisanceParameter = (RooRealVar*)NuisItr->Next())) {
         if (nextConstraint->dependsOn(*nextNuisanceParameter)) {
           tmpComp->add(*nextConstraint);
-          coutI(ObjectHandling) << "Measurement::CollectChannels(" << fName << ") using " << nextConstraint->GetName() << " for channel " <<  thisChannelName << endl;
+          coutI(ObjectHandling) << "Measurement::CollectChannels(" << fName << ") using " << nextConstraint->GetName() << " for channel " <<  thisChannelName << std::endl;
           break;
         }
       }
@@ -310,12 +314,12 @@ void Measurement::CollectChannels()
     // Build a new, clean RooProdPdf used for this channel
     RooProdPdf* thisProdPdf = new RooProdPdf(thisPdf->GetName(),thisPdf->GetName(), thisComponents);
 
-    string newName = string(thisPdf->GetName()) + "_complete";
+    std::string newName = std::string(thisPdf->GetName()) + "_complete";
     thisProdPdf->SetName(newName.c_str());
     thisProdPdf->SetTitle(newName.c_str());
 
     // Make the channel and regularise it.
-    Channel* thisChannel = new Channel(thisChannelName, (RooAbsPdf*)thisProdPdf, ds, string(fName));
+    Channel* thisChannel = new Channel(thisChannelName, (RooAbsPdf*)thisProdPdf, ds, fName.Data());
     thisChannel->SetRenamingMap(fRenamingMap);
     thisChannel->SetCorrelationFactors(fCorrelationFactors);
     thisChannel->SetGlobalObservables(fGlobalObservables);
@@ -358,28 +362,29 @@ void Measurement::CollectChannels()
 }
 
 // ____________________________________________________________________________|__________
-// Find all unique components of a RooProdPdf
-void Measurement::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
+
+void RooFitUtils::Measurement::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
 {
+  // Find all unique components of a RooProdPdf
   static int counter = 0;
   counter++;
 
   if (counter > 50) {
-    coutE(ObjectHandling) << "Measurement::FindUniqueProdComponents(" << fName << ") detected infinite loop. Please check." << endl;
+    coutE(ObjectHandling) << "Measurement::FindUniqueProdComponents(" << fName << ") detected infinite loop. Please check." << std::endl;
     exit(1);
   }
 
   RooArgList pdfList = Pdf->pdfList();
   if (pdfList.getSize() == 1) {
-    coutI(ObjectHandling) << "Measurement::FindUniqueProdComponents(" << fName << ") " << pdfList.at(0)->GetName() << " is fundamental." << endl;
+    coutI(ObjectHandling) << "Measurement::FindUniqueProdComponents(" << fName << ") " << pdfList.at(0)->GetName() << " is fundamental." << std::endl;
     Components.add(pdfList);
   } else {
     TIterator* pdfItr = pdfList.createIterator();
     RooAbsArg* nextArg;
     while ((nextArg = (RooAbsArg*)pdfItr->Next())) {
       RooProdPdf* Pdf = (RooProdPdf*)nextArg;
-      if (string(Pdf->ClassName()) != "RooProdPdf") {
-        coutI(ObjectHandling) << "Measurement::FindUniqueProdComponents(" << fName << ") " << Pdf->GetName() << " is no RooProdPdf. Adding it." << endl;
+      if (std::string(Pdf->ClassName()) != "RooProdPdf") {
+        coutI(ObjectHandling) << "Measurement::FindUniqueProdComponents(" << fName << ") " << Pdf->GetName() << " is no RooProdPdf. Adding it." << std::endl;
         Components.add(*Pdf);
         continue;
       }
@@ -391,8 +396,8 @@ void Measurement::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Componen
 }
 
 // ____________________________________________________________________________|__________
-//
-RenamingMap::ConstraintType Measurement::DetermineConstraintType( RooRealVar* Parameter )
+
+RooFitUtils::RenamingMap::ConstraintType RooFitUtils::Measurement::DetermineConstraintType( RooRealVar* Parameter )
 {
   std::string tmpConstraintType = "unconstrained";
   TIterator* ConstraintItr = fConstraints->createIterator();
@@ -415,45 +420,47 @@ RenamingMap::ConstraintType Measurement::DetermineConstraintType( RooRealVar* Pa
 }
 
 // ____________________________________________________________________________|__________
-// Print information about the measurement
-void Measurement::Print()
+
+void RooFitUtils::Measurement::Print()
 {
-  cout << "== MEASUREMENT SUMMARY ==== " << endl;
-  cout << "Measurement           : " << fName << endl;
-  cout << "\nChannels              : " << fChannels.size() << endl;
-  cout << "\nExcluded channels     : " << fExcludedChannels.size() << endl;
+  // Print information about the measurement
+  std::cout << "== MEASUREMENT SUMMARY ==== " << std::endl;
+  std::cout << "Measurement           : " << fName << std::endl;
+  std::cout << "\nChannels              : " << fChannels.size() << std::endl;
+  std::cout << "\nExcluded channels     : " << fExcludedChannels.size() << std::endl;
   if(fModelConfig && fModelConfig->GetParametersOfInterest()){
-    cout << "\nParameters of interest: " << fModelConfig->GetParametersOfInterest()->getSize() << endl;
+    std::cout << "\nParameters of interest: " << fModelConfig->GetParametersOfInterest()->getSize() << std::endl;
     CombinedMeasurement::PrintCollection((RooArgSet*)fModelConfig->GetParametersOfInterest());
   } else {
-    cout << "\nParameters of interest: NONE" << endl;
+    std::cout << "\nParameters of interest: NONE" << std::endl;
   }
   if(fObservables){
-    cout << "\nObservables           : " << fObservables->getSize() << endl;
+    std::cout << "\nObservables           : " << fObservables->getSize() << std::endl;
     CombinedMeasurement::PrintCollection(fObservables);
   } else {
-    cout << "\nObservables           : NONE" << endl;
+    std::cout << "\nObservables           : NONE" << std::endl;
   }
   if(fNuisanceParameters){
-    cout << "\nNuisance parameters   : " << fNuisanceParameters->getSize() << endl;
+    std::cout << "\nNuisance parameters   : " << fNuisanceParameters->getSize() << std::endl;
     CombinedMeasurement::PrintCollection(fNuisanceParameters);
   } else {
-    cout << "\nNuisance parameters   : NONE" << endl;
+    std::cout << "\nNuisance parameters   : NONE" << std::endl;
   }
   if(fGlobalObservables){
-    cout << "\nGlobal observables    : " << fGlobalObservables->getSize() << endl;
+    std::cout << "\nGlobal observables    : " << fGlobalObservables->getSize() << std::endl;
     CombinedMeasurement::PrintCollection(fGlobalObservables);
   } else {
-    cout << "\nGlobal observables    : NONE" << endl;
+    std::cout << "\nGlobal observables    : NONE" << std::endl;
   }
-  cout << "\nRenaming map          : " << fName << endl;
+  std::cout << "\nRenaming map          : " << fName << std::endl;
   fRenamingMap.Print();
-  cout << "\n" << endl;
+  std::cout << "\n" << std::endl;
 }
 
 // ____________________________________________________________________________|__________
-void Measurement::TagPrunableParameters()
+void RooFitUtils::Measurement::TagPrunableParameters()
 {
+  // Print information about the measurement
   std::map< std::string, std::string > thisRenamingMap = fRenamingMap.GetRenamingMap();
 
   for (std::list< std::string >::const_iterator pruneItr = fPrunedNuisanceParameters.begin(), end = fPrunedNuisanceParameters.end(); pruneItr != end; ++pruneItr) {
@@ -487,10 +494,11 @@ void Measurement::TagPrunableParameters()
 }
 
 // ____________________________________________________________________________|__________
-// Convert a RooDataHist to a RooDataSet incl. weights.
-// Courtesy of Hongtao Yang <Hongtao.Yang@cern.ch>.
-void Measurement::hist2dataset( RooSimultaneous* thisSim, RooCategory* cat )
+
+void RooFitUtils::Measurement::hist2dataset( RooSimultaneous* thisSim, RooCategory* cat )
 {
+  // Convert a RooDataHist to a RooDataSet incl. weights.
+  // Courtesy of Hongtao Yang <Hongtao.Yang@cern.ch>.
     RooRealVar* x[500], *w[500];
     RooDataSet* data[500];
     std::map<std::string, RooDataSet*> datasetMap;
@@ -508,7 +516,7 @@ void Measurement::hist2dataset( RooSimultaneous* thisSim, RooCategory* cat )
 
       RooArgSet* args = new RooArgSet();
       args->add(RooArgSet(*x[ich], *w[ich]));
-      data[ich] = new RooDataSet("combData", "combData", *args, WeightVar(*w[ich]));
+      data[ich] = new RooDataSet("combData", "combData", *args, RooFit::WeightVar(*w[ich]));
 
       RooArgSet* obs_tmp = (RooArgSet*)datai->get();
       RooRealVar* xdata_tmp = (RooRealVar*)obs_tmp->find(obsi->GetName());
@@ -528,7 +536,7 @@ void Measurement::hist2dataset( RooSimultaneous* thisSim, RooCategory* cat )
     RooArgSet *args = new RooArgSet();
     args->add(*Observables);
     args->add(wt);
-    RooDataSet* combData = new RooDataSet("combData", "combData", *args, Index(*cat), Import(datasetMap), WeightVar(wt));
+    RooDataSet* combData = new RooDataSet("combData", "combData", *args, RooFit::Index(*cat), RooFit::Import(datasetMap), RooFit::WeightVar(wt));
     fWorkSpace->import(*combData);
 
     fData=fWorkSpace->data(combData->GetName());

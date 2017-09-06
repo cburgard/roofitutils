@@ -26,7 +26,7 @@ namespace RooFitUtils {
 public:
 
   // Constructor and destructor
-  CorrelationScheme( std::string SchemeName = "", std::string ParametersOfInterest = "", bool AutoCorrelation = kFALSE );
+  CorrelationScheme( const std::string& SchemeName = "", const std::string& ParametersOfInterest = "", bool AutoCorrelation = kFALSE );
   ~CorrelationScheme();
 
   // Accessors
@@ -59,7 +59,6 @@ public:
   using TNamed::Print;
   void Print();
   void Print( std::set<std::string> thisMeasurements );
-  static void PrintTable(string* firstCol, std::string** matrix, std::string** matrixErr, string* header, int nrRows, int nrCols, int nSigFig, ostream& ost, std::string indent = "", std::string delim = " & ", std::string ending = " \\\\");
 
 // ____________________________________________________________________________|__________
 private:

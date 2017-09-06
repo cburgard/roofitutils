@@ -28,7 +28,7 @@ class Channel : public TNamed {
 public:
 
   // Constructor and destructor
-  Channel( std::string ChannelName, RooAbsPdf* Pdf, RooAbsData* Data, std::string ParentName );
+  Channel(const  std::string& ChannelName, RooAbsPdf* Pdf, RooAbsData* Data, const std::string& ParentName );
   ~Channel();
 
   // Accessors
@@ -41,7 +41,7 @@ public:
   void SetParentName( const std::string& ParentName ) { fParentMeasurement = ParentName; }
   std::string GetParentName() { return fParentMeasurement; }
 
-  void SetRenamingMap( RenamingMap& Map ) { fRenamingMap = Map; }
+  void SetRenamingMap( RooFitUtils::RenamingMap& Map ) { fRenamingMap = Map; }
   RenamingMap GetRenamingMap() { return fRenamingMap; }
 
   void SetCorrelationFactors( std::map< std::string, std::pair< TString, TMatrixDSym > >& Factors ) { fCorrelationFactors = Factors; }
@@ -65,7 +65,7 @@ private:
   RooAbsPdf* fPdf;
   RooAbsData* fData;
   std::string fParentMeasurement;
-  RenamingMap fRenamingMap;
+  RooFitUtils::RenamingMap fRenamingMap;
   std::map< std::string, std::pair< TString, TMatrixDSym > > fCorrelationFactors;
   RooArgSet* fNuisanceParameters;
   RooArgSet* fObservables;

@@ -1,35 +1,39 @@
 #include "RooFitUtils/RenamingMap.h"
+#include "RooFitUtils/Utils.h"
 #include "RooFitUtils/CorrelationScheme.h"
 #include "RooFitUtils/AbsMeasurement.h"
 
 #include "RooGaussian.h"
 
-const std::string RenamingMap::AttributeNames[] = { "Observable", "ObservableRange", "GlobalObservable", "GlobalObservableRange", "Sigma", "SigmaRange", "Constraint", "Type" };
-const std::string RenamingMap::ConstraintTypeNames[] = { "automatic", "unconstrained", "Gaussian", "Poisson", "Lognormal", "unknown" };
+const std::string RooFitUtils::RenamingMap::AttributeNames[] = { "Observable", "ObservableRange", "GlobalObservable", "GlobalObservableRange", "Sigma", "SigmaRange", "Constraint", "Type" };
+const std::string RooFitUtils::RenamingMap::ConstraintTypeNames[] = { "automatic", "unconstrained", "Gaussian", "Poisson", "Lognormal", "unknown" };
 
 // ____________________________________________________________________________|__________
-// Constqructor
-RenamingMap::RenamingMap( std::string MapName )
+
+RooFitUtils::RenamingMap::RenamingMap( std::string MapName )
   :
   TNamed( MapName.c_str(), MapName.c_str() )
 {
-  coutP(InputArguments) << "RenamingMap::RenamingMap(" << fName <<") created" << endl;
+  // Constqructor
+  coutP(InputArguments) << "RenamingMap::RenamingMap(" << fName <<") created" << std::endl;
 }
 
 // ____________________________________________________________________________|__________
-// Destructor
-RenamingMap::~RenamingMap()
-{
 
+RooFitUtils::RenamingMap::~RenamingMap()
+{
+  // Destructor
 }
 
 // ____________________________________________________________________________|__________
-// Generic interface for specifying a parameter that should be renamed
-void RenamingMap::RenameParameter( std::string OldParameterName, std::string NewParameterName )
+
+void RooFitUtils::RenamingMap::RenameParameter( const std::string& OldParameterName, const std::string& NewParameterName )
 {
+  // Generic interface for specifying a parameter that should be renamed
+  
   // Check if the parameter exists already in the renaming map
   if (fRenamingMap.find(OldParameterName) != fRenamingMap.end()) {
-    coutF(InputArguments) << "RenamingMap::AddRenamedParameter(" << fName <<") " << OldParameterName << " already exists! [Hint: renamed to " << fRenamingMap[OldParameterName] << "]" << endl;
+    coutF(InputArguments) << "RenamingMap::AddRenamedParameter(" << fName <<") " << OldParameterName << " already exists! [Hint: renamed to " << fRenamingMap[OldParameterName] << "]" << std::endl;
     exit(-1);
   }
 
@@ -38,37 +42,38 @@ void RenamingMap::RenameParameter( std::string OldParameterName, std::string New
   SetAttribute(OldParameterName, Observable, OldParameterName, individual);
   SetAttribute(NewParameterName, Observable, NewParameterName, combined);
 
-  coutI(InputArguments) << "RenamingMap::RenameParameter(" << fName <<") " << OldParameterName << " will be renamed to " << NewParameterName << endl;
+  coutI(InputArguments) << "RenamingMap::RenameParameter(" << fName <<") " << OldParameterName << " will be renamed to " << NewParameterName << std::endl;
 }
 
 // ____________________________________________________________________________|__________
-// Interface to set an attribute for a given parameter
-void RenamingMap::SetAttribute( std::string ParameterName, Attribute thisAttribute, std::string AttributeValue, MeasurementType thisMeasurementType )
+
+void RooFitUtils::RenamingMap::SetAttribute( const std::string& ParameterName, Attribute thisAttribute, const std::string& AttributeValue, MeasurementType thisMeasurementType )
 {
-  // std::string thisAttributeName = AttributeNames[thisAttribute];
+  // Interface to set an attribute for a given parameter
 
   switch (thisMeasurementType) {
     case individual: {
       fOldParameterMap[ParameterName][thisAttribute] = AttributeValue;
-      ccoutD(InputArguments) << "RenamingMap::SetAttribute(" << fName <<") " << AttributeNames[thisAttribute] << " = " << AttributeValue << " for parameter " << ParameterName << " for individual measurement" << endl;
+      ccoutD(InputArguments) << "RenamingMap::SetAttribute(" << fName <<") " << AttributeNames[thisAttribute] << " = " << AttributeValue << " for parameter " << ParameterName << " for individual measurement" << std::endl;
       break;
     }
     case combined: {
       fNewParameterMap[ParameterName][thisAttribute] = AttributeValue;
-      ccoutD(InputArguments) << "RenamingMap::SetAttribute(" << fName <<") " << AttributeNames[thisAttribute] << " = " << AttributeValue << " for parameter " << ParameterName << " for combined measurement" << endl;
+      ccoutD(InputArguments) << "RenamingMap::SetAttribute(" << fName <<") " << AttributeNames[thisAttribute] << " = " << AttributeValue << " for parameter " << ParameterName << " for combined measurement" << std::endl;
       break;
     }
     default: {
-      coutF(InputArguments) << "RenamingMap::SetAttribute(" << fName <<") " << thisMeasurementType << " not recognised. Ignoring attribute " << AttributeNames[thisAttribute] << " = " << AttributeValue << " for parameter" << ParameterName << endl;
+      coutF(InputArguments) << "RenamingMap::SetAttribute(" << fName <<") " << thisMeasurementType << " not recognised. Ignoring attribute " << AttributeNames[thisAttribute] << " = " << AttributeValue << " for parameter" << ParameterName << std::endl;
       exit(-1);
     }
   }
 }
 
 // ____________________________________________________________________________|__________
-// Interface to retrieve an attribute for a given parameter
-std::string RenamingMap::GetAttribute( std::string ParameterName, Attribute thisAttribute, MeasurementType thisMeasurementType )
+
+std::string RooFitUtils::RenamingMap::GetAttribute( const std::string& ParameterName, Attribute thisAttribute, MeasurementType thisMeasurementType )
 {
+  // Interface to retrieve an attribute for a given parameter
   std::string AttributeValue = "";
 
   switch (thisMeasurementType) {
@@ -81,24 +86,26 @@ std::string RenamingMap::GetAttribute( std::string ParameterName, Attribute this
       break;
     }
     default: {
-      coutF(InputArguments) << "RenamingMap::GetAttribute(" << fName <<") " << thisMeasurementType << " not recognised. Ignoring attribute " << AttributeNames[thisAttribute] << " for parameter" << ParameterName << endl;
+      coutF(InputArguments) << "RenamingMap::GetAttribute(" << fName <<") " << thisMeasurementType << " not recognised. Ignoring attribute " << AttributeNames[thisAttribute] << " for parameter" << ParameterName << std::endl;
       exit(-1);
     }
   }
 
   if (AttributeValue == "") {
-    coutW(InputArguments) << "RenamingMap::GetAttribute(" << fName <<") " << AttributeNames[thisAttribute] << " not found for parameter " << ParameterName << endl;
+    coutW(InputArguments) << "RenamingMap::GetAttribute(" << fName <<") " << AttributeNames[thisAttribute] << " not found for parameter " << ParameterName << std::endl;
   }
 
   return AttributeValue;
 }
 
 // ____________________________________________________________________________|__________
+
+void RooFitUtils::RenamingMap::AddAttributes( RooStats::ModelConfig* tmpModelConfig )
+{
 // Automatically add missing attributes to the renaming map, overwrite
 // explicitely specified old attributes, like constraint names and associated
 // global observables
-void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
-{
+
   // Load information needed to determine attributes from ModelConfig
   RooWorkspace* tmpWorkspace = tmpModelConfig->GetWorkspace();
   RooAbsPdf* tmpPdf = (RooAbsPdf*)tmpModelConfig->GetPdf();
@@ -161,7 +168,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
     // Get parameter from workspace
     RooRealVar* nextNuisanceParameter = tmpWorkspace->var(thisOldObservableName.c_str());
     if (!nextNuisanceParameter) {
-      coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") observable " << thisOldObservableName <<" not found. Skipping." << endl;
+      coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") observable " << thisOldObservableName <<" not found. Skipping." << std::endl;
       notExistingParameters.insert(thisOldObservableName);
       continue;
     }
@@ -171,8 +178,8 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
     double oldNuisMin = nextNuisanceParameter->getMin();
     double oldNuisMax = nextNuisanceParameter->getMax();
 
-    stringstream tmpNuisSS;
-    tmpNuisSS << setprecision(30) << "[" << oldNuisVal << "," << oldNuisMin <<"," << oldNuisMax << "]";
+    std::stringstream tmpNuisSS;
+    tmpNuisSS << std::setprecision(30) << "[" << oldNuisVal << "," << oldNuisMin <<"," << oldNuisMax << "]";
     tmpObservableRange = tmpNuisSS.str();
 
     // loop over all constraint of pdf to determine
@@ -185,7 +192,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
         foundConstraint = kTRUE;
 
         // find name of constraint
-        tmpConstraintName = string(nextConstraint->GetName());
+        tmpConstraintName = nextConstraint->GetName();
         TString thisConstraintType = nextConstraint->ClassName();
         tmpConstraintType = (thisConstraintType.ReplaceAll("Roo", "")).Data();
 
@@ -199,15 +206,15 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
             foundGlobalObservable = kTRUE;
 
             // find name of globale observable
-            tmpGlobalObservableName = string(nextGlobalObservable->GetName());
+            tmpGlobalObservableName = nextGlobalObservable->GetName();
 
             // find range of global observable
             double oldGlobVal = nextGlobalObservable->getVal();
             // double oldGlobMin = nextGlobalObservable->getMin();
             // double oldGlobMax = nextGlobalObservable->getMax();
 
-            stringstream tmpGlobSS;
-            tmpGlobSS << setprecision(30) << "[" << oldGlobVal /* << "," << oldGlobMin <<"," << oldGlobMax */ << "]";
+	    std::stringstream tmpGlobSS;
+            tmpGlobSS << std::setprecision(30) << "[" << oldGlobVal /* << "," << oldGlobMin <<"," << oldGlobMax */ << "]";
             tmpGlobalObservableRange = tmpGlobSS.str();
 
             // find constraint width in case of a Gaussian
@@ -223,17 +230,17 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
                 }
               }
 
-              stringstream tmpSigmaSS;
-              tmpSigmaSS << setprecision(30) << oldSigmaVal;
+	      std::stringstream tmpSigmaSS;
+              tmpSigmaSS << std::setprecision(30) << oldSigmaVal;
               tmpSigmaRange = tmpSigmaSS.str();
               if (AbsMeasurement::AlmostEqualUlpsAndAbs(oldSigmaVal, 1.0, 0.001, 4)) {
                 tmpSigmaRange = "1.0";
               }
 
               if (!foundSigma) {
-                coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") sigma for pdf " << nextConstraint->GetName() << " not found. Using 1.0." << endl;
+                coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") sigma for pdf " << nextConstraint->GetName() << " not found. Using 1.0." << std::endl;
               } else {
-                coutI(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") using " << tmpSigmaRange << " for sigma of pdf " << nextConstraint->GetName() << endl;
+                coutI(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") using " << tmpSigmaRange << " for sigma of pdf " << nextConstraint->GetName() << std::endl;
               }
             }
           }
@@ -248,7 +255,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
     //   not explicitely needed for regularisation
     //   use automatic value in any case, but print warning if it does not match the specified value
     if (thisOldObservableRange != "" && thisOldObservableRange != tmpObservableRange) {
-      coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old observable range (" << thisOldObservableRange <<") does not match actual range (" << tmpObservableRange << "). Use that instead." << endl;
+      coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old observable range (" << thisOldObservableRange <<") does not match actual range (" << tmpObservableRange << "). Use that instead." << std::endl;
     }
     SetAttribute(thisOldObservableName, RenamingMap::ObservableRange, tmpObservableRange, RenamingMap::individual);
 
@@ -258,7 +265,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
     //   use automatic value in any case, but print warning if it does not match the specified value
     if (tmpConstraintType != "unconstrained") {
       if (thisOldGlobalObservableName != "" && thisOldGlobalObservableName != tmpGlobalObservableName) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old global observable name (" << thisOldGlobalObservableName <<") does not match actual name (" << tmpGlobalObservableName << "). Use that instead." << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old global observable name (" << thisOldGlobalObservableName <<") does not match actual name (" << tmpGlobalObservableName << "). Use that instead." << std::endl;
       }
       SetAttribute(thisOldObservableName, RenamingMap::GlobalObservable, tmpGlobalObservableName, RenamingMap::individual);
     }
@@ -270,7 +277,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
     //   use automatic value in any case, but print warning if it does not match the specified value
     if (tmpConstraintType != "unconstrained") {
       if (thisOldGlobalObservableRange != "" && thisOldGlobalObservableRange != tmpGlobalObservableRange) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old global observable range (" << thisOldGlobalObservableRange <<") does not match actual range (" << tmpGlobalObservableRange << "). Use that instead." << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old global observable range (" << thisOldGlobalObservableRange <<") does not match actual range (" << tmpGlobalObservableRange << "). Use that instead." << std::endl;
       }
       SetAttribute(thisOldObservableName, RenamingMap::GlobalObservableRange, tmpGlobalObservableRange, RenamingMap::individual);
     }
@@ -281,7 +288,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
     //   use automatic value in any case, but print warning if it does not match the specified value
     if (tmpConstraintType != "unconstrained") {
       if (thisOldConstraintName != "" && thisOldConstraintName != tmpConstraintName) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old constraint name (" << thisOldConstraintName <<") does not match actual name (" << tmpConstraintName << "). Use that instead." << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") specified old constraint name (" << thisOldConstraintName <<") does not match actual name (" << tmpConstraintName << "). Use that instead." << std::endl;
       }
       SetAttribute(thisOldObservableName, RenamingMap::Constraint, tmpConstraintName, RenamingMap::individual);
     }
@@ -310,7 +317,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
       SetAttribute(thisNewObservableName, RenamingMap::ObservableRange, tmpNewObservableRange, RenamingMap::combined);
     } else {
       if (thisNewObservableRange != tmpObservableRange) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") observable range of " << thisNewObservableName << " changed from " << tmpObservableRange << " to " << thisNewObservableRange << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") observable range of " << thisNewObservableName << " changed from " << tmpObservableRange << " to " << thisNewObservableRange << std::endl;
       }
     }
 
@@ -324,7 +331,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
       }
     } else {
       if (thisNewGlobalObservableName != tmpGlobalObservableName) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") global observable name of " << thisNewObservableName << " changed from " << tmpGlobalObservableName << " to " << thisNewGlobalObservableName << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") global observable name of " << thisNewObservableName << " changed from " << tmpGlobalObservableName << " to " << thisNewGlobalObservableName << std::endl;
       }
     }
 
@@ -346,7 +353,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
       }
     } else {
       if (thisNewGlobalObservableRange != tmpGlobalObservableRange) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") global observable range of " << thisNewObservableName << " changed from " << tmpGlobalObservableRange << " to " << thisNewGlobalObservableRange << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") global observable range of " << thisNewObservableName << " changed from " << tmpGlobalObservableRange << " to " << thisNewGlobalObservableRange << std::endl;
       }
     }
 
@@ -360,7 +367,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
       }
     } else {
       if (thisNewConstraintName != tmpConstraintName) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") constraint name of " << thisNewObservableName << " changed from " << tmpConstraintName << " to " << thisNewConstraintName << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") constraint name of " << thisNewObservableName << " changed from " << tmpConstraintName << " to " << thisNewConstraintName << std::endl;
       }
     }
 
@@ -372,7 +379,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
       SetAttribute(thisNewObservableName, RenamingMap::Type, tmpConstraintType, RenamingMap::combined);
     } else {
       if (thisNewConstraintType != tmpConstraintType) {
-        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") casting constraint type of " << thisNewObservableName << " from " << tmpConstraintType << " to " << thisNewConstraintType << endl;
+        coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") casting constraint type of " << thisNewObservableName << " from " << tmpConstraintType << " to " << thisNewConstraintType << std::endl;
       }
     }
 
@@ -400,7 +407,7 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
   // Clean up spurious parameters
   for (std::set< std::string >::iterator it = notExistingParameters.begin(); it != notExistingParameters.end(); ++it) {
     std::string thisOldObservableName = *it;
-    coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") removing spurious parameter " << thisOldObservableName << " from RenamingMap and CorrelationScheme" << endl;
+    coutW(InputArguments) << "RenamingMap::AddAttributes(" << fName << ") removing spurious parameter " << thisOldObservableName << " from RenamingMap and CorrelationScheme" << std::endl;
     fOldParameterMap.erase(thisOldObservableName);
     fNewParameterMap.erase(fRenamingMap[thisOldObservableName]);
     fRenamingMap.erase(thisOldObservableName);
@@ -408,9 +415,10 @@ void RenamingMap::AddAttributes( ModelConfig* tmpModelConfig )
 }
 
 // ____________________________________________________________________________|__________
-// Format constraint terms in factory language
-std::string RenamingMap::FactoryExpression(std::string ParameterName, RenamingMap::MeasurementType thisMeasurementType)
+
+std::string RooFitUtils::RenamingMap::FactoryExpression(const std::string& ParameterName, RooFitUtils::RenamingMap::MeasurementType thisMeasurementType)
 {
+  // Format constraint terms in factory language
   std::string thisObservableName        = GetAttribute(ParameterName, Observable, thisMeasurementType);
   std::string thisObservableRange       = GetAttribute(ParameterName, ObservableRange, thisMeasurementType);
   std::string thisGlobalObservableName  = GetAttribute(ParameterName, GlobalObservable, thisMeasurementType);
@@ -438,42 +446,43 @@ std::string RenamingMap::FactoryExpression(std::string ParameterName, RenamingMa
     // no rounding as default implemented
     thisExpression = TString::Format("Poisson::%s(%s%s,Product::%spoisMean({%s%s,%stau%s}),1)", thisConstraintName.c_str(), thisGlobalObservableName.c_str(), thisGlobalObservableRange.c_str(), thisObservableName.c_str(), thisObservableName.c_str(), thisObservableRange.c_str(), thisObservableName.c_str(), thisGlobalObservableRange.c_str()).Data();
   } else if (thisConstraintType == "Lognormal") {
-    coutW(InputArguments) << "RenamingMap::FactoryExpression(" << fName <<") " << thisConstraintType << " not implemented yet." << endl;
+    coutW(InputArguments) << "RenamingMap::FactoryExpression(" << fName <<") " << thisConstraintType << " not implemented yet." << std::endl;
   } else {
-    coutF(InputArguments) << "RenamingMap::FactoryExpression(" << fName <<") " << thisConstraintType << " not recognised for parameter " << ParameterName << endl;
+    coutF(InputArguments) << "RenamingMap::FactoryExpression(" << fName <<") " << thisConstraintType << " not recognised for parameter " << ParameterName << std::endl;
     exit(-1);
   }
 
   if (thisExpression == "") {
-    coutE(InputArguments) << "RenamingMap::FactoryExpression(" << fName <<") failed writing factory expression for parameter " << ParameterName << endl;
+    coutE(InputArguments) << "RenamingMap::FactoryExpression(" << fName <<") failed writing factory expression for parameter " << ParameterName << std::endl;
   }
 
   return thisExpression;
 }
 
 // ____________________________________________________________________________|__________
-// Find all unique components of a RooProdPdf
-void RenamingMap::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
+
+void RooFitUtils::RenamingMap::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Components )
 {
+  // Find all unique components of a RooProdPdf
   static int counter = 0;
   counter++;
 
   if (counter > 50) {
-    coutE(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName << ") detected infinite loop. Please check." << endl;
+    coutE(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName << ") detected infinite loop. Please check." << std::endl;
     exit(1);
   }
 
   RooArgList pdfList = Pdf->pdfList();
   if (pdfList.getSize() == 1) {
-    coutI(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName << ") " << pdfList.at(0)->GetName() << " is fundamental." << endl;
+    coutI(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName << ") " << pdfList.at(0)->GetName() << " is fundamental." << std::endl;
     Components.add(pdfList);
   } else {
     TIterator* pdfItr = pdfList.createIterator();
     RooAbsArg* nextArg;
     while ((nextArg = (RooAbsArg*)pdfItr->Next())) {
       RooProdPdf* Pdf = (RooProdPdf*)nextArg;
-      if (string(Pdf->ClassName()) != "RooProdPdf") {
-        coutI(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName << ") " << Pdf->GetName() << " is no RooProdPdf. Adding it." << endl;
+      if (std::string(Pdf->ClassName()) != "RooProdPdf") {
+        coutI(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName << ") " << Pdf->GetName() << " is no RooProdPdf. Adding it." << std::endl;
         Components.add(*Pdf);
         continue;
       }
@@ -485,22 +494,23 @@ void RenamingMap::FindUniqueProdComponents( RooProdPdf* Pdf, RooArgSet& Componen
 }
 
 // ____________________________________________________________________________|__________
-// Print a RenamingMap
-void RenamingMap::Print()
+
+void RooFitUtils::RenamingMap::Print()
 {
+  // Print a RenamingMap
   int nrColumns = 1;
-  string* header = new string[nrColumns];
+  std::string* header = new std::string[nrColumns];
   header[0] = "New name";
 
   int nrEntries = fRenamingMap.size();
   if (nrEntries == 0) {
-    coutW(ObjectHandling) << "RenamingMap::Print(" << fName << ") " << fName << " is empty" << endl;
+    coutW(ObjectHandling) << "RenamingMap::Print(" << fName << ") " << fName << " is empty" << std::endl;
     delete[] header;
     return;
   }
-  string* firstCol = new string[nrEntries+1];
+  std::string* firstCol = new std::string[nrEntries+1];
   firstCol[0] = "Old name";
-  std::string** matrix = new string*[nrEntries];
+  std::string** matrix = new std::string*[nrEntries];
   for (int in = 0; in < nrEntries; in++) {
     matrix[in] = new std::string[nrColumns];
     for (int i = 0; i < nrColumns; i++) {
@@ -509,7 +519,7 @@ void RenamingMap::Print()
   }
 
   int irow = 1;
-  for (std::map<string,string>::iterator it = fRenamingMap.begin(); it != fRenamingMap.end(); ++it) {
+  for (std::map<std::string,std::string>::iterator it = fRenamingMap.begin(); it != fRenamingMap.end(); ++it) {
     std::string oldObservableName = it->first;
     firstCol[irow] = oldObservableName;
 
@@ -518,7 +528,7 @@ void RenamingMap::Print()
     matrix[irow-1][icol] = newObservableName;
     irow++;
   }
-  CorrelationScheme::PrintTable(firstCol, matrix, NULL, header, nrEntries, nrColumns, 0, cout, "    ");
+  RooFitUtils::PrintTable(firstCol, matrix, NULL, header, nrEntries, nrColumns, 0, std::cout, "    ");
 
   delete[] header;
   delete[] firstCol;

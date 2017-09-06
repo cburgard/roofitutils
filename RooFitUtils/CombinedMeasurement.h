@@ -69,7 +69,7 @@ public:
   void CollectMeasurements();
   void CombineMeasurements();
   void ParametriseMeasurements();
-  void DefineParametersOfInterest( std::string ParametersOfInterest, ModelConfig* tmpModelConfig );
+  void DefineParametersOfInterest( const std::string& ParametersOfInterest, RooStats::ModelConfig* tmpModelConfig );
   void MakeCleanWorkspace();
   void MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileGenerateAt );
   void MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileAt, CombinedMeasurement::SnapshotName generateAt );

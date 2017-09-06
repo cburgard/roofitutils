@@ -27,21 +27,21 @@
 #pragma link C++ nestedtypedef;
 
 #pragma link C++ class TOwnedList+ ;
-#pragma link C++ class ExtendedMinimizer+ ;
-#pragma link C++ class ExtendedModel+ ;
-#pragma link C++ class Log+ ;
-#pragma link C++ class ParametrisationScheme+ ;
-#pragma link C++ class ParametrisationSequence+ ;
-#pragma link C++ class RenamingMap+ ;
-#pragma link C++ class CorrelationScheme+ ;
-#pragma link C++ class Channel+ ;
-#pragma link C++ class AbsMeasurement+ ;
-#pragma link C++ class Measurement+ ;
-#pragma link C++ class CombinedMeasurement+ ;
-#pragma link C++ class RooCustomizerEnhanced+ ;
+#pragma link C++ class RooFitUtils::ExtendedMinimizer+ ;
+#pragma link C++ class RooFitUtils::ExtendedModel+ ;
+#pragma link C++ class RooFitUtils::Log+ ;
+#pragma link C++ class RooFitUtils::ParametrisationScheme+ ;
+#pragma link C++ class RooFitUtils::ParametrisationSequence+ ;
+#pragma link C++ class RooFitUtils::RenamingMap+ ;
+#pragma link C++ class RooFitUtils::CorrelationScheme+ ;
+#pragma link C++ class RooFitUtils::Channel+ ;
+#pragma link C++ class RooFitUtils::AbsMeasurement+ ;
+#pragma link C++ class RooFitUtils::Measurement+ ;
+#pragma link C++ class RooFitUtils::CombinedMeasurement+ ;
+#pragma link C++ class RooFitUtils::RooCustomizerEnhanced+ ;
 
 #pragma link C++ function editws ;
-#pragma link C++ function fixRooStarMomentMorph ;
+#pragma link C++ function RooFitUtils::fixRooStarMomentMorph ;
 
 #endif
 #endif

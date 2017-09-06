@@ -22,12 +22,7 @@ protected:
   std::ostringstream _os;
 };
 
-typedef Log LOG;
-
-#define LOG(_loglevel) \
-  if (_loglevel > LOG::ReportingLevel()) ;          \
-  else Log(_loglevel)
-
-#endif
-
 }
+
+#define LOG(_loglevel)  if (_loglevel <= RooFitUtils::Log::ReportingLevel()) RooFitUtils::Log(_loglevel)
+#endif

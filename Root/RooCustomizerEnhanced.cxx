@@ -40,15 +40,15 @@
 //_____________________________________________________________________________
 
 #include "RooFitUtils/RooCustomizerEnhanced.h"
+#include <iostream>
+#include <stdexcept>
 
-using namespace std;
-
-ClassImp(RooCustomizerEnhanced) 
+ClassImp(RooFitUtils::RooCustomizerEnhanced) 
 
 namespace {
   static Int_t init()
   {
-    RooFactoryWSTool::IFace* iface = new RooCustomizerEnhanced::CustIFace ;
+    RooFactoryWSTool::IFace* iface = new RooFitUtils::RooCustomizerEnhanced::CustIFace ;
     RooFactoryWSTool::registerSpecial("SEDIT",iface) ;
     return 0 ;
   }
@@ -57,7 +57,8 @@ namespace {
 
 
 //_____________________________________________________________________________
-RooCustomizerEnhanced::RooCustomizerEnhanced(const RooAbsArg& pdf, const char* name, const char* wild) :
+
+RooFitUtils::RooCustomizerEnhanced::RooCustomizerEnhanced(const RooAbsArg& pdf, const char* name, const char* wild) :
   TNamed(pdf.GetName(),pdf.GetTitle()),
   _owning(kFALSE),
   _name(name),
@@ -82,11 +83,9 @@ RooCustomizerEnhanced::RooCustomizerEnhanced(const RooAbsArg& pdf, const char* n
   initialize() ;
 }
 
-
-
-
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::initialize() 
+
+void RooFitUtils::RooCustomizerEnhanced::initialize() 
 {
   // Initialize the customizer
 
@@ -100,7 +99,8 @@ void RooCustomizerEnhanced::initialize()
 
 
 //_____________________________________________________________________________
-RooCustomizerEnhanced::~RooCustomizerEnhanced() 
+
+RooFitUtils::RooCustomizerEnhanced::~RooCustomizerEnhanced() 
 {
   // Destructor
 
@@ -113,13 +113,14 @@ RooCustomizerEnhanced::~RooCustomizerEnhanced()
   
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::replaceArg(const RooAbsArg& orig, const RooAbsArg& subst) 
+
+void RooFitUtils::RooCustomizerEnhanced::replaceArg(const RooAbsArg& orig, const RooAbsArg& subst) 
 {
   // Replace any occurence of arg 'orig' with arg 'subst'
 
   if (_replaceArgList.FindObject(orig.GetName())) {
     coutE(InputArguments) << "RooCustomizerEnhanced(" << GetName() << ") ERROR: multiple replacement rules defined for " 
-	 << orig.GetName() << " only using first rule" << endl ;
+	 << orig.GetName() << " only using first rule" << std::endl ;
     return ;
   }
 
@@ -130,7 +131,8 @@ void RooCustomizerEnhanced::replaceArg(const RooAbsArg& orig, const RooAbsArg& s
 
 
 //_____________________________________________________________________________
-RooAbsArg* RooCustomizerEnhanced::build(Bool_t verbose) 
+
+RooAbsArg* RooFitUtils::RooCustomizerEnhanced::build(Bool_t verbose) 
 {
   // Build a clone of the prototype executing all registered 'replace' rules
   // If verbose is set a message is printed for each leaf or branch node
@@ -161,10 +163,9 @@ RooAbsArg* RooCustomizerEnhanced::build(Bool_t verbose)
   return ret ;
 }
 
-
-
 //_____________________________________________________________________________
-RooAbsArg* RooCustomizerEnhanced::doBuild(Bool_t verbose) 
+
+RooAbsArg* RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) 
 {
   // Back-end implementation of the p.d.f building functionality
 
@@ -189,10 +190,10 @@ RooAbsArg* RooCustomizerEnhanced::doBuild(Bool_t verbose)
   RooArgSet* wilds= 0;
   if (_replaceWild.size()) {
     wilds= (RooArgSet*)_masterBranchList.selectByName(_replaceWild.c_str());
-    if (verbose) coutI(ObjectHandling) << "RooCustomizerEnhanced::build(" << _masterPdf->GetName() << ") selected branches: " << wilds->contentsString() << endl;
+    if (verbose) coutI(ObjectHandling) << "RooCustomizerEnhanced::build(" << _masterPdf->GetName() << ") selected branches: " << wilds->contentsString() << std::endl;
   }
 
-  //   cout << "loop over " << nodeList.getSize() << " nodes" << endl ;
+  //   cout << "loop over " << nodeList.getSize() << " nodes" << std::endl ;
   while((node=(RooAbsArg*)nIter->Next())) {
 
     RooAbsArg* ReplaceArg = (RooAbsArg*) _replaceArgList.FindObject(node->GetName()) ;
@@ -200,7 +201,7 @@ RooAbsArg* RooCustomizerEnhanced::doBuild(Bool_t verbose)
       RooAbsArg* substArg = (RooAbsArg*) _replaceSubList.At(_replaceArgList.IndexOf(ReplaceArg)) ;
       if (verbose) {
 	coutI(ObjectHandling) << "RooCustomizerEnhanced::build(" << _masterPdf->GetName() 
-			      << "): tree node " << node->GetName() << " will be replaced by " << substArg->GetName() << endl ;
+			      << "): tree node " << node->GetName() << " will be replaced by " << substArg->GetName() << std::endl ;
       }
 
       // Affix attribute with old name to support name changing server redirect
@@ -225,7 +226,7 @@ RooAbsArg* RooCustomizerEnhanced::doBuild(Bool_t verbose)
     
     if (masterNodesToBeReplaced.find(branch->GetName())) {
       if (verbose) {
-	coutI(ObjectHandling) << "RooCustomizerEnhanced::build(" << _masterPdf->GetName() << ") Branch node " << branch->GetName() << " is already replaced" << endl ;
+	coutI(ObjectHandling) << "RooCustomizerEnhanced::build(" << _masterPdf->GetName() << ") Branch node " << branch->GetName() << " is already replaced" << std::endl ;
       }
       continue ;
     }
@@ -234,7 +235,7 @@ RooAbsArg* RooCustomizerEnhanced::doBuild(Bool_t verbose)
       if (wilds && !branch->dependsOn(*wilds)) continue ;
       if (verbose) {
 	coutI(ObjectHandling) << "RooCustomizerEnhanced::build(" << _masterPdf->GetName() << ") Branch node " 
-			      << branch->IsA()->GetName() << "::" << branch->GetName() << " cloned: depends on a replaced parameter" << endl ;
+			      << branch->IsA()->GetName() << "::" << branch->GetName() << " cloned: depends on a replaced parameter" << std::endl ;
       }
       masterBranchesToBeCloned.add(*branch) ;
     }
@@ -286,7 +287,8 @@ RooAbsArg* RooCustomizerEnhanced::doBuild(Bool_t verbose)
 
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::printName(ostream& os) const 
+
+void RooFitUtils::RooCustomizerEnhanced::printName(std::ostream& os) const 
 {
   // Print name of customizer
   os << GetName() ;
@@ -294,7 +296,8 @@ void RooCustomizerEnhanced::printName(ostream& os) const
 
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::printTitle(ostream& os) const 
+
+void RooFitUtils::RooCustomizerEnhanced::printTitle(std::ostream& os) const 
 {
   // Print title of customizer
   os << GetTitle() ;
@@ -302,7 +305,8 @@ void RooCustomizerEnhanced::printTitle(ostream& os) const
 
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::printClassName(ostream& os) const 
+
+void RooFitUtils::RooCustomizerEnhanced::printClassName(std::ostream& os) const 
 {
   // Print class name of customizer
   os << IsA()->GetName() ;
@@ -310,7 +314,8 @@ void RooCustomizerEnhanced::printClassName(ostream& os) const
 
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::printArgs(ostream& os) const 
+
+void RooFitUtils::RooCustomizerEnhanced::printArgs(std::ostream& os) const 
 {
   // Print arguments of customizer, i.e. input p.d.f
   os << "[ masterPdf=" << _masterPdf->GetName() ;
@@ -320,17 +325,18 @@ void RooCustomizerEnhanced::printArgs(ostream& os) const
 
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::printMultiline(ostream& os, Int_t /*content*/, Bool_t /*verbose*/, TString indent) const
+
+void RooFitUtils::RooCustomizerEnhanced::printMultiline(std::ostream& os, Int_t /*content*/, Bool_t /*verbose*/, TString indent) const
 {
   // Print customizer configuration details
 
-  os << indent << "RooCustomizerEnhanced for " << _masterPdf->GetName() << endl ;
+  os << indent << "RooCustomizerEnhanced for " << _masterPdf->GetName() << std::endl ;
 
   Int_t i, nrepl = _replaceArgList.GetSize() ;
   if (nrepl>0) {
-    os << indent << "  Replacement rules:" << endl ;
+    os << indent << "  Replacement rules:" << std::endl ;
     for (i=0 ; i<nrepl ; i++) {
-      os << indent << "   " << _replaceSubList.At(i)->GetName() << " replaces " << _replaceArgList.At(i)->GetName() << endl ;
+      os << indent << "   " << _replaceSubList.At(i)->GetName() << " replaces " << _replaceArgList.At(i)->GetName() << std::endl ;
     }
   }
   
@@ -340,7 +346,8 @@ void RooCustomizerEnhanced::printMultiline(ostream& os, Int_t /*content*/, Bool_
 
 
 //_____________________________________________________________________________
-void RooCustomizerEnhanced::setCloneBranchSet(RooArgSet& cloneBranchSet) 
+
+void RooFitUtils::RooCustomizerEnhanced::setCloneBranchSet(RooArgSet& cloneBranchSet) 
 {
   // Install the input RooArgSet as container in which all cloned branches
   // will be stored
@@ -350,6 +357,7 @@ void RooCustomizerEnhanced::setCloneBranchSet(RooArgSet& cloneBranchSet)
 }
 
 
+namespace {
 std::string Join (const std::vector<std::string>& v, const std::string& sep=",", bool trim=true)
 {
   std::string s;
@@ -363,25 +371,26 @@ std::string Join (const std::vector<std::string>& v, const std::string& sep=",",
   }
   return s;
 }
+}
 
 
 //_____________________________________________________________________________
-std::string RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const char* typeName, const char* instanceName, std::vector<std::string> args) 
+std::string RooFitUtils::RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const char* typeName, const char* instanceName, std::vector<std::string> args) 
 {
 
   // Check number of arguments
   if (args.size()<2) {
-    throw string(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: expect at least 2 arguments for SEDIT: the input object and at least one $Replace() rule")) ;
+    throw std::runtime_error(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: expect at least 2 arguments for SEDIT: the input object and at least one $Replace() rule")) ;
   }
 
-  if (string(typeName)!="SEDIT") {
-    throw string(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: unknown type requested: %s",typeName)) ;
+  if (std::string(typeName)!="SEDIT") {
+    throw std::runtime_error(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: unknown type requested: %s",typeName)) ;
   }
 
   // Check that first arg exists as RooAbsArg
   RooAbsArg* arg = ft.ws().arg(args[0].c_str()) ;
   if (!arg) {
-    throw string(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: input RooAbsArg %s does not exist",args[0].c_str())) ;
+    throw std::runtime_error(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: input RooAbsArg %s does not exist",args[0].c_str())) ;
   }
 
   // If name of new object is same as original, execute in sterile mode (i.e no suffixes attached), and rename original nodes in workspace upon import
@@ -396,17 +405,17 @@ std::string RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const
     i++;
   }
 
-  if (verbose) cout << typeName << "::" << instanceName << " (" << Join(args,", ") << ")" <<endl;
+  if (verbose) std::cout << typeName << "::" << instanceName << " (" << Join(args,", ") << ")" <<std::endl;
 
   size_t l= args[i].size();
-  string wild;
+  std::string wild;
   if (l>=2 && ((args[i][0]=='{' && args[i][l-1]=='}') || (args[i][0]=='\'' && args[i][l-1]=='\''))) {
     wild= args[i].substr(1,l-2);
     i++;
   }
 
   if (args.size()-i<1) {
-    throw string(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: expect at least one $Replace() rule")) ;
+    throw std::runtime_error(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: expect at least one $Replace() rule")) ;
   }
 
   // Create a customizer
@@ -417,12 +426,12 @@ std::string RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const
     strlcpy(buf,args[i].c_str(),1024) ;
     char* sep = strchr(buf,'=') ;
     if (!sep) {
-      throw string(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: unknown argument: %s, expect form orig=subst",args[i].c_str())) ;
+      throw std::runtime_error(Form("RooCustomizerEnhanced::CustIFace::create() ERROR: unknown argument: %s, expect form orig=subst",args[i].c_str())) ;
     }
     *sep = 0 ;    
     RooAbsArg* orig = ft.ws().arg(buf) ;
     RooAbsArg* subst(0) ;
-    if (string(sep+1).find("$REMOVE")==0) {
+    if (std::string(sep+1).find("$REMOVE")==0) {
 
       // Create a removal dummy ;
       subst = &RooRealConstant::removalDummy() ;
@@ -435,7 +444,7 @@ std::string RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const
 	char* saveptr ;
 	char* tok = strtok_r(buf2,",)",&saveptr) ;
 	while(tok) {
-	  //cout << "$REMOVE is restricted to " << tok << endl ;
+	  //cout << "$REMOVE is restricted to " << tok << std::endl ;
 	  subst->setAttribute(Form("REMOVE_FROM_%s",tok)) ;
 	  tok = strtok_r(0,",)",&saveptr) ;
 	}
@@ -450,14 +459,14 @@ std::string RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const
     if (orig && subst) {
       cust.replaceArg(*orig,*subst) ;
     } else {
-      oocoutW((TObject*)0,ObjectHandling) << "RooCustomizerEnhanced::CustIFace::create() WARNING: input or replacement of a replacement operation not found, operation ignored"<< endl ;
+      oocoutW((TObject*)0,ObjectHandling) << "RooCustomizerEnhanced::CustIFace::create() WARNING: input or replacement of a replacement operation not found, operation ignored"<< std::endl ;
     }
   }
 
   // Build the desired edited object
   RooAbsArg* targ = cust.build(verbose)  ;
   if (!targ) {
-    throw string(Form("RooCustomizerEnhanced::CustIFace::create() ERROR in customizer build, object %snot created",instanceName)) ;
+    throw std::runtime_error(Form("RooCustomizerEnhanced::CustIFace::create() ERROR in customizer build, object %snot created",instanceName)) ;
   }
 
   // Import the object into the workspace
@@ -469,5 +478,5 @@ std::string RooCustomizerEnhanced::CustIFace::create(RooFactoryWSTool& ft, const
     ft.ws().import(cust.cloneBranchList(),RooFit::Silence(),RooFit::RenameConflictNodes("orig",1),RooFit::NoRecursion(kTRUE)) ;    
   }
 
-  return string(instanceName?instanceName:targ->GetName()) ;
+  return instanceName?instanceName:targ->GetName() ;
 }

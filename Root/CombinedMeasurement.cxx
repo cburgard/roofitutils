@@ -1,5 +1,6 @@
 #include "RooFitUtils/CombinedMeasurement.h"
 #include "RooFitUtils/ExtendedMinimizer.h"
+#include "RooFitUtils/Utils.h"
 
 #include "RooGaussian.h"
 #include "RooLognormal.h"
@@ -13,14 +14,14 @@ RooFitUtils::CombinedMeasurement::CombinedMeasurement( const std::string& Combin
   :
   AbsMeasurement( CombinedMeasurementName, WorkspaceName, ModelConfigName, DataName )
 {
-  coutP(InputArguments) << "CombinedMeasurement::CombinedMeasurement(" << fName <<") created" << endl;
+  coutP(InputArguments) << "CombinedMeasurement::CombinedMeasurement(" << fName <<") created" << std::endl;
 
   fPdfName = "combPdf";
   fCategoryName = "master_measurement";
 
   fWorkSpace = new RooWorkspace(fWorkspaceName.c_str());
   fWorkSpace->autoImportClassCode(kTRUE);
-  fModelConfig = new ModelConfig(fModelConfigName.c_str(), fWorkSpace);
+  fModelConfig = new RooStats::ModelConfig(fModelConfigName.c_str(), fWorkSpace);
   fParametersOfInterest = new RooArgSet("ParametersOfInterest");
   fNuisanceParameters = new RooArgSet("NuisanceParameters");
   fObservables = new RooArgSet("Observables");
@@ -36,7 +37,7 @@ RooFitUtils::CombinedMeasurement::CombinedMeasurement( const std::string& Combin
 {
   fFile = TFile::Open(fFileName.c_str());
   fWorkSpace = (RooWorkspace*) fFile->Get(fWorkspaceName.c_str());
-  fModelConfig = (ModelConfig*)fWorkSpace->obj(fModelConfigName.c_str());
+  fModelConfig = (RooStats::ModelConfig*)fWorkSpace->obj(fModelConfigName.c_str());
   fData = (RooAbsData*) fWorkSpace->obj(fDataName.c_str());
   fPdf = (RooSimultaneous*)fModelConfig->GetPdf();
   fParametersOfInterest = (RooArgSet*) fModelConfig->GetParametersOfInterest();
@@ -49,7 +50,7 @@ RooFitUtils::CombinedMeasurement::CombinedMeasurement( const std::string& Combin
   TIterator* poiItr = fParametersOfInterest->createIterator();
   RooRealVar* nextPOI;
   while ((nextPOI = (RooRealVar*)poiItr->Next())) {
-    fParametersOfInterestString += "," + string(nextPOI->GetName());
+    fParametersOfInterestString += "," + std::string(nextPOI->GetName());
   }
 
   fPdfName = fPdf->GetName();
@@ -60,7 +61,7 @@ RooFitUtils::CombinedMeasurement::CombinedMeasurement( const std::string& Combin
 // Destructor
 RooFitUtils::CombinedMeasurement::~CombinedMeasurement()
 {
-  coutI(InputArguments) << "CombinedMeasurement::~CombinedMeasurement(" << fName << ") cleaning up" << endl;
+  coutI(InputArguments) << "CombinedMeasurement::~CombinedMeasurement(" << fName << ") cleaning up" << std::endl;
 
   fNuisanceParameters->Delete();
   delete fNuisanceParameters;
@@ -170,7 +171,7 @@ void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations( std::map< std:
       fCorrelationScheme->RenameParameter(thisMeasurementName.c_str(), thisParameterName.c_str(), ("auto_" + thisParameterName + "_" + thisMeasurementName).c_str());
     } else {
       // If a parameter is part of more than one measurement, either correlate it or de-correlate it, depending on
-      // specified setting of CorrelationScheme. In case they should be correlated, a correlation string is composed
+      // specified setting of CorrelationScheme. In case they should be correlated, a correlation std::string is composed
       // from the measurement name and parameter name. Parameters can be identified as automatically correlated by a prefix
       if (!enableAutoCorrelation) {
         for (std::set< std::string >::iterator measItr = thisMeasurements.begin(); measItr != thisMeasurements.end(); ++measItr) {
@@ -195,15 +196,15 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements()
 {
   std::map< std::string, RooDataSet* > datasetMap;
   std::map< std::string, RooAbsPdf* > pdfMap;
-  coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") Making new master category " << fCategoryName << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") Making new master category " << fCategoryName << std::endl;
   RooCategory* category = new RooCategory(fCategoryName.c_str(), fCategoryName.c_str());
 
   int nrMeasurements = fMeasurements.size();
   if (nrMeasurements == 0) {
-    coutF(InputArguments) << "CombinedMeasurement::CombineMeasurements(" << fName << ") no measurements for combination specified" << endl;
+    coutF(InputArguments) << "CombinedMeasurement::CombineMeasurements(" << fName << ") no measurements for combination specified" << std::endl;
     exit(-1);
   } else {
-    coutP(InputArguments) << "CombinedMeasurement::CombineMeasurements(" << fName << ") will combine " << nrMeasurements << " measurements" << endl;
+    coutP(InputArguments) << "CombinedMeasurement::CombineMeasurements(" << fName << ") will combine " << nrMeasurements << " measurements" << std::endl;
   }
 
   int numTotPdf = 0;
@@ -244,8 +245,8 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements()
       RooAbsPdf* pdf_tmp = (RooAbsPdf*)thisChannel->GetPdf();
       RooAbsData* data_tmp = thisChannel->GetData();
 
-      coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") defining category " << thisChannel->GetName() << endl;
-      coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") with PDF " << pdf_tmp->GetName() << " and dataset " << data_tmp->GetName() << endl;
+      coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") defining category " << thisChannel->GetName() << std::endl;
+      coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") with PDF " << pdf_tmp->GetName() << " and dataset " << data_tmp->GetName() << std::endl;
       category->defineType(thisChannel->GetName(),numTotPdf);
       category->setLabel(thisChannel->GetName(), true);
 
@@ -257,18 +258,18 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements()
   }
   fObservables->add(*category);
 
-  coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") Making new simultaneous pdf " << fPdfName << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") Making new simultaneous pdf " << fPdfName << std::endl;
   fPdf = new RooSimultaneous( fPdfName.c_str(), fPdfName.c_str(), pdfMap, *category );
   fPdf->setStringAttribute( "DefaultGlobalObservablesTag","GLOBAL_OBSERVABLE" );
   RooRealVar weightVar( "weightVar", "", 1., -1e10, 1e10 );
 
   // making the combined dataset
-  coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") Making combined dataset " << fDataName << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::CombineMeasurements(" << fName << ") Making combined dataset " << fDataName << std::endl;
   RooArgSet obs_cat_weight;
   obs_cat_weight.add(*fObservables);
   obs_cat_weight.add(*category);
   obs_cat_weight.add(weightVar);
-  fData = new RooDataSet(fDataName.c_str(), fDataName.c_str(), obs_cat_weight, Index(*category), Import(datasetMap), WeightVar("weightVar"));
+  fData = new RooDataSet(fDataName.c_str(), fDataName.c_str(), obs_cat_weight, RooFit::Index(*category), RooFit::Import(datasetMap), RooFit::WeightVar("weightVar"));
 
   // putting everything together
   MakeCleanWorkspace();
@@ -286,7 +287,7 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements()
 // Re-parametrise a (combined) measurement
 void RooFitUtils::CombinedMeasurement::ParametriseMeasurements()
 {
-  coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() trying to re-parametrise the model according to " << fParametrisationSequence->GetName() << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() trying to re-parametrise the model according to " << fParametrisationSequence->GetName() << std::endl;
 
   // Get the list of schemes for this model from the parametrisation sequence
   std::list< ParametrisationScheme > thisSequence = fParametrisationSequence->GetSequence();
@@ -297,11 +298,11 @@ void RooFitUtils::CombinedMeasurement::ParametriseMeasurements()
   for (std::list< ParametrisationScheme >::const_iterator itrSequence = thisSequence.begin(), end = thisSequence.end(); itrSequence != end; ++itrSequence) {
     // Get the list of expressions from the parametrisation scheme
     ParametrisationScheme thisScheme = *itrSequence;
-    coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() on scheme " << thisScheme.GetName() << endl;
+    coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() on scheme " << thisScheme.GetName() << std::endl;
     std::list< std::string > thisExpressions = thisScheme.GetExpressions();
 
     // Loop through the expressions
-    stringstream editStr;
+    std::stringstream editStr;
     editStr << "EDIT::" << originalName <<"(" << originalName;
 
     for (std::list< std::string >::const_iterator itrScheme = thisExpressions.begin(), end = thisExpressions.end(); itrScheme != end; ++itrScheme) {
@@ -312,23 +313,23 @@ void RooFitUtils::CombinedMeasurement::ParametriseMeasurements()
         // convert to proper factory replacement
         editStr << "," << thisExpression;
       } else {
-        coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() trying to call " << thisExpression << endl;
+        coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() trying to call " << thisExpression << std::endl;
         fWorkSpace->factory(thisExpression);
       }
     }
 
     editStr << ")";
-    coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() editing command so far " << editStr.str() << endl;
+    coutP(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() editing command so far " << editStr.str() << std::endl;
 
     // replacement
     fWorkSpace->factory(editStr.str().c_str());
     RooAbsPdf* tmpPdf = fWorkSpace->pdf(originalName.c_str());
 
     if (!tmpPdf) {
-      coutE(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() something went wrong when editing the Pdf for channel " << fName << ". Skipping this replacement." << endl;
+      coutE(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() something went wrong when editing the Pdf for channel " << fName << ". Skipping this replacement." << std::endl;
       // continue;
     } else {
-      coutI(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() successful replacement, continuing." << endl;
+      coutI(ObjectHandling) << "CombinedMeasurement::ParametriseMeasurements() successful replacement, continuing." << std::endl;
       fPdf = tmpPdf;
     }
 
@@ -354,7 +355,7 @@ void RooFitUtils::CombinedMeasurement::ParametriseMeasurements()
 
 // ____________________________________________________________________________|__________
 // Set parameters of interest for the combined model
-void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest( std::string ParametersOfInterest, ModelConfig* tmpModelConfig )
+void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest( const std::string& ParametersOfInterest, RooStats::ModelConfig* tmpModelConfig )
 {
   TString allParametersOfInterest = ParametersOfInterest;
   TObjArray* allParametersOfInterestArray = allParametersOfInterest.Tokenize(",");
@@ -369,14 +370,14 @@ void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest( std::string P
 
     if (tmpWorkspace->var(thisParametersOfInterest)) {
       fParametersOfInterest->add(*tmpWorkspace->var(thisParametersOfInterest));
-      coutP(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") adding POI: " << thisParametersOfInterest << endl;
+      coutP(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") adding POI: " << thisParametersOfInterest << std::endl;
 
       if (fNuisanceParameters->find(*tmpWorkspace->var(thisParametersOfInterest))) {
         fNuisanceParameters->remove(*fNuisanceParameters->find(*tmpWorkspace->var(thisParametersOfInterest)));
-        coutP(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") removing new POI " << thisParametersOfInterest << " from nuisance parameters" << endl;
+        coutP(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") removing new POI " << thisParametersOfInterest << " from nuisance parameters" << std::endl;
       }
     } else {
-      coutE(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") failed adding POI: " << thisParametersOfInterest << endl;
+      coutE(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") failed adding POI: " << thisParametersOfInterest << std::endl;
     }
   }
 
@@ -385,7 +386,7 @@ void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest( std::string P
   RooRealVar* nextParameterOfInterest;
   while ((nextParameterOfInterest = (RooRealVar*)PoiItr->Next())) {
     if (tmpWorkspace->var(nextParameterOfInterest->GetName()) && !fParametersOfInterest->find(*nextParameterOfInterest)) {
-      coutP(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") transferring old POI " << nextParameterOfInterest->GetName() << " to nuisance parameters" << endl;
+      coutP(ObjectHandling) << "CombinedMeasurement::DefineParametersOfInterest(" << fName << ") transferring old POI " << nextParameterOfInterest->GetName() << " to nuisance parameters" << std::endl;
       fNuisanceParameters->add(*nextParameterOfInterest);
     }
   }
@@ -397,10 +398,11 @@ void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest( std::string P
 }
 
 // ____________________________________________________________________________|__________
-// Clean the workspace
+
 void RooFitUtils::CombinedMeasurement::MakeCleanWorkspace()
 {
-  coutP(ObjectHandling) << "CombinedMeasurement::MakeCleanWorkspace(" << fName << ") Building clean workspace" << endl;
+  // Clean the workspace
+  coutP(ObjectHandling) << "CombinedMeasurement::MakeCleanWorkspace(" << fName << ") Building clean workspace" << std::endl;
 
   fParametersOfInterest->sort();
   fNuisanceParameters->sort();
@@ -409,10 +411,10 @@ void RooFitUtils::CombinedMeasurement::MakeCleanWorkspace()
 
   RooWorkspace* tmpWorkspace = new RooWorkspace(fWorkSpace->GetName());
   tmpWorkspace->autoImportClassCode(kTRUE);
-  ModelConfig* tmpModelConfig = new ModelConfig(fModelConfig->GetName(), tmpWorkspace);
+  RooStats::ModelConfig* tmpModelConfig = new RooStats::ModelConfig(fModelConfig->GetName(), tmpWorkspace);
 
   std::string tmpPdfName = fPdf->GetName();
-  tmpWorkspace->import(*fPdf, RecycleConflictNodes());
+  tmpWorkspace->import(*fPdf, RooFit::RecycleConflictNodes());
   delete fPdf;
   fPdf = tmpWorkspace->pdf(tmpPdfName.c_str());
 
@@ -433,8 +435,8 @@ void RooFitUtils::CombinedMeasurement::MakeCleanWorkspace()
 
   RooArgSet* prunedNuisanceParameters = (RooArgSet*)((fWorkSpace->allVars()).selectByName("PRUNED_NUIS_*"));
   RooArgSet* prunedGlobalObservables = (RooArgSet*)((fWorkSpace->allVars()).selectByName("PRUNED_GLOB_*"));
-  SetAllConstant(*prunedNuisanceParameters);
-  SetAllConstant(*prunedGlobalObservables);
+  RooStats::SetAllConstant(*prunedNuisanceParameters);
+  RooStats::SetAllConstant(*prunedGlobalObservables);
 	fWorkSpace->defineSet("ModelConfig_PrunedNuisParams", *prunedNuisanceParameters);
 	fWorkSpace->defineSet("ModelConfig_PrunedGlobalObservables", *prunedGlobalObservables);
 
@@ -446,17 +448,19 @@ void RooFitUtils::CombinedMeasurement::MakeCleanWorkspace()
 }
 
 // ____________________________________________________________________________|__________
-// Interface to add Asimov data
+
 void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileGenerateAt )
 {
+  // Interface to add Asimov data
   MakeAsimovData(Conditional, profileGenerateAt, profileGenerateAt);
 }
 
 // ____________________________________________________________________________|__________
-// Interface to add Asimov data
+
 void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, CombinedMeasurement::SnapshotName profileAt, CombinedMeasurement::SnapshotName generateAt )
 {
-  coutP(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") adding " << (!Conditional?"unconditional":"conditional") << " Asimov data, profile at " << profileAt << ", generate at " << generateAt  << endl;
+  // Interface to add Asimov data
+  coutP(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") adding " << (!Conditional?"unconditional":"conditional") << " Asimov data, profile at " << profileAt << ", generate at " << generateAt  << std::endl;
 
   // Generate the needed snapshots
   MakeSnapshots(profileAt, Conditional);
@@ -478,7 +482,7 @@ void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, Combine
     fWorkSpace->loadSnapshot("nominalNuis");
     fWorkSpace->loadSnapshot("nominalGlobs");
   } else {
-    coutE(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") Unknown value for generation requested." << endl;
+    coutE(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") Unknown value for generation requested." << std::endl;
     return;
   }
 
@@ -491,7 +495,7 @@ void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, Combine
   } else if (profileAt == ucmles) {
     muStr = "_muhat";
   } else {
-    coutE(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") Unknown value for profiling requested." << endl;
+    coutE(ObjectHandling) << "CombinedMeasurement::MakeAsimovData(" << fName << ") Unknown value for profiling requested." << std::endl;
     return;
   }
 
@@ -524,15 +528,16 @@ void RooFitUtils::CombinedMeasurement::MakeAsimovData( bool Conditional, Combine
 }
 
 // ____________________________________________________________________________|__________
-// Unfold constraints, needed for snapshot making
+
 void RooFitUtils::CombinedMeasurement::UnfoldConstraints( RooArgSet& initial, RooArgSet& final, RooArgSet& obs, RooArgSet& nuis, int& counter )
 {
+  // Unfold constraints, needed for snapshot making
   if (counter > 50) {
-    coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") failed to unfold constraints! Details given below." << endl;
-    coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") Initial: " << endl;
+    coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") failed to unfold constraints! Details given below." << std::endl;
+    coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") Initial: " << std::endl;
     initial.Print("v");
-    cout << endl;
-    coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") Final: " << endl;
+    std::cout << std::endl;
+    coutF(ObjectHandling) << "CombinedMeasurement::UnfoldConstraints(" << fName << ") Final: " << std::endl;
     final.Print("v");
     exit(-1);
   }
@@ -553,10 +558,11 @@ void RooFitUtils::CombinedMeasurement::UnfoldConstraints( RooArgSet& initial, Ro
 }
 
 // ____________________________________________________________________________|__________
-// Add snapshots to the workspace
-void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::SnapshotName Snapshot, bool Conditional )
+
+void RooFitUtils::CombinedMeasurement::MakeSnapshots( RooFitUtils::CombinedMeasurement::SnapshotName Snapshot, bool Conditional )
 {
-  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") making snapshots." << endl;
+  // Add snapshots to the workspace
+  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") making snapshots." << std::endl;
 
   // Set the value of the POI for (conditional) profiling
   RooRealVar* mu = (RooRealVar*)fModelConfig->GetParametersOfInterest()->first();
@@ -568,7 +574,7 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
   } else if (Snapshot == ucmles) {
     muVal = 1; // will be set later
   } else {
-    coutE(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Unknown snapshot requested." << endl;
+    coutE(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Unknown snapshot requested." << std::endl;
     return;
   }
 
@@ -636,7 +642,7 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
       delete itr1;
     }
     if (components->getSize() > 1) {
-      coutE(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Failed to isolate proper nuisance parameter." << endl;
+      coutE(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Failed to isolate proper nuisance parameter." << std::endl;
       return;
     }
     else if (components->getSize() == 1) {
@@ -655,11 +661,11 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
     delete gIter;
 
     if (!thisNui || !thisGlob) {
-      coutW(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Failed to find nuisance parameter or global observable for constraint " << pdf->GetName() << endl;
+      coutW(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Failed to find nuisance parameter or global observable for constraint " << pdf->GetName() << std::endl;
       continue;
     }
 
-    coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Pairing nuisance parameter: " << thisNui->GetName() << " with global observable: " << thisGlob->GetName() << " from constraint " << pdf->GetName() << endl;
+    coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Pairing nuisance parameter: " << thisNui->GetName() << " with global observable: " << thisGlob->GetName() << " from constraint " << pdf->GetName() << std::endl;
 
     nui_list.add(*thisNui);
     glob_list.add(*thisGlob);
@@ -667,7 +673,7 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
   delete cIter;
 
   // Save the snapshots of nominal parameters
-  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Saving nominal snapshots." << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Saving nominal snapshots." << std::endl;
   fWorkSpace->saveSnapshot("nominalGlobs", *fModelConfig->GetGlobalObservables());
   fWorkSpace->saveSnapshot("nominalNuis", *fModelConfig->GetNuisanceParameters());
 
@@ -681,12 +687,12 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
   }
 
   if (Conditional) {
-    coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") performing conditional fit." << endl;
+    coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") performing conditional fit." << std::endl;
 
-    ExtendedMinimizer minimizer("minimizer", fPdf, fData);
-    minimizer.minimize(Minimizer(fMinimizerType.c_str(), fMinimizerAlgo.c_str()), Strategy(fDefaultStrategy),
-                       Constrain(*fModelConfig->GetNuisanceParameters()), GlobalObservables(*fModelConfig->GetGlobalObservables()),
-                       NumCPU(fNumCPU, 3), Offset(1), Optimize(2));
+    RooFitUtils::ExtendedMinimizer minimizer("minimizer", fPdf, fData);
+    minimizer.minimize(RooFit::Minimizer(fMinimizerType.c_str(), fMinimizerAlgo.c_str()), RooFit::Strategy(fDefaultStrategy),
+                       RooFit::Constrain(*fModelConfig->GetNuisanceParameters()), RooFit::GlobalObservables(*fModelConfig->GetGlobalObservables()),
+                       RooFit::NumCPU(fNumCPU, 3), RooFit::Offset(1), RooFit::Optimize(2));
   }
 
   mu->setConstant(0);
@@ -694,7 +700,7 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
   // loop over the nui/glob list, grab the corresponding variable from the tmp ws, and set the glob to the value of the nui
   int nrNuis = nui_list.getSize();
   if (nrNuis != glob_list.getSize()) {
-    coutE(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") number of nuisance paraeters does not match number of global observables" << endl;
+    coutE(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") number of nuisance paraeters does not match number of global observables" << std::endl;
     return;
   }
 
@@ -702,14 +708,14 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
     RooRealVar* nui = (RooRealVar*)nui_list.at(i);
     RooRealVar* glob = (RooRealVar*)glob_list.at(i);
 
-    coutI(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Nuisance parameter: " << nui << ", global observable: " << glob << endl;
-    coutI(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Setting global observable " << glob->GetName() << " (previous value: " << glob->getVal() << ") to conditional value: " << nui->getVal() << endl;
+    coutI(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Nuisance parameter: " << nui << ", global observable: " << glob << std::endl;
+    coutI(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Setting global observable " << glob->GetName() << " (previous value: " << glob->getVal() << ") to conditional value: " << nui->getVal() << std::endl;
 
     glob->setVal(nui->getVal());
   }
 
   // Save the snapshots of conditional parameters
-  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Saving conditional snapshots." << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Saving conditional snapshots." << std::endl;
   fWorkSpace->saveSnapshot(("conditionalGlobs" + muStr).c_str(), *fModelConfig->GetGlobalObservables());
   fWorkSpace->saveSnapshot(("conditionalNuis" + muStr).c_str(), *fModelConfig->GetNuisanceParameters());
 
@@ -719,41 +725,43 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots( CombinedMeasurement::Snaps
   }
 
   // Bring us back to nominal for exporting
-  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Return to nominal parameter values." << endl;
+  coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName << ") Return to nominal parameter values." << std::endl;
   fWorkSpace->loadSnapshot("nominalNuis");
   fWorkSpace->loadSnapshot("nominalGlobs");
 }
 
 // ____________________________________________________________________________|__________
-// Add multiple snapshots to the workspace
+
 void RooFitUtils::CombinedMeasurement::MakeSnapshots( std::set<CombinedMeasurement::SnapshotName> Snapshots, bool Conditional )
 {
-  for (std::set<CombinedMeasurement::SnapshotName>::iterator itr = Snapshots.begin(); itr != Snapshots.end(); ++itr) {
+  // Add multiple snapshots to the workspace
+  for (auto itr = Snapshots.begin(); itr != Snapshots.end(); ++itr) {
     MakeSnapshots(*itr, Conditional);
   }
 }
 
 // ____________________________________________________________________________|__________
-// Print information of the combined measurement
+
 void RooFitUtils::CombinedMeasurement::Print()
 {
-  coutI(ObjectHandling) << "CombinedMeasurement::Print(" << fName << ") printing information about the comined measurement\n" << endl;
+  // Print information of the combined measurement
+  coutI(ObjectHandling) << "CombinedMeasurement::Print(" << fName << ") printing information about the comined measurement\n" << std::endl;
 
-  cout << "== COMBINED SUMMARY ==== " << endl;
-  cout << "Combined measurement   : " << fName << endl;
-  cout << "\nIndividual measurements: " << fMeasurements.size() << endl;
-  cout << "\nParameters of interest : " << fParametersOfInterest->getSize() << endl;
+  std::cout << "== COMBINED SUMMARY ==== " << std::endl;
+  std::cout << "Combined measurement   : " << fName << std::endl;
+  std::cout << "\nIndividual measurements: " << fMeasurements.size() << std::endl;
+  std::cout << "\nParameters of interest : " << fParametersOfInterest->getSize() << std::endl;
   PrintCollection(fParametersOfInterest);
-  cout << "\nObservables            : " << fObservables->getSize() << endl;
+  std::cout << "\nObservables            : " << fObservables->getSize() << std::endl;
   PrintCollection(fObservables);
-  cout << "\nNuisance parameters    : " << fNuisanceParameters->getSize() << endl;
+  std::cout << "\nNuisance parameters    : " << fNuisanceParameters->getSize() << std::endl;
   PrintCollection(fNuisanceParameters);
-  cout << "\nGlobal observables     : " << fGlobalObservables->getSize() << endl;
+  std::cout << "\nGlobal observables     : " << fGlobalObservables->getSize() << std::endl;
   PrintCollection(fGlobalObservables);
-  cout << "\n" << endl;
+  std::cout << "\n" << std::endl;
 
   std::set<std::string> inputMeasurements;
-  for (std::map< std::string, Measurement* >::iterator measItr = fMeasurements.begin(); measItr != fMeasurements.end(); ++measItr) {
+  for (auto measItr = fMeasurements.begin(); measItr != fMeasurements.end(); ++measItr) {
     RooFitUtils::Measurement* meas = measItr->second;
     inputMeasurements.insert(meas->GetName());
   }
@@ -762,23 +770,24 @@ void RooFitUtils::CombinedMeasurement::Print()
 }
 
 // ____________________________________________________________________________|__________
-// Print collection, map name to title (to be used as description)
+
 void RooFitUtils::CombinedMeasurement::PrintCollection(RooAbsCollection* collection)
 {
+  // Print collection, map name to title (to be used as description)
   int nrColumns = 1;
-  string* header = new string[nrColumns];
+  std::string* header = new std::string[nrColumns];
   header[0] = "Description";
 
   int nrEntries = collection->getSize();
   if (nrEntries == 0) {
-    // coutW(ObjectHandling) << "CombinedMeasurement::PrintCollection(" << this->GetName() << ") collection " << collection->GetName() << " is empty" << endl;
-    cout << "CombinedMeasurement::PrintCollection() collection " << collection->GetName() << " is empty" << endl;
+    // coutW(ObjectHandling) << "CombinedMeasurement::PrintCollection(" << this->GetName() << ") collection " << collection->GetName() << " is empty" << std::endl;
+    std::cout << "CombinedMeasurement::PrintCollection() collection " << collection->GetName() << " is empty" << std::endl;
     delete[] header;
     return;
   }
-  string* firstCol = new string[nrEntries+1];
+  std::string* firstCol = new std::string[nrEntries+1];
   firstCol[0] = "Parameter";
-  std::string** matrix = new string*[nrEntries];
+  std::string** matrix = new std::string*[nrEntries];
   for (int in = 0; in < nrEntries; in++) {
     matrix[in] = new std::string[nrColumns];
     for (int i = 0; i < nrColumns; i++) {
@@ -790,12 +799,12 @@ void RooFitUtils::CombinedMeasurement::PrintCollection(RooAbsCollection* collect
   for (RooLinkedListIter it = collection->iterator(); RooAbsArg* arg = dynamic_cast<RooAbsArg*>(it.Next());) {
     firstCol[irow] = arg->GetName();
     int icol = 0;
-    string description = arg->GetTitle();
+    std::string description = arg->GetTitle();
     matrix[irow-1][icol] = description;
     irow++;
   }
 
-  RooFitUtils::CorrelationScheme::PrintTable(firstCol, matrix, NULL, header, nrEntries, nrColumns, 0, cout, "    ");
+  RooFitUtils::PrintTable(firstCol, matrix, NULL, header, nrEntries, nrColumns, 0, std::cout, "    ");
 
   delete[] header;
   delete[] firstCol;

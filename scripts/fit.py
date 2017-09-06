@@ -49,7 +49,7 @@ def main(args):
     rootcore()
 
     # setup verbosity
-    ROOT.Log.SetReportingLevel(ROOT.LOG.FromString(args.loglevel))
+    ROOT.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
     if args.loglevel == "DEBUG":
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(1)
     else:
@@ -65,9 +65,9 @@ def main(args):
     ROOT.RooFitUtils.RooMultiPdfFix = args.fixMulti
 
     # Load the model
-    model = ROOT.ExtendedModel("model", args.inFileName, args.wsName,
-                               args.modelConfigName, args.dataName, args.snapshot,
-                               args.binnedLikelihood, "pdf_")
+    model = ROOT.RooFitUtils.ExtendedModel("model", args.inFileName, args.wsName,
+                                           args.modelConfigName, args.dataName, args.snapshot,
+                                           args.binnedLikelihood, "pdf_")
 
     ws = model.GetWorkspace()
     mc = model.GetModelConfig()
@@ -110,13 +110,13 @@ def main(args):
                 ROOT.RooFit.Precision(args.precision)]
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
-    minimizer = ROOT.ExtendedMinimizer("minimizer", pdf, data, ws,arglist)
+    minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", pdf, data, ws,arglist)
     
     if args.fit:
         start = time()
         if not args.dummy:
             if args.findSigma:
-                minimizer.minimize(ROOT.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
+                minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
             else:
                 minimizer.minimize(ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
         

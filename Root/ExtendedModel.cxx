@@ -27,15 +27,11 @@
 #include <iostream>
 #include <sstream>
 
-using namespace std;
-using namespace RooFit;
-using namespace RooStats;
-
-ClassImp(ExtendedModel)
+ClassImp(RooFitUtils::ExtendedModel)
 
 // _____________________________________________________________________________
-// Constructor
-ExtendedModel::ExtendedModel( const std::string& ModelName, const std::string& FileName, const std::string& WsName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool binnedLikelihood, const std::string& TagAsMeasurement, bool FixCache, bool FixMulti )
+
+RooFitUtils::ExtendedModel::ExtendedModel( const std::string& ModelName, const std::string& FileName, const std::string& WsName, const std::string& ModelConfigName, const std::string& DataName, const std::string& SnapshotName, bool binnedLikelihood, const std::string& TagAsMeasurement, bool FixCache, bool FixMulti )
   :
   TNamed( ModelName.c_str(), ModelName.c_str() ),
   fFileName( FileName ),
@@ -46,24 +42,25 @@ ExtendedModel::ExtendedModel( const std::string& ModelName, const std::string& F
   fBinnedLikelihood( binnedLikelihood ),
   fTagAsMeasurement( TagAsMeasurement )
 {
-
+  // Constructor
   initialise(FixCache,FixMulti);
 
-  coutP(InputArguments) << "ExtendedModel::ExtendedModel(" << fName <<") created" << endl;
+  coutP(InputArguments) << "ExtendedModel::ExtendedModel(" << fName <<") created" << std::endl;
 }
 
 // _____________________________________________________________________________
-// Destructor
-ExtendedModel::~ExtendedModel()
+
+RooFitUtils::ExtendedModel::~ExtendedModel()
 {
-  // TODO
+  // Destructor
 }
 
 // _____________________________________________________________________________
-// Load all model information from specified file
-void ExtendedModel::initialise(bool fixCache, bool fixMulti)
+
+void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti)
 {
-  coutP(InputArguments) << "Opening file " << fFileName << endl;
+  // Load all model information from specified file
+  coutP(InputArguments) << "Opening file " << fFileName << std::endl;
   fFile = TFile::Open(fFileName.c_str());
   if(!fFile || !fFile->IsOpen()){
     if(fFile){
@@ -92,19 +89,19 @@ void ExtendedModel::initialise(bool fixCache, bool fixMulti)
 
   // Fixes for known features
   if (fBinnedLikelihood) {
-    coutP(InputArguments) << "Activating binned likelihood evaluation" << endl;
+    coutP(InputArguments) << "Activating binned likelihood evaluation" << std::endl;
     RooFIter iter = fWorkspace->components().fwdIterator();
     RooAbsArg* arg;
     while ((arg = iter.next())) {
       if (arg->IsA() == RooRealSumPdf::Class()) {
         arg->setAttribute("BinnedLikelihood");
-        coutI(InputArguments) << "Activating binned likelihood attribute for " << arg->GetName() << endl;
+        coutI(InputArguments) << "Activating binned likelihood attribute for " << arg->GetName() << std::endl;
       }
     }
   }
 
   if (fTagAsMeasurement != "") {
-    coutP(InputArguments) << "Tagging CMS main measurements to reduce memory consumption" << endl;
+    coutP(InputArguments) << "Tagging CMS main measurements to reduce memory consumption" << std::endl;
     RooFIter iter = fWorkspace->components().fwdIterator() ;
     RooAbsArg* arg ;
     while ((arg = iter.next())) {
@@ -116,19 +113,19 @@ void ExtendedModel::initialise(bool fixCache, bool fixMulti)
   }
 
 //   if (fixMulti) {
-//     coutP(InputArguments) << "De-activating level 2 constant term optimization for RooMultiPdf" << endl;
+//     coutP(InputArguments) << "De-activating level 2 constant term optimization for RooMultiPdf" << std::endl;
 //     RooFIter iter = fWorkspace->components().fwdIterator();
 //     RooAbsArg* arg;
 //     while ((arg = iter.next())) {
 //       if (arg->IsA() == RooMultiPdf::Class()) {
 //         arg->setAttribute("NOCacheAndTrack");
-//         coutI(InputArguments) << "De-activation of level 2 constant term optimization for " << arg->GetName() << endl;
+//         coutI(InputArguments) << "De-activation of level 2 constant term optimization for " << arg->GetName() << std::endl;
 //       }
 //     }
 //   }
 
   if (kTRUE) {
-    coutP(InputArguments) << "De-activating level 2 constant term optimization for specified pdfs" << endl;
+    coutP(InputArguments) << "De-activating level 2 constant term optimization for specified pdfs" << std::endl;
     RooFIter iter = fWorkspace->components().fwdIterator();
     RooAbsArg* arg;
     int n = 0;
@@ -143,17 +140,17 @@ void ExtendedModel::initialise(bool fixCache, bool fixMulti)
   }
 
   // Continue loading the model
-  coutP(InputArguments) << "Loading ModelConfig " << fModelConfigName << endl;
-  fModelConfig = (ModelConfig*)(fWorkspace->obj(fModelConfigName.c_str()));
+  coutP(InputArguments) << "Loading ModelConfig " << fModelConfigName << std::endl;
+  fModelConfig = (RooStats::ModelConfig*)(fWorkspace->obj(fModelConfigName.c_str()));
   if (!fModelConfig) {
-    coutE(InputArguments) << "Something went wrong when loading the ModelConfig " << fModelConfigName << endl;
+    coutE(InputArguments) << "Something went wrong when loading the ModelConfig " << fModelConfigName << std::endl;
     throw std::runtime_error(TString::Format("unable to load ModelConfig '%s'",fModelConfigName.c_str()).Data());
   }
 
-  coutP(InputArguments) << "Grabbing the pdf from the ModelConfig" << endl;
+  coutP(InputArguments) << "Grabbing the pdf from the ModelConfig" << std::endl;
   fPdf = (RooAbsPdf*)fModelConfig->GetPdf();
   if (!fPdf) {
-    coutE(InputArguments) << "Something went wrong when loading the pdf" << endl;
+    coutE(InputArguments) << "Something went wrong when loading the pdf" << std::endl;
     throw std::runtime_error("unable to obtain pdf");
   }
 
@@ -167,81 +164,84 @@ void ExtendedModel::initialise(bool fixCache, bool fixMulti)
     throw std::runtime_error(ss.str());
   }
 
-  coutP(InputArguments) << "Loading the nuisance parameters" << endl;
+  coutP(InputArguments) << "Loading the nuisance parameters" << std::endl;
   fNuis = (RooArgSet*)fModelConfig->GetNuisanceParameters();
   if (!fNuis) {
-    coutE(InputArguments) << "Something went wrong when loading the nuisance parameters" << endl;
+    coutE(InputArguments) << "Something went wrong when loading the nuisance parameters" << std::endl;
     throw std::runtime_error("unable to obtain list of nuisance parameters");
   }
 
-  coutP(InputArguments) << "Loading the global observables" << endl;
+  coutP(InputArguments) << "Loading the global observables" << std::endl;
   fGlobs = (RooArgSet*)fModelConfig->GetGlobalObservables();
   if (!fGlobs) {
-    coutE(InputArguments) << "Something went wrong when loading the global observables" << endl;
+    coutE(InputArguments) << "Something went wrong when loading the global observables" << std::endl;
     throw std::runtime_error("unable to obtain list of global observables");
   }
 
-  coutP(InputArguments) << "Loading the parameters of interest" << endl;
+  coutP(InputArguments) << "Loading the parameters of interest" << std::endl;
   fPOIs = (RooArgSet*)fModelConfig->GetParametersOfInterest();
   if (!fPOIs) {
-    coutE(InputArguments) << "Something went wrong when loading the parameters of interest" << endl;
+    coutE(InputArguments) << "Something went wrong when loading the parameters of interest" << std::endl;
     throw std::runtime_error("unable to obtain list of parameters of interest");
   }
 
-  coutP(InputArguments) << "Loading the observables" << endl;
+  coutP(InputArguments) << "Loading the observables" << std::endl;
   fObs = (RooArgSet*)fModelConfig->GetObservables();
   if (!fObs) {
-    coutE(InputArguments) << "Something went wrong when loading the observables" << endl;
+    coutE(InputArguments) << "Something went wrong when loading the observables" << std::endl;
     throw std::runtime_error("unable to obtain list of observables");
   }
 
   if (fSnapshotName != "") {
-    coutP(InputArguments) << "Loading snapshots" << endl;
-    vector<string> parsedSnapshots = parseString(fSnapshotName, ",");
+    coutP(InputArguments) << "Loading snapshots" << std::endl;
+    std::vector<std::string> parsedSnapshots = parseString(fSnapshotName, ",");
     for (size_t i_snapshot = 0; i_snapshot < parsedSnapshots.size(); ++i_snapshot) {
-      string thisSnapshot = parsedSnapshots[i_snapshot];
-      coutI(InputArguments) << "Loading snapshot " << thisSnapshot << endl;
+      std::string thisSnapshot = parsedSnapshots[i_snapshot];
+      coutI(InputArguments) << "Loading snapshot " << thisSnapshot << std::endl;
       fWorkspace->loadSnapshot(thisSnapshot.c_str());
     }
   }
 }
 
 // _____________________________________________________________________________
-// Fix all nuisance parameters
-void ExtendedModel::fixNuisanceParameters()
+
+void RooFitUtils::ExtendedModel::fixNuisanceParameters()
 {
+  // Fix all nuisance parameters
   for (RooLinkedListIter it = fNuis->iterator(); RooRealVar* v = dynamic_cast<RooRealVar*>(it.Next());) {
     Double_t value = v->getVal();
-    string name = v->GetName();
-    coutI(ObjectHandling) << "Fixing nuisance parameter " << name << " at value " << value << endl;
+    std::string name = v->GetName();
+    coutI(ObjectHandling) << "Fixing nuisance parameter " << name << " at value " << value << std::endl;
     v->setConstant(1);
   }
 }
 
 // _____________________________________________________________________________
-// Fix all parameters of interest
-void ExtendedModel::fixParametersOfInterest()
+
+void RooFitUtils::ExtendedModel::fixParametersOfInterest()
 {
+  // Fix all parameters of interest
   for (RooLinkedListIter it = fPOIs->iterator(); RooRealVar* v = dynamic_cast<RooRealVar*>(it.Next());) {
     Double_t value = v->getVal();
-    string name = v->GetName();
-    coutI(ObjectHandling) << "Fixing parameter of interest " << name << " at value " << value << endl;
+    std::string name = v->GetName();
+    coutI(ObjectHandling) << "Fixing parameter of interest " << name << " at value " << value << std::endl;
     v->setConstant(1);
   }
 }
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::fixNuisanceParameters( const std::string& fixName )
+
+void RooFitUtils::ExtendedModel::fixNuisanceParameters( const std::string& fixName )
 {
+  // Fix a subset of the nuisance parameters at the specified values
   fixNuisanceParameters(parseString(fixName, ","));
 }
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parsed )
+
+void RooFitUtils::ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parsed )
 {
-  
+  // Fix a subset of the nuisance parameters at the specified values  
   for (size_t i = 0; i < parsed.size(); i++) {
      TString thisName = parsed[i].c_str();
      TString thisVal;
@@ -255,7 +255,7 @@ void ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parse
 
      RooRealVar* par = (RooRealVar*)fWorkspace->var(thisName.Data());
      if (!par) {
-       coutE(ObjectHandling) << "Nuisance parameter " << thisName.Data() << " does not exist." << endl;
+       coutE(ObjectHandling) << "Nuisance parameter " << thisName.Data() << " does not exist." << std::endl;
        exit(-1);
      }
 
@@ -265,20 +265,24 @@ void ExtendedModel::fixNuisanceParameters( const std::vector<std::string>& parse
        par->setVal(value);
      }
 
-     coutI(ObjectHandling) << "Fixing nuisance parameter " << thisName.Data() << " at value " << value << endl;
+     coutI(ObjectHandling) << "Fixing nuisance parameter " << thisName.Data() << " at value " << value << std::endl;
      par->setConstant(1);
    }
 
 }
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::profileParameters( const std::string& profileName )
+
+void RooFitUtils::ExtendedModel::profileParameters( const std::string& profileName )
 {
+  // Fix a subset of the nuisance parameters at the specified values
   profileParameters(parseString(profileName, ","));
 }
 
-RooRealVar* ExtendedModel::configureParameter(const std::string& pname){
+// _____________________________________________________________________________
+
+RooRealVar* RooFitUtils::ExtendedModel::configureParameter(const std::string& pname){
+  // Fix a subset of the nuisance parameters at the specified values
   TString thisName(pname.c_str());
     TString range;
     TString boundary;
@@ -322,7 +326,7 @@ RooRealVar* ExtendedModel::configureParameter(const std::string& pname){
 
     RooRealVar* thisPoi = (RooRealVar*)fWorkspace->var(thisName);
     if (!thisPoi) {
-      coutE(ObjectHandling) << "Parameter " << thisName << " doesn't exist!" << endl;
+      coutE(ObjectHandling) << "Parameter " << thisName << " doesn't exist!" << std::endl;
       return NULL;
     }
 
@@ -337,7 +341,7 @@ RooRealVar* ExtendedModel::configureParameter(const std::string& pname){
       if ((origVal < lo) || (origVal > hi)) {
         double newVal = (hi - lo) / 2;
         thisPoi->setVal(newVal);
-        coutI(ObjectHandling) << "Setting value to " << newVal << endl;
+        coutI(ObjectHandling) << "Setting value to " << newVal << std::endl;
       }
     }
 
@@ -367,29 +371,31 @@ RooRealVar* ExtendedModel::configureParameter(const std::string& pname){
     }
 
     thisPoi->setConstant(0);
-    coutI(ObjectHandling) << thisName.Data() << " = " << thisPoi->getVal() << " in [" << thisPoi->getMin() << "," << thisPoi->getMax() << "]" << endl;
+    coutI(ObjectHandling) << thisName.Data() << " = " << thisPoi->getVal() << " in [" << thisPoi->getMin() << "," << thisPoi->getMax() << "]" << std::endl;
     return thisPoi;
 
 }
 
 
 // _____________________________________________________________________________
-// Fix a subset of the nuisance parameters at the specified values
-void ExtendedModel::profileParameters( const std::vector<std::string>& parsed )
+
+void RooFitUtils::ExtendedModel::profileParameters( const std::vector<std::string>& parsed )
 {
+  // Fix a subset of the nuisance parameters at the specified values
   for (size_t i = 0; i < parsed.size(); i++) {
     RooRealVar* thisPoi = this->configureParameter(parsed[i]);
     if(thisPoi){
-      coutI(ObjectHandling) << "Profiling parameter " << thisPoi->GetName() << endl;
+      coutI(ObjectHandling) << "Profiling parameter " << thisPoi->GetName() << std::endl;
     }
   }
 }
 
 
 // _____________________________________________________________________________
-// Set initial errors of model parameters depending on constraint terms
-void ExtendedModel::setInitialErrors()
+
+void RooFitUtils::ExtendedModel::setInitialErrors()
 {
+  // Set initial errors of model parameters depending on constraint terms
   RooArgSet* AllConstraints = new RooArgSet();
 
   if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(), RooNameSet(*fData->get()).content()))) {
@@ -419,7 +425,7 @@ void ExtendedModel::setInitialErrors()
       FindUniqueProdComponents((RooProdPdf*)nextConstraint, thisComponents);
       tmpAllConstraints->add(thisComponents);
     } else {
-      coutI(ObjectHandling) << "Adding constraint " << nextConstraint->GetName() << endl;
+      coutI(ObjectHandling) << "Adding constraint " << nextConstraint->GetName() << std::endl;
       tmpAllConstraints->add(*nextConstraint);
     }
   }
@@ -463,9 +469,9 @@ void ExtendedModel::setInitialErrors()
               }
 
               if (!foundSigma) {
-                coutI(ObjectHandling) << "Sigma for pdf " << nextConstraint->GetName() << " not found. Using 1.0." << endl;
+                coutI(ObjectHandling) << "Sigma for pdf " << nextConstraint->GetName() << " not found. Using 1.0." << std::endl;
               } else {
-                coutI(ObjectHandling)  << "Using " << oldSigmaVal << " for sigma of pdf " << nextConstraint->GetName() << endl;
+                coutI(ObjectHandling)  << "Using " << oldSigmaVal << " for sigma of pdf " << nextConstraint->GetName() << std::endl;
               }
 
               prefitvariation = oldSigmaVal;
@@ -478,7 +484,7 @@ void ExtendedModel::setInitialErrors()
     delete ConstraintItr;
 
     if (foundGaussianConstraint) {
-      coutP(ObjectHandling) << "Changing error of " << nuip->GetName() << " from " << nuip->getError() << " to " << prefitvariation << endl;
+      coutP(ObjectHandling) << "Changing error of " << nuip->GetName() << " from " << nuip->getError() << " to " << prefitvariation << std::endl;
       nuip->setError(prefitvariation);
       nuip->removeRange();
     }

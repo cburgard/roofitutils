@@ -61,6 +61,7 @@
 using namespace std;
 using namespace RooFit;
 using namespace RooStats;
+using namespace RooFitUtils;
 
 #include <chrono>
 #include "TROOT.h"
@@ -182,7 +183,7 @@ int main(int argc, char** argv)
   // - WARNING
   // - INFO
   // - DEBUG
-  LOG::ReportingLevel() = LOG::FromString(loglevel);
+  Log::ReportingLevel() = Log::FromString(loglevel);
 
   // Configuration of minimizer
   ROOT::Math::MinimizerOptions::SetDefaultMinimizer(minimizerType.c_str(), minimizerAlgo.c_str());
@@ -294,7 +295,7 @@ int main(int argc, char** argv)
 
     RooRealVar* thisPoi = (RooRealVar*)ws->var(thisName);
     if (!thisPoi) {
-      LOG(logERROR) << "POI: " << thisName << " doesn't exist!";
+      Log(logERROR) << "POI: " << thisName << " doesn't exist!";
       exit(-1);
     }
 
@@ -342,7 +343,7 @@ int main(int argc, char** argv)
     thisPoi->setError(0.2);
     thisPoi->setConstant(0);
     double val = thisPoi->getVal();
-    LOG(logINFO) << "Getting POI " << thisPoi->GetName() << " and set value to " << val;
+    Log(logINFO) << "Getting POI " << thisPoi->GetName() << " and set value to " << val;
 
     scan_poi_vector.push_back(thisPoi);
     scan_poi_set.add(*thisPoi);
@@ -361,7 +362,7 @@ int main(int argc, char** argv)
 
   if (makeParameterSnapshots) {
     // Save the snapshots of nominal parameters
-    LOG(logINFO) << "MakeSnapshots() Saving nominal snapshots.";
+    Log(logINFO) << "MakeSnapshots() Saving nominal snapshots.";
     ws->saveSnapshot("nominalGlobs", *mc->GetGlobalObservables());
     ws->saveSnapshot("nominalNuis", *mc->GetNuisanceParameters());
     ws->saveSnapshot("nominalPois", *mc->GetParametersOfInterest());
@@ -374,10 +375,10 @@ int main(int argc, char** argv)
                      NumCPU(numCPU, 3), Offset(offsetting), Optimize(constOpt),
                      ExtendedMinimizer::Scan(scan_poi_set), Precision(precision), Hesse(), Save());//stars around extended minimizer 
   double time = timer.elapsed();
-  LOG(logINFO) << "Fitting time: " << setprecision(9) << time << " seconds";
+  Log(logINFO) << "Fitting time: " << setprecision(9) << time << " seconds";
 
   double minNll = minimizer.GetMinNll();
-  LOG(logINFO) << "NLL after minimisation: " << setprecision(15) << minNll;
+  Log(logINFO) << "NLL after minimisation: " << setprecision(15) << minNll;
 
   // Save fit result
   RooFitResult* result = (minimizer.GetFitResult());
@@ -390,9 +391,9 @@ int main(int argc, char** argv)
     if(fout.IsOpen()){
       result->Write("",TObject::kOverwrite);
       fout.Close();
-      LOG(logINFO) << "Saved fitresult as " << fname;
+      Log(logINFO) << "Saved fitresult as " << fname;
     } else {
-      LOG(logERROR) << "Unable to open file " << fname;
+      Log(logERROR) << "Unable to open file " << fname;
     }
     if (makeParameterSnapshots) {
       TString filename_with_snapshot(inFileName);
@@ -402,7 +403,7 @@ int main(int argc, char** argv)
       ws->saveSnapshot("ucmles", floatingParameters);
       
       // Bring us back to nominal for exporting
-      LOG(logINFO) << "MakeSnapshots() Return to nominal parameter values.";
+      Log(logINFO) << "MakeSnapshots() Return to nominal parameter values.";
       ws->loadSnapshot("nominalNuis");
       ws->loadSnapshot("nominalGlobs");
       ws->loadSnapshot("nominalPois");
@@ -410,7 +411,7 @@ int main(int argc, char** argv)
       ws->writeToFile(filename_with_snapshot.Data());
     }
   } else {
-    LOG(logERROR) << "fit failed, no fit result obtained!";
+    Log(logERROR) << "fit failed, no fit result obtained!";
   }  
   
   PrintResourcesUsed(thistime);

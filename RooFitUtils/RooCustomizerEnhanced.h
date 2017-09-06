@@ -12,8 +12,6 @@
 #include "RooFactoryWSTool.h"
 #include "RooRealConstant.h"
 
-//_____________________________________________________________________________
-
 namespace RooFitUtils {
 
 class RooCustomizerEnhanced : public TNamed, public RooPrintable {

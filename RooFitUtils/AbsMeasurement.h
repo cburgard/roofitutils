@@ -144,8 +144,8 @@ protected:
 // ____________________________________________________________________________|__________
 protected:
 
-  friend class ::Measurement;
-  friend class ::CombinedMeasurement;
+  friend class RooFitUtils::Measurement;
+  friend class RooFitUtils::CombinedMeasurement;
 
 // ____________________________________________________________________________|__________
 private:

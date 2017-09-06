@@ -59,7 +59,7 @@ RooFitUtils::AbsMeasurement::~AbsMeasurement()
 
 // ____________________________________________________________________________|__________
 
-void AbsMeasurement::enablePruning( const std::string& poi, const std::string& filter, const std::string& weight, const std::string& threshold, int additionalDigit )
+void RooFitUtils::AbsMeasurement::enablePruning( const std::string& poi, const std::string& filter, const std::string& weight, const std::string& threshold, int additionalDigit )
 {
   coutP(InputArguments) << "AbsMeasurement::enablePruning(" << fName <<") pruning enabled" << std::endl;
   std::cout << "\n****************************************************************************" << std::endl;
@@ -726,6 +726,8 @@ void RooFitUtils::AbsMeasurement::SetDatasetBinning ( Int_t setNbins, const char
 // Generate binned data
 // Method adapted from Tim Adye <T.J.Adye@rl.ac.uk>
 // Originally implemented in https://svnweb.cern.ch/trac/atlasoff/browser/PhysicsAnalysis/HiggsPhys/CombinationTools/RooStatTools/trunk/StandardHypoTestInv/WorkspaceCalculator.cxx
+
+ClassImp(TOwnedList)
 
 TOwnedList::TOwnedList() : TList() { SetOwner(); }
 TOwnedList::~TOwnedList()          { Clear(); }
