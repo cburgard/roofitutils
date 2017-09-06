@@ -1,55 +1,62 @@
-//this file looks like plain C, but it's actually -*- c++ -*-
+// this file looks like plain C, but it's actually -*- c++ -*-
 #ifndef PARAMETRISATIONSCHEME
 #define PARAMETRISATIONSCHEME
 
-#include <string>
-#include <list>
 #include <iostream>
+#include <list>
 #include <sstream>
+#include <string>
 
 #include "TNamed.h"
 
 #include "RooMsgService.h"
 
-namespace RooFitUtils { 
+namespace RooFitUtils {
 class ParametrisationScheme : public TNamed {
 
-// ____________________________________________________________________________|__________
+  // ____________________________________________________________________________|__________
 public:
-
   // Constructor and destructor
-  ParametrisationScheme( const std::string& SchemeName = "" );
+  ParametrisationScheme(const std::string &SchemeName = "");
   ~ParametrisationScheme();
 
   // Accessors
-  void SetExpressions( const std::list< std::string >& Expressions ) { fExpressions = Expressions; }
-  std::list< std::string > GetExpressions() { return fExpressions; }
+  void SetExpressions(const std::list<std::string> &Expressions) {
+    fExpressions = Expressions;
+  }
+  std::list<std::string> GetExpressions() { return fExpressions; }
 
-  void SetNewNuisanceParameters( const std::list< std::string >& NewNuisanceParameters ) { fNewNuisanceParameters = NewNuisanceParameters; }
-  std::list< std::string > GetNewNuisanceParameters() { return fNewNuisanceParameters; }
+  void SetNewNuisanceParameters(
+      const std::list<std::string> &NewNuisanceParameters) {
+    fNewNuisanceParameters = NewNuisanceParameters;
+  }
+  std::list<std::string> GetNewNuisanceParameters() {
+    return fNewNuisanceParameters;
+  }
 
-  void SetNewGlobalObservables( const std::list< std::string >& NewGlobalObservables ) { fNewGlobalObservables = NewGlobalObservables; }
-  std::list< std::string > GetNewGlobalObservables() { return fNewGlobalObservables; }
+  void
+  SetNewGlobalObservables(const std::list<std::string> &NewGlobalObservables) {
+    fNewGlobalObservables = NewGlobalObservables;
+  }
+  std::list<std::string> GetNewGlobalObservables() {
+    return fNewGlobalObservables;
+  }
 
   // Steering
-  void AddExpression( const std::string& Expression );
-  void AddNewNuisanceParameters( const std::string& NewNuisanceParameters );
-  void AddNewGlobalObservable( const std::string& NewGlobalObservable );
+  void AddExpression(const std::string &Expression);
+  void AddNewNuisanceParameters(const std::string &NewNuisanceParameters);
+  void AddNewGlobalObservable(const std::string &NewGlobalObservable);
 
-// ____________________________________________________________________________|__________
+  // ____________________________________________________________________________|__________
 private:
+  std::list<std::string> fExpressions;
+  std::list<std::string> fNewNuisanceParameters;
+  std::list<std::string> fNewGlobalObservables;
 
-  std::list< std::string > fExpressions;
-  std::list< std::string > fNewNuisanceParameters;
-  std::list< std::string > fNewGlobalObservables;
-
-// ____________________________________________________________________________|__________
+  // ____________________________________________________________________________|__________
 protected:
-
   ClassDefOverride(ParametrisationScheme, 1)
-
 };
-
 }
 
 #endif

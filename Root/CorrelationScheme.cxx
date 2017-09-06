@@ -3,69 +3,99 @@
 
 // ____________________________________________________________________________|__________
 
-RooFitUtils::CorrelationScheme::CorrelationScheme( const std::string& SchemeName, const std::string& ParametersOfInterest, bool AutoCorrelation )
-  :
-  TNamed(SchemeName.c_str(), SchemeName.c_str()),
-  fParametersOfInterest(ParametersOfInterest)
-{
+RooFitUtils::CorrelationScheme::CorrelationScheme(
+    const std::string &SchemeName, const std::string &ParametersOfInterest,
+    bool AutoCorrelation)
+    : TNamed(SchemeName.c_str(), SchemeName.c_str()),
+      fParametersOfInterest(ParametersOfInterest) {
   // Constructor
-  coutP(InputArguments) << "CorrelationScheme::CorrelationScheme(" << fName <<") created" << std::endl;
+  coutP(InputArguments) << "CorrelationScheme::CorrelationScheme(" << fName
+                        << ") created" << std::endl;
   this->SetAutoCorrelation(AutoCorrelation);
 }
 
 // ____________________________________________________________________________|__________
 
-RooFitUtils::CorrelationScheme::~CorrelationScheme()
-{
+RooFitUtils::CorrelationScheme::~CorrelationScheme() {
   // Destructor
 }
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::SetAutoCorrelation( bool setting )
-{
+void RooFitUtils::CorrelationScheme::SetAutoCorrelation(bool setting) {
   // Enable automatic correlation, print warning, as potentially dangerous
   fAutoCorrelation = setting;
 
   if (fAutoCorrelation) {
-    std::cout << "\n****************************************************************************" << std::endl;
-    std::cout << "* WARNING: Parameters with the same name will be correlated automatically! *" << std::endl;
-    std::cout << "*          It is the responsibility of the user to make sure, that those   *" << std::endl;
-    std::cout << "*          parameters describe the same effect in the input workspaces!    *" << std::endl;
-    std::cout << "*                                                                          *" << std::endl;
-    std::cout << "*          It is recommended to explicitly enter the correlation scheme!   *" << std::endl;
-    std::cout << "****************************************************************************\n" << std::endl;
+    std::cout << "\n***********************************************************"
+                 "*****************"
+              << std::endl;
+    std::cout << "* WARNING: Parameters with the same name will be correlated "
+                 "automatically! *"
+              << std::endl;
+    std::cout << "*          It is the responsibility of the user to make "
+                 "sure, that those   *"
+              << std::endl;
+    std::cout << "*          parameters describe the same effect in the input "
+                 "workspaces!    *"
+              << std::endl;
+    std::cout << "*                                                            "
+                 "              *"
+              << std::endl;
+    std::cout << "*          It is recommended to explicitly enter the "
+                 "correlation scheme!   *"
+              << std::endl;
+    std::cout << "*************************************************************"
+                 "***************\n"
+              << std::endl;
   }
 }
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, RenamingMap::ConstraintType thisConstraintType )
-{
-// Interface to add fully correlated parameters among different channels,
-// constraint terms will be determined automatically if not specified otherwise
+void RooFitUtils::CorrelationScheme::CorrelateParameter(
+    const char *OldParameterNamePlusMeasurement, const char *NewParameterName,
+    RenamingMap::ConstraintType thisConstraintType) {
+  // Interface to add fully correlated parameters among different channels,
+  // constraint terms will be determined automatically if not specified
+  // otherwise
   TString allOldParameterNamePlusMeasurement = OldParameterNamePlusMeasurement;
-  TObjArray* allOldParameterNamePlusMeasurementArray = allOldParameterNamePlusMeasurement.Tokenize(",");
-  unsigned int numCorrPars = allOldParameterNamePlusMeasurementArray->GetEntries();
+  TObjArray *allOldParameterNamePlusMeasurementArray =
+      allOldParameterNamePlusMeasurement.Tokenize(",");
+  unsigned int numCorrPars =
+      allOldParameterNamePlusMeasurementArray->GetEntries();
 
   for (unsigned int itrPars = 0; itrPars < numCorrPars; ++itrPars) {
-    TString thisOldParameterNamePlusMeasurement = ((TObjString*)allOldParameterNamePlusMeasurementArray->At(itrPars))->GetString();
+    TString thisOldParameterNamePlusMeasurement =
+        ((TObjString *)allOldParameterNamePlusMeasurementArray->At(itrPars))
+            ->GetString();
 
     unsigned int offset = 0;
-    while (thisOldParameterNamePlusMeasurement.Contains("(") && !thisOldParameterNamePlusMeasurement.Contains(")")) {
+    while (thisOldParameterNamePlusMeasurement.Contains("(") &&
+           !thisOldParameterNamePlusMeasurement.Contains(")")) {
       offset++;
-      thisOldParameterNamePlusMeasurement = thisOldParameterNamePlusMeasurement + "," + ((TObjString*)allOldParameterNamePlusMeasurementArray->At(itrPars+offset))->GetString();
+      thisOldParameterNamePlusMeasurement =
+          thisOldParameterNamePlusMeasurement + "," +
+          ((TObjString *)allOldParameterNamePlusMeasurementArray->At(itrPars +
+                                                                     offset))
+              ->GetString();
     }
 
     if (thisOldParameterNamePlusMeasurement.Contains("(")) {
       assert(thisOldParameterNamePlusMeasurement.Contains(")"));
     }
 
-    TObjArray* thisOldParameterNamePlusMeasurementArray = thisOldParameterNamePlusMeasurement.Tokenize("::");
-    TString thisMeasurement = ((TObjString*)thisOldParameterNamePlusMeasurementArray->At(0))->GetString();
-    TString thisOldParameter = ((TObjString*)thisOldParameterNamePlusMeasurementArray->At(1))->GetString();
+    TObjArray *thisOldParameterNamePlusMeasurementArray =
+        thisOldParameterNamePlusMeasurement.Tokenize("::");
+    TString thisMeasurement =
+        ((TObjString *)thisOldParameterNamePlusMeasurementArray->At(0))
+            ->GetString();
+    TString thisOldParameter =
+        ((TObjString *)thisOldParameterNamePlusMeasurementArray->At(1))
+            ->GetString();
 
-    RenameParameter(thisMeasurement, thisOldParameter, NewParameterName, thisConstraintType);
+    RenameParameter(thisMeasurement, thisOldParameter, NewParameterName,
+                    thisConstraintType);
 
     itrPars += offset;
 
@@ -79,106 +109,149 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParamete
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::RenameParameter( const char* MeasurementName, const char* OldParameterName, const char* NewParameterName, RenamingMap::ConstraintType thisConstraintType )
-{
+void RooFitUtils::CorrelationScheme::RenameParameter(
+    const char *MeasurementName, const char *OldParameterName,
+    const char *NewParameterName,
+    RenamingMap::ConstraintType thisConstraintType) {
   // Rename a parameter without correlating it
-  std::string thisOldParameterName         = std::string(OldParameterName);
-  std::string thisOldConstraintName        = "";
-  std::string thisOldObservableName        = "";
-  std::string thisOldObservableRange       = "";
-  std::string thisOldGlobalObservableName  = "";
+  std::string thisOldParameterName = std::string(OldParameterName);
+  std::string thisOldConstraintName = "";
+  std::string thisOldObservableName = "";
+  std::string thisOldObservableRange = "";
+  std::string thisOldGlobalObservableName = "";
   std::string thisOldGlobalObservableRange = "";
-  std::string thisOldSigmaName             = "";
-  std::string thisOldSigmaRange            = "";
-  ParseInputs(thisOldParameterName, thisOldConstraintName, thisOldObservableName, thisOldObservableRange, thisOldGlobalObservableName, thisOldGlobalObservableRange, thisOldSigmaName, thisOldSigmaRange);
+  std::string thisOldSigmaName = "";
+  std::string thisOldSigmaRange = "";
+  ParseInputs(thisOldParameterName, thisOldConstraintName,
+              thisOldObservableName, thisOldObservableRange,
+              thisOldGlobalObservableName, thisOldGlobalObservableRange,
+              thisOldSigmaName, thisOldSigmaRange);
 
-  std::string thisNewParameterName         = std::string(NewParameterName);
-  std::string thisNewConstraintName        = "";
-  std::string thisNewObservableName        = "";
-  std::string thisNewObservableRange       = "";
-  std::string thisNewGlobalObservableName  = "";
+  std::string thisNewParameterName = std::string(NewParameterName);
+  std::string thisNewConstraintName = "";
+  std::string thisNewObservableName = "";
+  std::string thisNewObservableRange = "";
+  std::string thisNewGlobalObservableName = "";
   std::string thisNewGlobalObservableRange = "";
-  std::string thisNewSigmaName             = "";
-  std::string thisNewSigmaRange            = "";
-  ParseInputs(thisNewParameterName, thisNewConstraintName, thisNewObservableName, thisNewObservableRange, thisNewGlobalObservableName, thisNewGlobalObservableRange, thisNewSigmaName, thisNewSigmaRange);
+  std::string thisNewSigmaName = "";
+  std::string thisNewSigmaRange = "";
+  ParseInputs(thisNewParameterName, thisNewConstraintName,
+              thisNewObservableName, thisNewObservableRange,
+              thisNewGlobalObservableName, thisNewGlobalObservableRange,
+              thisNewSigmaName, thisNewSigmaRange);
 
   if (std::string(fCorrelationMap[MeasurementName].GetName()) == "") {
     fCorrelationMap[MeasurementName].SetName(MeasurementName);
   }
 
-  fCorrelationMap[MeasurementName].RenameParameter(thisOldObservableName, thisNewObservableName);
-  fCorrelationMap[MeasurementName].SetAttribute(thisNewObservableName, RenamingMap::Type, RenamingMap::ConstraintTypeNames[thisConstraintType], RenamingMap::combined);
+  fCorrelationMap[MeasurementName].RenameParameter(thisOldObservableName,
+                                                   thisNewObservableName);
+  fCorrelationMap[MeasurementName].SetAttribute(
+      thisNewObservableName, RenamingMap::Type,
+      RenamingMap::ConstraintTypeNames[thisConstraintType],
+      RenamingMap::combined);
 
   if (thisOldConstraintName != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisOldObservableName, RenamingMap::Constraint, thisOldConstraintName, RenamingMap::individual);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisOldObservableName, RenamingMap::Constraint, thisOldConstraintName,
+        RenamingMap::individual);
   }
 
   if (thisOldObservableRange != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisOldObservableName, RenamingMap::ObservableRange, thisOldObservableRange, RenamingMap::individual);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisOldObservableName, RenamingMap::ObservableRange,
+        thisOldObservableRange, RenamingMap::individual);
   }
 
   if (thisOldGlobalObservableName != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisOldObservableName, RenamingMap::GlobalObservable, thisOldGlobalObservableName, RenamingMap::individual);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisOldObservableName, RenamingMap::GlobalObservable,
+        thisOldGlobalObservableName, RenamingMap::individual);
   }
 
   if (thisOldGlobalObservableRange != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisOldObservableName, RenamingMap::GlobalObservableRange, thisOldGlobalObservableRange, RenamingMap::individual);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisOldObservableName, RenamingMap::GlobalObservableRange,
+        thisOldGlobalObservableRange, RenamingMap::individual);
   }
 
   if (thisOldSigmaName != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisOldObservableName, RenamingMap::Sigma, thisOldSigmaName, RenamingMap::individual);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisOldObservableName, RenamingMap::Sigma, thisOldSigmaName,
+        RenamingMap::individual);
   }
 
   if (thisOldSigmaRange != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisOldObservableName, RenamingMap::SigmaRange, thisOldSigmaRange, RenamingMap::individual);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisOldObservableName, RenamingMap::SigmaRange, thisOldSigmaRange,
+        RenamingMap::individual);
   }
 
   if (thisNewConstraintName != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisNewObservableName, RenamingMap::Constraint, thisNewConstraintName, RenamingMap::combined);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisNewObservableName, RenamingMap::Constraint, thisNewConstraintName,
+        RenamingMap::combined);
   }
 
   if (thisNewObservableRange != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisNewObservableName, RenamingMap::ObservableRange, thisNewObservableRange, RenamingMap::combined);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisNewObservableName, RenamingMap::ObservableRange,
+        thisNewObservableRange, RenamingMap::combined);
   }
 
   if (thisNewGlobalObservableName != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisNewObservableName, RenamingMap::GlobalObservable, thisNewGlobalObservableName, RenamingMap::combined);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisNewObservableName, RenamingMap::GlobalObservable,
+        thisNewGlobalObservableName, RenamingMap::combined);
   }
 
   if (thisNewGlobalObservableRange != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisNewObservableName, RenamingMap::GlobalObservableRange, thisNewGlobalObservableRange, RenamingMap::combined);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisNewObservableName, RenamingMap::GlobalObservableRange,
+        thisNewGlobalObservableRange, RenamingMap::combined);
   }
 
   if (thisNewSigmaName != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisNewObservableName, RenamingMap::Sigma, thisNewSigmaName, RenamingMap::combined);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisNewObservableName, RenamingMap::Sigma, thisNewSigmaName,
+        RenamingMap::combined);
   }
 
   if (thisNewSigmaRange != "") {
-    fCorrelationMap[(MeasurementName)].SetAttribute(thisNewObservableName, RenamingMap::SigmaRange, thisNewSigmaRange, RenamingMap::combined);
+    fCorrelationMap[(MeasurementName)].SetAttribute(
+        thisNewObservableName, RenamingMap::SigmaRange, thisNewSigmaRange,
+        RenamingMap::combined);
   }
 }
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::ParseInputs( std::string& InputName, std::string& InputConstraintName, std::string& InputObservableName, std::string& InputObservableRange, std::string& InputGlobalObservableName, std::string& InputGlobalObservableRange, std::string& InputSigmaName, std::string& InputSigmaRange )
-{
-// Determine explicit names of constraint terms, observables and global observables
-// as well as their ranges. The input format specified by the user should be
-// ConstraintName(Observable[ObservableRange],GlobalObservable[GlobalObservableRange])
+void RooFitUtils::CorrelationScheme::ParseInputs(
+    std::string &InputName, std::string &InputConstraintName,
+    std::string &InputObservableName, std::string &InputObservableRange,
+    std::string &InputGlobalObservableName,
+    std::string &InputGlobalObservableRange, std::string &InputSigmaName,
+    std::string &InputSigmaRange) {
+  // Determine explicit names of constraint terms, observables and global
+  // observables
+  // as well as their ranges. The input format specified by the user should be
+  // ConstraintName(Observable[ObservableRange],GlobalObservable[GlobalObservableRange])
   TString thisInputName = InputName.c_str();
 
   if (thisInputName.Contains("(")) {
     assert(thisInputName.Contains(")"));
 
-    TObjArray* thisInputNameArray = thisInputName.Tokenize("(");
+    TObjArray *thisInputNameArray = thisInputName.Tokenize("(");
 
     // constraint name is part before the round opening bracket
-    InputConstraintName = ((TObjString*)thisInputNameArray->At(0))->GetString();
+    InputConstraintName =
+        ((TObjString *)thisInputNameArray->At(0))->GetString();
 
     // arguments
-    TString thisArguments = ((TObjString*)thisInputNameArray->At(1))->GetString();
+    TString thisArguments =
+        ((TObjString *)thisInputNameArray->At(1))->GetString();
     thisArguments.ReplaceAll(")", "");
-    TObjArray* thisArgumentsArray;
+    TObjArray *thisArgumentsArray;
     if (thisArguments.Contains("],")) {
       thisArguments.ReplaceAll("],", "|");
       thisArgumentsArray = thisArguments.Tokenize("|");
@@ -190,21 +263,26 @@ void RooFitUtils::CorrelationScheme::ParseInputs( std::string& InputName, std::s
 
     // find the observable including its range if specified
     if (nrArguments > 0) {
-      TString thisInputObservableName = ((TObjString*)thisArgumentsArray->At(0))->GetString();
+      TString thisInputObservableName =
+          ((TObjString *)thisArgumentsArray->At(0))->GetString();
       std::string tmp = thisInputObservableName.Data();
       DecomposeVariable(tmp, InputObservableName, InputObservableRange);
     }
 
     // find the global observable including its range if specified
     if (nrArguments > 1) {
-      TString thisInputGlobalObservableName = ((TObjString*)thisArgumentsArray->At(1))->GetString();
+      TString thisInputGlobalObservableName =
+          ((TObjString *)thisArgumentsArray->At(1))->GetString();
       std::string tmp = thisInputGlobalObservableName.Data();
-      DecomposeVariable(tmp, InputGlobalObservableName, InputGlobalObservableRange);
+      DecomposeVariable(tmp, InputGlobalObservableName,
+                        InputGlobalObservableRange);
     }
 
-    // find the width/sigma including its range if specified, not used at the moment
+    // find the width/sigma including its range if specified, not used at the
+    // moment
     if (nrArguments > 2) {
-      TString thisInputSigmaName = ((TObjString*)thisArgumentsArray->At(2))->GetString();
+      TString thisInputSigmaName =
+          ((TObjString *)thisArgumentsArray->At(2))->GetString();
       std::string tmp = thisInputSigmaName.Data();
       DecomposeVariable(tmp, InputSigmaName, InputSigmaRange);
     }
@@ -219,8 +297,9 @@ void RooFitUtils::CorrelationScheme::ParseInputs( std::string& InputName, std::s
 
 // ____________________________________________________________________________|__________
 // Decompose a factory like variable term into its name and range if specified
-void RooFitUtils::CorrelationScheme::DecomposeVariable( std::string& InputName, std::string& InputVariableName, std::string& InputVariableRange )
-{
+void RooFitUtils::CorrelationScheme::DecomposeVariable(
+    std::string &InputName, std::string &InputVariableName,
+    std::string &InputVariableRange) {
   TString thisInputName = InputName.c_str();
 
   if (thisInputName.BeginsWith("[")) {
@@ -228,14 +307,15 @@ void RooFitUtils::CorrelationScheme::DecomposeVariable( std::string& InputName, 
     InputVariableName = "";
     InputVariableRange = thisInputName;
   } else {
-    TObjArray* thisInputNameArray = thisInputName.Tokenize("[");
+    TObjArray *thisInputNameArray = thisInputName.Tokenize("[");
     int nrTerms = thisInputNameArray->GetEntries();
 
-    InputVariableName = ((TObjString*)thisInputNameArray->At(0))->GetString();
+    InputVariableName = ((TObjString *)thisInputNameArray->At(0))->GetString();
 
     if (nrTerms > 1) {
-      TString thisInputVariableRange = ((TObjString*)thisInputNameArray->At(1))->GetString();
-      InputVariableRange = "["+thisInputVariableRange;
+      TString thisInputVariableRange =
+          ((TObjString *)thisInputNameArray->At(1))->GetString();
+      InputVariableRange = "[" + thisInputVariableRange;
       if (!thisInputVariableRange.EndsWith("]")) {
         InputVariableRange += "]";
       }
@@ -247,37 +327,37 @@ void RooFitUtils::CorrelationScheme::DecomposeVariable( std::string& InputName, 
   }
 }
 
-
-
-
-
-
-
-
 // ____________________________________________________________________________|__________
 // Interface to add partly correlated parameters among 2 channels
-void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, double rho )
-{
+void RooFitUtils::CorrelationScheme::CorrelateParameter(
+    const char *OldParameterNamePlusMeasurement, const char *NewParameterName,
+    double rho) {
   // if parameters are fully correlated, use existing function
   if (rho == 1.0) {
     CorrelateParameter(OldParameterNamePlusMeasurement, NewParameterName);
   }
 
   TString allOldParameterNamePlusMeasurement = OldParameterNamePlusMeasurement;
-  TObjArray* allOldParameterNamePlusMeasurementArray = allOldParameterNamePlusMeasurement.Tokenize(",");
-  unsigned int numCorrPars = allOldParameterNamePlusMeasurementArray->GetEntries();
+  TObjArray *allOldParameterNamePlusMeasurementArray =
+      allOldParameterNamePlusMeasurement.Tokenize(",");
+  unsigned int numCorrPars =
+      allOldParameterNamePlusMeasurementArray->GetEntries();
 
   // this interface takes correlates only 2 parameters
   if (numCorrPars != 2) {
-    coutF(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName <<") " << numCorrPars << " specified. Can be 2 only." << std::endl;
+    coutF(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName
+                          << ") " << numCorrPars << " specified. Can be 2 only."
+                          << std::endl;
     exit(-1);
   }
 
   TMatrixDSym cov(numCorrPars);
   for (unsigned int i = 0; i < numCorrPars; i++) {
     for (unsigned int j = 0; j < numCorrPars; j++) {
-      if (i == j) cov(i,j) = 1.0;
-      else        cov(i,j) = rho;
+      if (i == j)
+        cov(i, j) = 1.0;
+      else
+        cov(i, j) = rho;
     }
   }
 
@@ -289,11 +369,14 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParamete
 
 // ____________________________________________________________________________|__________
 // Interface to add partly correlated parameters among multiple channels
-void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParameterNamePlusMeasurement, const char* NewParameterName, TMatrixDSym cov )
-{
+void RooFitUtils::CorrelationScheme::CorrelateParameter(
+    const char *OldParameterNamePlusMeasurement, const char *NewParameterName,
+    TMatrixDSym cov) {
   // check dimensions
   if (cov.GetNcols() != cov.GetNrows()) {
-    coutF(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName <<") expecting N x N matrix. Got " << cov.GetNcols() << " x " << cov.GetNrows() << std::endl;
+    coutF(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName
+                          << ") expecting N x N matrix. Got " << cov.GetNcols()
+                          << " x " << cov.GetNrows() << std::endl;
     exit(-1);
   }
 
@@ -301,23 +384,30 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParamete
   bool fullycorrelated = true;
   for (int i = 0; i < cov.GetNcols(); i++) {
     for (int j = 0; j < cov.GetNrows(); j++) {
-      if (cov(i,j) != 1.0) {
+      if (cov(i, j) != 1.0) {
         fullycorrelated = false;
       }
     }
   }
   if (fullycorrelated) {
-    coutW(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName <<") all parameters are fully correlated. Not using multivariate gaussian." << std::endl;
+    coutW(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName
+                          << ") all parameters are fully correlated. Not using "
+                             "multivariate gaussian."
+                          << std::endl;
     CorrelateParameter(OldParameterNamePlusMeasurement, NewParameterName);
   }
 
   TString allOldParameterNamePlusMeasurement = OldParameterNamePlusMeasurement;
-  TObjArray* allOldParameterNamePlusMeasurementArray = allOldParameterNamePlusMeasurement.Tokenize(",");
+  TObjArray *allOldParameterNamePlusMeasurementArray =
+      allOldParameterNamePlusMeasurement.Tokenize(",");
   int numCorrPars = allOldParameterNamePlusMeasurementArray->GetEntries();
 
   // match parameters to dimension of covariance matrix
   if (numCorrPars != cov.GetNcols()) {
-    coutF(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName <<") " << numCorrPars << " specified but covariance matrix has " << cov.GetNcols() << " dimensions" << std::endl;
+    coutF(InputArguments) << "CorrelationScheme::CorrelateParameter(" << fName
+                          << ") " << numCorrPars
+                          << " specified but covariance matrix has "
+                          << cov.GetNcols() << " dimensions" << std::endl;
     exit(-1);
   }
 
@@ -326,11 +416,20 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParamete
   std::vector<TString> AllNewParameters;
 
   for (int itrPars = 0; itrPars < numCorrPars; ++itrPars) {
-    TString thisOldParameterNamePlusMeasurement = ((TObjString*)allOldParameterNamePlusMeasurementArray->At(itrPars))->GetString();
-    TObjArray* thisOldParameterNamePlusMeasurementArray = thisOldParameterNamePlusMeasurement.Tokenize("::");
-    TString thisMeasurement = ((TObjString*)thisOldParameterNamePlusMeasurementArray->At(0))->GetString();
-    TString thisOldParameter = ((TObjString*)thisOldParameterNamePlusMeasurementArray->At(1))->GetString();
-    TString thisNewParamter = (std::string(NewParameterName)+"_"+std::string(thisMeasurement)).c_str();
+    TString thisOldParameterNamePlusMeasurement =
+        ((TObjString *)allOldParameterNamePlusMeasurementArray->At(itrPars))
+            ->GetString();
+    TObjArray *thisOldParameterNamePlusMeasurementArray =
+        thisOldParameterNamePlusMeasurement.Tokenize("::");
+    TString thisMeasurement =
+        ((TObjString *)thisOldParameterNamePlusMeasurementArray->At(0))
+            ->GetString();
+    TString thisOldParameter =
+        ((TObjString *)thisOldParameterNamePlusMeasurementArray->At(1))
+            ->GetString();
+    TString thisNewParamter =
+        (std::string(NewParameterName) + "_" + std::string(thisMeasurement))
+            .c_str();
 
     AllMeasurements.push_back(thisMeasurement);
     AllOldParameters.push_back(thisOldParameter);
@@ -341,7 +440,8 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParamete
   }
 
   for (unsigned int itrPars = 0; itrPars < AllOldParameters.size(); ++itrPars) {
-    RenameParameter(AllMeasurements[itrPars], AllOldParameters[itrPars], AllNewParameters[itrPars]);
+    RenameParameter(AllMeasurements[itrPars], AllOldParameters[itrPars],
+                    AllNewParameters[itrPars]);
     IntroduceCorrelation(AllMeasurements[itrPars], AllNewParameters, cov);
   }
 
@@ -350,9 +450,11 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter( const char* OldParamete
 }
 
 // ____________________________________________________________________________|__________
-// Interface for specifying a parameter that should be renamed and correlated partially to others
-void RooFitUtils::CorrelationScheme::IntroduceCorrelation( const char* MeasurementName, std::vector<TString> NewParameterNames, TMatrixDSym cov )
-{
+// Interface for specifying a parameter that should be renamed and correlated
+// partially to others
+void RooFitUtils::CorrelationScheme::IntroduceCorrelation(
+    const char *MeasurementName, std::vector<TString> NewParameterNames,
+    TMatrixDSym cov) {
   unsigned int nDim = NewParameterNames.size();
 
   // get common new parameter name
@@ -364,35 +466,42 @@ void RooFitUtils::CorrelationScheme::IntroduceCorrelation( const char* Measureme
       break;
     }
   }
-  thisCommonName.Remove(thisCommonName.Sizeof()-1-thisMeasurementName.Sizeof());
+  thisCommonName.Remove(thisCommonName.Sizeof() - 1 -
+                        thisMeasurementName.Sizeof());
 
   // build list of observables and means
   TString thisMean;
   TString thisObs;
-  for (unsigned int i = 0; i < nDim-1; ++i) {
+  for (unsigned int i = 0; i < nDim - 1; ++i) {
     thisObs += NewParameterNames[i] + "[0.0,-5.0,5.0],";
     thisMean += "nom_" + NewParameterNames[i] + "[0.0],";
   }
-  thisObs += NewParameterNames[nDim-1] + "[0.0,-5.0,5.0]";
-  thisMean += "nom_" + NewParameterNames[nDim-1] + "[0.0]";
+  thisObs += NewParameterNames[nDim - 1] + "[0.0,-5.0,5.0]";
+  thisMean += "nom_" + NewParameterNames[nDim - 1] + "[0.0]";
 
   // Give a name to the correlation matrix and add it to the map with the pdf
   TString thisCorrName = thisCommonName + "_corr";
-  TString OutputParameterName = TString::Format("MultiVarGaussian::%sCorr({%s},{%s},%s)", thisCommonName.Data(), thisObs.Data(), thisMean.Data(), thisCorrName.Data() ).Data();
+  TString OutputParameterName =
+      TString::Format("MultiVarGaussian::%sCorr({%s},{%s},%s)",
+                      thisCommonName.Data(), thisObs.Data(), thisMean.Data(),
+                      thisCorrName.Data())
+          .Data();
 
-  fCorrelationFactors[MeasurementName][thisCommonName.Data()].second.ResizeTo(cov);
-  fCorrelationFactors[MeasurementName][thisCommonName.Data()].first = OutputParameterName;
+  fCorrelationFactors[MeasurementName][thisCommonName.Data()].second.ResizeTo(
+      cov);
+  fCorrelationFactors[MeasurementName][thisCommonName.Data()].first =
+      OutputParameterName;
   fCorrelationFactors[MeasurementName][thisCommonName.Data()].second = cov;
 }
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::Print()
-{
+void RooFitUtils::CorrelationScheme::Print() {
   // Print the correlation scheme as table
   std::set<std::string> allMeasurements;
   typedef std::map<std::string, RenamingMap>::iterator it_type;
-  for (it_type corrItr = fCorrelationMap.begin(); corrItr != fCorrelationMap.end(); ++corrItr) {
+  for (it_type corrItr = fCorrelationMap.begin();
+       corrItr != fCorrelationMap.end(); ++corrItr) {
     allMeasurements.insert(corrItr->first);
   }
   Print(allMeasurements);
@@ -400,25 +509,29 @@ void RooFitUtils::CorrelationScheme::Print()
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::Print( std::set<std::string> thisMeasurements )
-{
+void RooFitUtils::CorrelationScheme::Print(
+    std::set<std::string> thisMeasurements) {
   // Print the correlation scheme as table for given numbers of measurements
-  coutI(ObjectHandling) << "CorrelationScheme::Print(" << fName << ") printing correlations scheme" << std::endl;
+  coutI(ObjectHandling) << "CorrelationScheme::Print(" << fName
+                        << ") printing correlations scheme" << std::endl;
 
   int nrMeasurements = thisMeasurements.size();
   if (nrMeasurements == 0) {
-    coutW(ObjectHandling) << "CorrelationScheme::Print(" << fName << ") no measurement added to correlation map" << std::endl;
+    coutW(ObjectHandling) << "CorrelationScheme::Print(" << fName
+                          << ") no measurement added to correlation map"
+                          << std::endl;
     return;
   }
 
-  std::map<std::string, std::vector<std::string> > correlationMap;
-  std::string* header = new std::string[nrMeasurements];
+  std::map<std::string, std::vector<std::string>> correlationMap;
+  std::string *header = new std::string[nrMeasurements];
 
   typedef std::map<std::string, RenamingMap>::iterator it_type1;
   typedef std::map<std::string, std::string>::iterator it_type2;
   int iMeas = 0;
 
-  for (it_type1 corrItr = fCorrelationMap.begin(); corrItr != fCorrelationMap.end(); ++corrItr) {
+  for (it_type1 corrItr = fCorrelationMap.begin();
+       corrItr != fCorrelationMap.end(); ++corrItr) {
     if (thisMeasurements.find(corrItr->first) == thisMeasurements.end()) {
       continue;
     }
@@ -426,17 +539,19 @@ void RooFitUtils::CorrelationScheme::Print( std::set<std::string> thisMeasuremen
     header[iMeas] = corrItr->first;
     iMeas++;
     RenamingMap thisRenamingMap = corrItr->second;
-    std::map< std::string, std::string > thisRenamingMapMap = thisRenamingMap.GetRenamingMap();
-    for (it_type2 parItr = thisRenamingMapMap.begin(); parItr != thisRenamingMapMap.end(); ++parItr) {
+    std::map<std::string, std::string> thisRenamingMapMap =
+        thisRenamingMap.GetRenamingMap();
+    for (it_type2 parItr = thisRenamingMapMap.begin();
+         parItr != thisRenamingMapMap.end(); ++parItr) {
       std::string thisNewObservableName = parItr->second;
       correlationMap[thisNewObservableName].push_back(corrItr->first);
     }
   }
 
   int nrNuis = correlationMap.size();
-  std::string* firstCol = new std::string[nrNuis+1];
+  std::string *firstCol = new std::string[nrNuis + 1];
   firstCol[0] = "Parameter";
-  std::string** matrix = new std::string*[nrNuis];
+  std::string **matrix = new std::string *[nrNuis];
   for (int in = 0; in < nrNuis; in++) {
     matrix[in] = new std::string[nrMeasurements];
     for (int i = 0; i < nrMeasurements; i++) {
@@ -444,30 +559,37 @@ void RooFitUtils::CorrelationScheme::Print( std::set<std::string> thisMeasuremen
     }
   }
 
-  typedef std::map<std::string, std::vector<std::string> >::iterator it_type3;
+  typedef std::map<std::string, std::vector<std::string>>::iterator it_type3;
   int irow = 1;
-  for (it_type3 iterator = correlationMap.begin(); iterator != correlationMap.end(); ++iterator) {
+  for (it_type3 iterator = correlationMap.begin();
+       iterator != correlationMap.end(); ++iterator) {
     firstCol[irow] = iterator->first;
     int icol = 0;
-    for (it_type1 corrItr = fCorrelationMap.begin(); corrItr != fCorrelationMap.end(); ++corrItr) {
+    for (it_type1 corrItr = fCorrelationMap.begin();
+         corrItr != fCorrelationMap.end(); ++corrItr) {
       if (thisMeasurements.find(corrItr->first) == thisMeasurements.end()) {
         continue;
       }
 
-      if (std::find(iterator->second.begin(), iterator->second.end(), corrItr->first) != iterator->second.end()) {
-        matrix[irow-1][icol] = "x";
+      if (std::find(iterator->second.begin(), iterator->second.end(),
+                    corrItr->first) != iterator->second.end()) {
+        matrix[irow - 1][icol] = "x";
       }
       icol++;
     }
     irow++;
   }
 
-  coutI(ObjectHandling) << "CorrelationScheme::Print(" << fName << ") the following correlation scheme is used" << std::endl;
+  coutI(ObjectHandling) << "CorrelationScheme::Print(" << fName
+                        << ") the following correlation scheme is used"
+                        << std::endl;
 
   std::cout << "\\begin{tabular}{l";
-  for (int i = 0; i < nrMeasurements; i++) std::cout << "|c";
+  for (int i = 0; i < nrMeasurements; i++)
+    std::cout << "|c";
   std::cout << "}\n";
-  RooFitUtils::PrintTable(firstCol, matrix, NULL, header, nrNuis, nrMeasurements, 0, std::cout);
+  RooFitUtils::PrintTable(firstCol, matrix, NULL, header, nrNuis,
+                          nrMeasurements, 0, std::cout);
   std::cout << "\\end{tabular}\n";
 
   delete[] header;
