@@ -41,7 +41,7 @@ if(NOT WITHOUT_ASG)
     ${RooFitUtilsHeaders} ${RooFitUtilsSources} ${RooFitUtilsLibCintDict}
     PUBLIC_HEADERS RooFitUtils
     PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS} 
-    LINK_LIBRARIES QFrameworkLib
+    LINK_LIBRARIES RooFitUtilsLib
     PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES} xml2
     )
 ELSE()
