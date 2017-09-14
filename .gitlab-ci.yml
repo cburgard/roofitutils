@@ -28,4 +28,4 @@ cmake_compile:
     - CMakeLists.txt
 
   script:
-    - cd .. && asetup 2.6.2,AnalysisBase,here && mkdir build && cd build && cmake ../RooFitUtils && make
+    - cd .. && asetup 2.6.2,AnalysisBase,here && mkdir build && cd build && cmake .. && make
