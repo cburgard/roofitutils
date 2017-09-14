@@ -3,7 +3,7 @@
 #include "TFile.h"
 #include "TMath.h"
 #include "TMatrixDSymEigen.h"
-
+#include <math.h>
 // unfortunately, this is needed
 #define private public
 #define protected public
@@ -559,7 +559,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
     const double nllval = fNll->getVal();
 
-    if ((isnan(nllval) || isinf(nllval) || (status != 0 && status != 1)) &&
+    if ((std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)) &&
         strategy < 2 && retry > 0) {
       coutW(ObjectHandling)
           << "ExtendedMinimizer::robustMinimize(" << fName
@@ -649,7 +649,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
                           << std::endl;
     TMatrixDSym origG = fMinimizer->lastMinuitFit()->covarianceMatrix();
     TMatrixDSym G = origG.Invert(&determ);
-    if (determ == 0 || isnan(determ)) {
+    if (determ == 0 || std::isnan(determ)) {
       coutE(ObjectHandling)
           << "ExtendedMinimizer::minimize(" << fName
           << "): covariance matrix is singular! " << std::endl;
