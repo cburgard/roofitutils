@@ -1,8 +1,3 @@
-// Author      : Stefan Gadatsch
-// Email       : stefan.gadatsch@cern.ch
-// Date        : 2016-03-17
-// Description : Common helper functions
-
 #include <chrono>
 #include <iomanip>
 

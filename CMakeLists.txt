@@ -12,7 +12,7 @@ IF(NOT WITHOUT_ASG)
   atlas_subdir( RooFitUtils )
 ENDIF()
 
-find_package( ROOT COMPONENTS Core MathCore Gpad Graf Matrix HistPainter HistFactory RooFitCore RooStats )
+find_package( ROOT COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats )
 
 # set some variables for easier handling
 set(RooFitUtilsLinkDef ${PROJECT_SOURCE_DIR}/Root/LinkDef.h)
