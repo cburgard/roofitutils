@@ -1,22 +1,9 @@
-variables:
-  # example base path for an Experiment environment
-  ATLAS_LOCAL_ROOT_BASE: /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase
-  PYTHON: /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/x86_64/python/2.7.4-x86_64-slc6-gcc48/sw/lcg/external/Python/2.7.4/x86_64-slc6-gcc48-opt/bin/python 
-
-before_script:
-  - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
-
 image: atlas/analysisbase:21.2.3
 
 stages:
   - build
 
-
 cmake_compile:
-  tags:
-    # Make your job be executed in a shared runner that has CVMFS mounted
-    - cvmfs
-
   stage: build
 
   artifacts:
@@ -24,8 +11,10 @@ cmake_compile:
     untracked: true
     paths:
     - build
-    - .asetup.save
-    - CMakeLists.txt
 
   script:
-    - cd .. && asetup 2.6.2,AnalysisBase,here && mkdir build && cd build && cmake .. && make
+    - source /home/atlas/release_setup.sh
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make

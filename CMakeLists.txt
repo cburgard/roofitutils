@@ -4,10 +4,27 @@
 cmake_minimum_required(VERSION 2.8)
 project( RooFitUtils )
 
-set(HAS_RooFitUtils 1 PARENT_SCOPE)
-set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
+IF(${HAS_PARENT})
+  set(HAS_RooFitUtils 1 PARENT_SCOPE)
+  set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
+ENDIF()
 
-IF(NOT WITHOUT_ASG)
+find_package( AnalysisBase ) 
+
+IF(${AnalysisBase_FOUND})
+  # Set up the usage of CTest: 
+  atlas_ctest_setup() # Set up the project: 
+  atlas_project( RooFitUtils 1.0.0 
+    USE AnalysisBase ${AnalysisBase_VERSION} ) 
+
+  # Generate an environment setup script: 
+  lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
+  install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh    DESTINATION . ) 
+
+  # Set up the usage of CPack: 
+  set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
+  atlas_cpack_setup()
+
   # register this as a package to ASG
   atlas_subdir( RooFitUtils )
 ENDIF()
@@ -30,7 +47,7 @@ else()
     )
 endif()
 
-if(NOT WITHOUT_ASG)
+if(${AnalysisBase_FOUND})
   # this section reflects the standard ASG way of configuring CMake
   # it is executed when compiling within an ASG environment
   find_package( GTest )
