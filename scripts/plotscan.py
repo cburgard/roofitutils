@@ -51,7 +51,7 @@ def collectscan(paths):
     for path in paths:
         with open(path,'r') as infile:
             lines = [ line for line in infile ]
-            for line in lines[1:]:
+            for line in lines[3:]:
                 vals = line.split()
                 scan[float(vals[0])] = float(vals[1])
     return scan
