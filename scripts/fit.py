@@ -30,6 +30,15 @@ def printtime(seconds):
     h = "{0:d}h".format(int(seconds/3600))
     return h+" "+m+":"+s
 
+def makelist(coll):
+    itr = coll.createIterator()
+    var = itr.Next()
+    retval = []
+    while var :
+        retval.append(var)
+        var = itr.Next()
+    return retval
+
 def union(listoflists):
     s = set()
     for l in listoflists:
@@ -49,7 +58,7 @@ def main(args):
     rootcore()
 
     # setup verbosity
-    ROOT.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
+    ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
     if args.loglevel == "DEBUG":
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(1)
     else:
@@ -73,9 +82,13 @@ def main(args):
     mc = model.GetModelConfig()
     pdf = model.GetPdf()
     data = model.GetData()
+    allparams = ROOT.RooArgSet()
     nuis = model.GetNuisanceParameters()
+    allparams.add(nuis)
     globs = model.GetGlobalObservables()
+    allparams.add(globs)
     pois = model.GetParametersOfInterest()
+    allparams.add(pois)
     obs = model.GetObservables()
 
     if args.fixAllNP:          model.fixNuisanceParameters()
@@ -87,25 +100,28 @@ def main(args):
 
     # Collect POIs
     poiset = ROOT.RooArgSet()
-    poilist =  []
-    for poi in args.pois:
+    if args.pois:
+        poinames = args.pois
+    else:
+        poinames = [ p.GetName() for p in makelist(pois) ]
+    for poi in poinames:
         p = model.configureParameter(poi)
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.removeRange()
         p.setError(0.2)
         poiset.add(p)
-        poilist.append(p)
 
     if args.makeParameterSnapshots:
         # Save the snapshots of nominal parameters
         print("Saving nominal snapshots.")
-        ws.saveSnapshot("nominalGlobs", mc.GetGlobalObservables())
-        ws.saveSnapshot("nominalNuis", mc.GetNuisanceParameters())
-        ws.saveSnapshot("nominalPois", mc.GetParametersOfInterest())
+        ws.saveSnapshot("nominalGlobs", globs)
+        ws.saveSnapshot("nominalNuis", nuis)
+        ws.saveSnapshot("nominalPois", pois)
+        ws.saveSnapshot("nominalAll", allparams)
 
     argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), ROOT.RooFit.Strategy(args.defaultStrategy), 
-                ROOT.ExtendedMinimizer.Eps(args.eps), ROOT.RooFit.Constrain(nuis), ROOT.RooFit.GlobalObservables(globs),
+                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), ROOT.RooFit.Constrain(nuis), ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), ROOT.RooFit.Offset(args.offsetting), ROOT.RooFit.Optimize(args.constOpt),
                 ROOT.RooFit.Precision(args.precision)]
     arglist = ROOT.RooLinkedList()
@@ -124,13 +140,20 @@ def main(args):
         print("Fitting time: " + printtime(end-start))
         minNll = minimizer.GetMinNll()
         print("NLL after minimisation: "+str(minNll))
+
+        if args.makeParameterSnapshots:
+            # Save the snapshots of nominal parameters
+            print("Saving minimum snapshots.")
+            ws.saveSnapshot("minimumGlobs", globs)
+            ws.saveSnapshot("minimumNuis", nuis)
+            ws.saveSnapshot("minimumPois", pois)
+            ws.saveSnapshot("minimumAll", allparams)
     else:
         print("no fit requested")
 
     parnames = None
     coords = None
     if args.scan:
-        print(args.scan)
         parname = args.scan[0]
         parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
         parnames = vec([parname],"string")
@@ -152,8 +175,10 @@ def main(args):
     if result:
         if args.outFileName:
             with open(args.outFileName,'w') as out:
-                if result.min.nll:
-                    out.write("Minimization: minNll = {0:g}\n".format(result.min.nll))
+                if args.fit and result.min.nll:
+                    out.write("Minimization: minNll = ")
+                    out.write(str(result.min.nll))
+                    out.write("\n")
                     for p in result.parameters:
                         out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
                 for scan in result.scans:
@@ -166,6 +191,12 @@ def main(args):
     else:
         print("received invalid result")
 
+    if args.outWsName:
+        outfile = ROOT.TFile.Open(args.outWsName,"RECREATE")
+        outfile.Add(ws)
+        outfile.Write()
+        outfile.Close()
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -176,7 +207,7 @@ if __name__ == "__main__":
     parser.add_argument( "--scan"          , nargs=4,      dest="scan"                       , help="POI range to scan the Nll.", metavar=("POI","n","min","max"), default=None)
     parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None)
     parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" )
-    parser.add_argument( "--makeSnapshots" , type=bool,    dest="makeParameterSnapshots"     , help="Make parameter snapshots.", default=True )
+    parser.add_argument( "--make-snapshots", action="store_true",    dest="makeParameterSnapshots"     , help="Make parameter snapshots." )
     parser.add_argument('--fit',                           dest='fit', action='store_true'   , help="Actually run the fit.", default=True )
     parser.add_argument('--no-fit',                        dest='fit', action='store_false'  , help="Do not run the fit.", default=True )
     parser.add_argument('--findSigma',                     dest='findSigma', action='store_true' , help="Search for crossings to identify the 1-sigma-band.", default=True )
@@ -187,6 +218,7 @@ if __name__ == "__main__":
     parser.add_argument( "--profile"       , type=str,     dest="profile"                    , help="Parameters to profile.", nargs="+", metavar="NP", default=[] )
     parser.add_argument( "--fix"           , type=str,     dest="fixParameters"              , help="Parameters to fix.", nargs="+", metavar="NP", default=[])
     parser.add_argument( "--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combined" )
+    parser.add_argument( "--write-workspace", type=str,    dest="outWsName"                  , help="Filename of the output workspace." , default=None )
     parser.add_argument( "--modelconfig"   , type=str,     dest="modelConfigName"            , help="MC to load.", default="ModelConfig" )
     parser.add_argument( "--data"          , type=str,     dest="dataName"                   , help="Data to use.", default="combData" )
     parser.add_argument( "--minimizerType" , type=str,     dest="minimizerType"              , help="Minimizer type.", default="Minuit2" )
