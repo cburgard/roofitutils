@@ -1,0 +1,20 @@
+image: atlas/analysisbase:21.2.3
+
+stages:
+  - build
+
+cmake_compile:
+  stage: build
+
+  artifacts:
+    expire_in: 1d
+    untracked: true
+    paths:
+    - build
+
+  script:
+    - source /home/atlas/release_setup.sh
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
