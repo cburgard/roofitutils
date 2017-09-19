@@ -153,142 +153,140 @@ double RooFitUtils::ExtendedMinimizer::GetMinNll() {
 
 namespace {
 
-// ____________________________________________________________________________|__________
-
-RooLinkedList *makeList(const RooCmdArg &arg1 = RooCmdArg::none(),
-                        const RooCmdArg &arg2 = RooCmdArg::none(),
-                        const RooCmdArg &arg3 = RooCmdArg::none(),
-                        const RooCmdArg &arg4 = RooCmdArg::none(),
-                        const RooCmdArg &arg5 = RooCmdArg::none(),
-                        const RooCmdArg &arg6 = RooCmdArg::none(),
-                        const RooCmdArg &arg7 = RooCmdArg::none(),
-                        const RooCmdArg &arg8 = RooCmdArg::none(),
-                        const RooCmdArg &arg9 = RooCmdArg::none(),
-                        const RooCmdArg &arg10 = RooCmdArg::none(),
-                        const RooCmdArg &arg11 = RooCmdArg::none(),
-                        const RooCmdArg &arg12 = RooCmdArg::none(),
-                        const RooCmdArg &arg13 = RooCmdArg::none(),
-                        const RooCmdArg &arg14 = RooCmdArg::none(),
-                        const RooCmdArg &arg15 = RooCmdArg::none(),
-                        const RooCmdArg &arg16 = RooCmdArg::none(),
-                        const RooCmdArg &arg17 = RooCmdArg::none(),
-                        const RooCmdArg &arg18 = RooCmdArg::none(),
-                        const RooCmdArg &arg19 = RooCmdArg::none(),
-                        const RooCmdArg &arg20 = RooCmdArg::none()) {
-  // helper function
-  RooLinkedList *l = new RooLinkedList();
-  l->SetName("CmdList");
-  l->Add(arg1.Clone());
-  l->Add(arg2.Clone());
-  l->Add(arg3.Clone());
-  l->Add(arg4.Clone());
-  l->Add(arg5.Clone());
-  l->Add(arg6.Clone());
-  l->Add(arg7.Clone());
-  l->Add(arg8.Clone());
-  l->Add(arg9.Clone());
-  l->Add(arg10.Clone());
-  l->Add(arg11.Clone());
-  l->Add(arg12.Clone());
-  l->Add(arg13.Clone());
-  l->Add(arg14.Clone());
-  l->Add(arg15.Clone());
-  l->Add(arg16.Clone());
-  l->Add(arg17.Clone());
-  l->Add(arg18.Clone());
-  l->Add(arg19.Clone());
-  l->Add(arg20.Clone());
-  return l;
-}
-
-inline const double *getAry(const std::vector<double> &numbers) {
-  return &numbers[0];
-}
-
-inline void
-addAllPoints(std::vector<std::vector<double>> &points,
-             const std::vector<std::string> &parnames,
-             const std::map<const std::string, std::vector<double>> &params,
-             std::vector<double> &currentvals, size_t idx) {
-  if (idx < parnames.size()) {
-    for (auto val : params.at(parnames[idx])) {
-      currentvals[idx] = val;
-      addAllPoints(points, parnames, params, currentvals, idx + 1);
-    }
-  } else {
-    points.push_back(currentvals);
+  RooLinkedList *makeList(const RooCmdArg &arg1 = RooCmdArg::none(),
+			  const RooCmdArg &arg2 = RooCmdArg::none(),
+			  const RooCmdArg &arg3 = RooCmdArg::none(),
+			  const RooCmdArg &arg4 = RooCmdArg::none(),
+			  const RooCmdArg &arg5 = RooCmdArg::none(),
+			  const RooCmdArg &arg6 = RooCmdArg::none(),
+			  const RooCmdArg &arg7 = RooCmdArg::none(),
+			  const RooCmdArg &arg8 = RooCmdArg::none(),
+			  const RooCmdArg &arg9 = RooCmdArg::none(),
+			  const RooCmdArg &arg10 = RooCmdArg::none(),
+			  const RooCmdArg &arg11 = RooCmdArg::none(),
+			  const RooCmdArg &arg12 = RooCmdArg::none(),
+			  const RooCmdArg &arg13 = RooCmdArg::none(),
+			  const RooCmdArg &arg14 = RooCmdArg::none(),
+			  const RooCmdArg &arg15 = RooCmdArg::none(),
+			  const RooCmdArg &arg16 = RooCmdArg::none(),
+			  const RooCmdArg &arg17 = RooCmdArg::none(),
+			  const RooCmdArg &arg18 = RooCmdArg::none(),
+			  const RooCmdArg &arg19 = RooCmdArg::none(),
+			  const RooCmdArg &arg20 = RooCmdArg::none()) {
+    // helper function
+    RooLinkedList *l = new RooLinkedList();
+    l->SetName("CmdList");
+    l->Add(arg1.Clone());
+    l->Add(arg2.Clone());
+    l->Add(arg3.Clone());
+    l->Add(arg4.Clone());
+    l->Add(arg5.Clone());
+    l->Add(arg6.Clone());
+    l->Add(arg7.Clone());
+    l->Add(arg8.Clone());
+    l->Add(arg9.Clone());
+    l->Add(arg10.Clone());
+    l->Add(arg11.Clone());
+    l->Add(arg12.Clone());
+    l->Add(arg13.Clone());
+    l->Add(arg14.Clone());
+    l->Add(arg15.Clone());
+    l->Add(arg16.Clone());
+    l->Add(arg17.Clone());
+    l->Add(arg18.Clone());
+    l->Add(arg19.Clone());
+    l->Add(arg20.Clone());
+    return l;
   }
-}
 
-inline int addAllArgs(const RooLinkedList &orig, RooLinkedList &target) {
-  int n = 0;
-  RooLinkedListIter it = orig.iterator();
-  while (true) {
-    TObject *obj = it.Next();
-    if (!obj)
-      break;
-    RooCmdArg *v = dynamic_cast<RooCmdArg *>(obj);
-    if (!v)
-      break;
-    if (v != &RooCmdArg::none()) {
-      target.Add(v);
-      n++;
+  inline const double *getAry(const std::vector<double> &numbers) {
+    return &numbers[0];
+  }
+
+  inline void
+  addAllPoints(std::vector<std::vector<double>> &points,
+	       const std::vector<std::string> &parnames,
+	       const std::map<const std::string, std::vector<double>> &params,
+	       std::vector<double> &currentvals, size_t idx) {
+    if (idx < parnames.size()) {
+      for (auto val : params.at(parnames[idx])) {
+	currentvals[idx] = val;
+	addAllPoints(points, parnames, params, currentvals, idx + 1);
+      }
+    } else {
+      points.push_back(currentvals);
     }
   }
-  return n;
-}
 
-void inverseFilterCmdList(RooLinkedList &cmdInList, const char *cmdNameList) {
-  RooLinkedList filterList;
-  if (!cmdNameList) {
+  inline int addAllArgs(const RooLinkedList &orig, RooLinkedList &target) {
+    int n = 0;
+    RooLinkedListIter it = orig.iterator();
+    while (true) {
+      TObject *obj = it.Next();
+      if (!obj)
+	break;
+      RooCmdArg *v = dynamic_cast<RooCmdArg *>(obj);
+      if (!v)
+	break;
+      if (v != &RooCmdArg::none()) {
+	target.Add(v);
+	n++;
+      }
+    }
+    return n;
+  }
+  
+  void inverseFilterCmdList(RooLinkedList &cmdInList, const char *cmdNameList) {
+    RooLinkedList filterList;
+    if (!cmdNameList) {
+      cmdInList.Clear();
+      return;
+    }
+
+    // Copy command list for parsing
+    char buf[1024];
+    strlcpy(buf, cmdNameList, 1024);
+
+    char *name = strtok(buf, ",");
+    while (name) {
+      TObject *cmd = cmdInList.FindObject(name);
+      if (cmd) {
+	filterList.Add(cmd);
+      }
+      name = strtok(0, ",");
+    }
     cmdInList.Clear();
-    return;
+    addAllArgs(filterList, cmdInList);
   }
 
-  // Copy command list for parsing
-  char buf[1024];
-  strlcpy(buf, cmdNameList, 1024);
-
-  char *name = strtok(buf, ",");
-  while (name) {
-    TObject *cmd = cmdInList.FindObject(name);
-    if (cmd) {
-      filterList.Add(cmd);
-    }
-    name = strtok(0, ",");
-  }
-  cmdInList.Clear();
-  addAllArgs(filterList, cmdInList);
-}
-
-void setVals(const RooAbsCollection &vars, const RooAbsCollection *snap,
-             bool setConstant = false) {
-  if (!snap)
-    return;
-  RooAbsArg *obj;
-  RooFIter itr(vars.fwdIterator());
-  while ((obj = itr.next())) {
-    RooRealVar *v = dynamic_cast<RooRealVar *>(obj);
-    if (!v)
-      continue;
-    RooAbsReal *sv = dynamic_cast<RooAbsReal *>(snap->find(v->GetName()));
-    if (!sv)
-      continue;
-    v->setVal(sv->getVal());
-    if (setConstant) {
-      v->setConstant(true);
+  void setVals(const RooAbsCollection &vars, const RooAbsCollection *snap,
+	       bool setConstant = false) {
+    if (!snap)
+      return;
+    RooAbsArg *obj;
+    RooFIter itr(vars.fwdIterator());
+    while ((obj = itr.next())) {
+      RooRealVar *v = dynamic_cast<RooRealVar *>(obj);
+      if (!v)
+	continue;
+      RooAbsReal *sv = dynamic_cast<RooAbsReal *>(snap->find(v->GetName()));
+      if (!sv)
+	continue;
+      v->setVal(sv->getVal());
+      if (setConstant) {
+	v->setConstant(true);
+      }
     }
   }
-}
 
-Double_t useLimits(const RooRealVar *par, Double_t val) {
-  if (val < par->getMin()) {
-    return par->getMin();
-  } else if (val > par->getMax()) {
-    return par->getMax();
+  Double_t useLimits(const RooRealVar *par, Double_t val) {
+    if (val < par->getMin()) {
+      return par->getMin();
+    } else if (val > par->getMax()) {
+      return par->getMax();
+    }
+    return val;
   }
-  return val;
-}
 }
 
 // ____________________________________________________________________________|__________
@@ -300,7 +298,9 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
                                                   const RooLinkedList &argList)
     : ExtendedMinimizer(minimizerName, pdf, data, workspace) {
   // Constructor
-  parseConfig(argList);
+  
+  parseNllConfig(argList);
+  parseFitConfig(argList);
 }
 
 // ____________________________________________________________________________|__________
@@ -309,29 +309,23 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
                                                   RooAbsPdf *pdf,
                                                   RooAbsData *data,
                                                   RooWorkspace *workspace)
-    : // Constructor
-      TNamed(minimizerName, minimizerName),
+    : TNamed(minimizerName, minimizerName),
       fWorkspace(workspace), fPdf(pdf), fData(data),
-
       fOffset(0), fOptConst(2), fVerbose(0), fSave(0), fTimer(1),
       fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinos(0), fScan(0),
       fNumee(5), fDoEEWall(1), fRetry(0), fEigen(0), fReuseMinimizer(0),
       fReuseNLL(0), fEps(1.0), fNsigma(1), // 1sigma 1dof
       fPrecision(0.005),
-
       fMinimizerType("Minuit2"), fMinimizerAlgo("Migrad") {
   // Constructor
-  fMinosSet = NULL;
-  fCondSet = NULL;
-  fScanSet = NULL;
+
+  fNllCmdList.SetName("NllCmdList");
+  fFitCmdList.SetName("FitCmdList");
 
   ROOT::Math::MinimizerOptions::SetDefaultMinimizer(fMinimizerType.c_str(),
                                                     fMinimizerAlgo.c_str());
   ROOT::Math::MinimizerOptions::SetDefaultStrategy(fDefaultStrategy);
   ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(fPrintLevel);
-
-  fNllCmdList.SetName("NllCmdList");
-  fFitCmdList.SetName("FitCmdList");
 
   coutP(InputArguments) << "ExtendedMinimizer::ExtendedMinimizer(" << fName
                         << ") created" << std::endl;
@@ -433,18 +427,29 @@ void RooFitUtils::ExtendedMinimizer::setup() {
 // ____________________________________________________________________________|__________
 
 template <class A>
-int RooFitUtils::ExtendedMinimizer::parseConfig(const A &cmdList) {
-  // parse the configuration
-  RooCmdConfig pc(Form("ExtendedMinimizer::parseConfig(%s)", GetName()));
-  pc.allowUndefined();
+int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
+  if(!this->fNll){
+    fNllCmdList.Clear();
+    addAllArgs(cmdList, fNllCmdList);
+    inverseFilterCmdList(fNllCmdList, 
+			 "NumCPU,Constrained,Constrain,CloneData,"
+			 "GlobalObservables,GlobalObservablesTag,"
+			 "OffsetLikelihood");
+  } else {
+    coutE(ObjectHandling) << "cannot change Nll config with preexisting Nll!" << std::endl;
+  }
+  return fNllCmdList.GetSize();
+}
 
-  fFitCmdList.Clear();
+// ____________________________________________________________________________|__________
+
+template <class A>
+int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
+  // parse the configuration
+  RooCmdConfig pc(Form("ExtendedMinimizer::parseFitConfig(%s)", GetName()));
+  pc.allowUndefined();
+ 
   addAllArgs(cmdList, fFitCmdList);
-  fNllCmdList.Clear();
-  addAllArgs(cmdList, fNllCmdList);
-  inverseFilterCmdList(fNllCmdList, "NumCPU,Constrained,Constrain,CloneData,"
-                                    "GlobalObservables,GlobalObservablesTag,"
-                                    "OffsetLikelihood");
 
   pc.defineInt("optConst", "Optimize", 0, fOptConst);
   pc.defineInt("doOffset", "OffsetLikelihood", 0, fOffset);
@@ -503,7 +508,7 @@ int RooFitUtils::ExtendedMinimizer::parseConfig(const A &cmdList) {
   fMinimizerType = std::string(pc.getString("mintype", "Minuit2"));
   fMinimizerAlgo = std::string(pc.getString("minalg", "Migrad"));
 
-  return 1;
+  return fFitCmdList.GetSize();
 }
 
 // ____________________________________________________________________________|__________
@@ -604,7 +609,7 @@ void RooFitUtils::ExtendedMinimizer::initialize() {
 
 int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
   // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-  parseConfig(cmdList);
+  parseFitConfig(cmdList);
 
   return minimize();
 }

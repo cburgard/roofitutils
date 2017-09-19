@@ -149,12 +149,14 @@ public:
     return RooCmdArg("ReuseNLL", flag, 0, 0, 0, 0, 0, 0, 0);
   }
 
+  template <class A> int parseFitConfig(const A &cmdList);
+  template <class A> int parseNllConfig(const A &cmdList);
+
   // ____________________________________________________________________________|__________
 protected:
   void initialize();
   Result *run();
   void setup();
-  template <class A> int parseConfig(const A &cmdList);
   Result::Eigen *eigenAnalysis(const TMatrixDSym &hesse);
   void findSigma(Result *result, const RooAbsCollection &pois);
   virtual double findSigma(Result *result, const double guessval,
@@ -176,8 +178,8 @@ protected:
   RooAbsReal *fNll = NULL;
   RooMinimizer *fMinimizer = NULL;
 
-  RooLinkedList fFitCmdList;
   RooLinkedList fNllCmdList;
+  RooLinkedList fFitCmdList;
 
   Int_t fOffset;
   Int_t fOptConst;
@@ -198,9 +200,9 @@ protected:
   Double_t fEps;
   Double_t fNsigma;
   Double_t fPrecision;
-  const RooArgSet *fMinosSet;
-  const RooArgSet *fCondSet;
-  const RooArgSet *fScanSet;
+  const RooArgSet *fMinosSet = NULL;
+  const RooArgSet *fCondSet  = NULL;
+  const RooArgSet *fScanSet  = NULL;
   std::string fMinimizerType;
   std::string fMinimizerAlgo;
 
