@@ -18,6 +18,7 @@
 #include "RooRealVar.h"
 
 #include "RooFitUtils/Utils.h"
+#include "RooFitUtils/ExtendedModel.h"
 
 #include "RooStats/RooStatsUtils.h"
 
@@ -229,8 +230,8 @@ namespace {
       if (!v)
 	break;
       if (v != &RooCmdArg::none()) {
-	target.Add(v);
-	n++;
+				target.Add(v);
+				n++;
       }
     }
     return n;
@@ -251,7 +252,7 @@ namespace {
     while (name) {
       TObject *cmd = cmdInList.FindObject(name);
       if (cmd) {
-	filterList.Add(cmd);
+				filterList.Add(cmd);
       }
       name = strtok(0, ",");
     }
@@ -268,13 +269,13 @@ namespace {
     while ((obj = itr.next())) {
       RooRealVar *v = dynamic_cast<RooRealVar *>(obj);
       if (!v)
-	continue;
+				continue;
       RooAbsReal *sv = dynamic_cast<RooAbsReal *>(snap->find(v->GetName()));
       if (!sv)
-	continue;
+				continue;
       v->setVal(sv->getVal());
       if (setConstant) {
-	v->setConstant(true);
+				v->setConstant(true);
       }
     }
   }
@@ -288,6 +289,38 @@ namespace {
     return val;
   }
 }
+
+// ____________________________________________________________________________|__________
+
+RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, RooFitUtils::ExtendedModel* model,
+                                                  const RooLinkedList &argList)
+	: ExtendedMinimizer(minimizerName, 
+											model->GetPdf(),
+											model->GetData(),
+											model->GetWorkspace()) {
+  // Constructor
+	RooLinkedList newargList(argList);
+	fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+	newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+
+  parseNllConfig(newargList);
+  parseFitConfig(newargList);
+}
+
+// ____________________________________________________________________________|__________
+
+RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, RooFitUtils::ExtendedModel* model)
+	: ExtendedMinimizer(minimizerName,
+											model->GetPdf(), 
+											model->GetData(),
+											model->GetWorkspace()) {
+  // Constructor
+	RooLinkedList argList;
+	fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+	argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  parseNllConfig(argList);
+}
+
 
 // ____________________________________________________________________________|__________
 

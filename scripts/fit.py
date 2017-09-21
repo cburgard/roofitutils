@@ -80,8 +80,6 @@ def main(args):
 
     ws = model.GetWorkspace()
     mc = model.GetModelConfig()
-    pdf = model.GetPdf()
-    data = model.GetData()
     allparams = ROOT.RooArgSet()
     nuis = model.GetNuisanceParameters()
     allparams.add(nuis)
@@ -120,13 +118,18 @@ def main(args):
         ws.saveSnapshot("nominalPois", pois)
         ws.saveSnapshot("nominalAll", allparams)
 
-    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), ROOT.RooFit.Strategy(args.defaultStrategy), 
-                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), ROOT.RooFit.Constrain(nuis), ROOT.RooFit.GlobalObservables(globs),
-                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), ROOT.RooFit.Offset(args.offsetting), ROOT.RooFit.Optimize(args.constOpt),
+    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
+                ROOT.RooFit.Strategy(args.defaultStrategy), 
+                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
+                ROOT.RooFit.Constrain(nuis), 
+                ROOT.RooFit.GlobalObservables(globs),
+                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
+                ROOT.RooFit.Offset(args.offsetting), 
+                ROOT.RooFit.Optimize(args.constOpt),
                 ROOT.RooFit.Precision(args.precision)]
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
-    minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", pdf, data, ws,arglist)
+    minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
     
     if args.fit:
         start = time()
@@ -192,11 +195,7 @@ def main(args):
         print("received invalid result")
 
     if args.outWsName:
-        outfile = ROOT.TFile.Open(args.outWsName,"RECREATE")
-        outfile.Add(ws)
-        outfile.Write()
-        outfile.Close()
-
+        ws.writeToFile(args.outWsName)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -225,17 +224,21 @@ if __name__ == "__main__":
     parser.add_argument( "--minimizerAlgo" , type=str,     dest="minimizerAlgo"              , help="Minimizer algorithm.", default="Migrad" )
     parser.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=0 )
     parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 )
-    parser.add_argument( "--numThreads"    , type=int,     dest="numThreads"                 , help="Number of CPUs.", default=3 )
-    parser.add_argument( "--binned"        , type=bool,    dest="binnedLikelihood"           , help="Binned likelihood.", default=True )
-    parser.add_argument( "--starfix"       , type=bool,    dest="fixCache"                   , help="Fix StarMomentMorph cache.", default=True )
-    parser.add_argument( "--multifix"      , type=bool,    dest="fixMulti"                   , help="Fix MultiPdf level 2.", default=True )
+    parser.add_argument( "--numThreads"    , type=int,     dest="numThreads"                 , help="Number of CPU Threads.", default=3 )
+    parser.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True )
+    parser.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False )
+    parser.add_argument( "--starfix"       , action='store_true',    dest="fixCache"                   , help="Fix StarMomentMorph cache.", default=True )
+    parser.add_argument( "--no-starfix"    , action='store_false',   dest="fixCache"                   , help="Do not fix StarMomentMorph cache.", default=False )
+    parser.add_argument( "--multifix"      , action='store_true',    dest="fixMulti"                   , help="Fix MultiPdf level 2.", default=True )
+    parser.add_argument( "--no-multifix"   , action='store_false',   dest="fixMulti"                   , help="Do not fix MultiPdf level 2.", default=False )
     parser.add_argument( "--precision"     , type=float,   dest="precision"                  , help="Precision for scan.", default=0.001 )
     parser.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=1.0 )
-    parser.add_argument( "--eigen"         , type=bool,    dest="eigendecomposition"         , help="Eigenvalues and vectors.", default=False )
-    parser.add_argument( "--offset"        , type=bool,    dest="offsetting"                 , help="Offset likelihood.", default=True )
+    parser.add_argument( "--eigen"         , action='store_true',   dest="eigendecomposition"         , help="Eigenvalues and vectors.", default=False )
+    parser.add_argument( "--offset"        , action='store_true',   dest="offsetting"                 , help="Offset likelihood.", default=True )
+    parser.add_argument( "--no-offset"     , action='store_false',  dest="offsetting"                 , help="Do not offset likelihood.", default=False )
     parser.add_argument( "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False )
     parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2)
     parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" )
-    parser.add_argument( "--fixAllNP"      , type=bool,    dest="fixAllNP"                   , help="Fix all NP.", default=False )
+    parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False )
     args = parser.parse_args()
     main(args)

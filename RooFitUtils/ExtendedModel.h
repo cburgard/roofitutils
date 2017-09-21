@@ -40,6 +40,7 @@ public:
   RooArgSet *GetNuisanceParameters() { return fNuis; }
   RooArgSet *GetGlobalObservables() { return fGlobs; }
   RooArgSet *GetParametersOfInterest() { return fPOIs; }
+  RooArgSet *GetParameterSet() { return &fAllParams; }
   RooArgSet *GetObservables() { return fObs; }
 
   void fixNuisanceParameters();
@@ -74,6 +75,7 @@ private:
   RooArgSet *fGlobs;
   RooArgSet *fPOIs;
   RooArgSet *fObs;
+	RooArgSet fAllParams;
 
   // _____________________________________________________________________________
 protected:

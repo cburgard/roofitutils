@@ -9,13 +9,13 @@
 
 #include "RooMinimizer.h"
 class TGraph;
-
 #include "TMatrixD.h"
 #include "TVectorD.h"
 
 #include <map>
 
 namespace RooFitUtils {
+	class ExtendedModel;
 class ExtendedMinimizer : public TNamed {
 public:
   typedef std::pair<TGraph *, TGraph *> GraphPair;
@@ -64,6 +64,8 @@ public:
   };
 
   // Constructor and destructor
+  ExtendedMinimizer(const char *minimizerName, RooFitUtils::ExtendedModel* model, const RooLinkedList &args);
+  ExtendedMinimizer(const char *minimizerName, RooFitUtils::ExtendedModel* model);
   ExtendedMinimizer(const char *minimizerName, RooAbsPdf *pdf, RooAbsData *data,
                     RooWorkspace *workspace, const RooLinkedList &args);
   ExtendedMinimizer(const char *minimizerName, RooAbsPdf *pdf = NULL,
@@ -178,6 +180,7 @@ protected:
   RooAbsReal *fNll = NULL;
   RooMinimizer *fMinimizer = NULL;
 
+	std::vector<RooCmdArg> fOwnedArgs;
   RooLinkedList fNllCmdList;
   RooLinkedList fFitCmdList;
 

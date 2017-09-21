@@ -46,15 +46,41 @@ def findcrossings(points,nllval):
     r = (x0,x0-down,up-x0)
     return r
 
-def collectscan(paths):
-    scan = {}
-    for path in paths:
-        with open(path,'r') as infile:
-            lines = [ line for line in infile ]
-            for line in lines[3:]:
-                vals = line.split()
-                scan[float(vals[0])] = float(vals[1])
-    return scan
+
+def collectresults(files):
+    import re
+    parpat = re.compile("([a-zA-Z0-9_.]+)[ ]*=[ ]*([0-9.naife-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife-]+)")
+    nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife-]+)")
+    results = {}
+    scans = {}
+    for filename in files:
+        if not filename.endswith(".txt"): continue
+        if os.path.isfile(filename):
+            with open(filename,'r') as infile:
+                lines = [ line for line in infile ]
+                for lineno in range(0,len(lines)):
+                    line = lines[lineno]
+                    parts = line.split()
+                    nllmatch = nllpat.match(line)
+                    match = parpat.match(line)
+                    if nllmatch:
+                        minnll = float(nllmatch.group(1))
+                    elif match:
+                        pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
+                        result = (float(cv),float(ed),float(eu))
+                        results[pname] = result
+                    elif parts[-1].strip() == "nll":
+                        scanp = parts[0]
+                        if scanp not in scans.keys():
+                            scans[scanp] = {}
+                    else:
+                        pval   = float(parts[0])
+                        nllval = float(parts[1])
+                        scans[scanp][pval] = nllval
+                for p in scans.keys():
+                    if p in results.keys():
+                        scans[p][results[p][0]]=minnll;
+    return scans,results
 
 def writescan(par,allpoints,outfilename,ymax=None):
     nllmin = min(allpoints.values())
@@ -104,5 +130,6 @@ if __name__ == '__main__':
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
     args = parser.parse_args()
 
-    scan = collectscan(args.input)
-    writescan(args.label,scan,args.output,args.ymax)
+    scans,results = collectresults(args.input)
+    for scan in scans.values():
+        writescan(args.label,scan,args.output,args.ymax)
