@@ -4,26 +4,34 @@
 cmake_minimum_required(VERSION 2.8)
 project( RooFitUtils )
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(HAS_PARENT 0)
+else()
+  set(HAS_PARENT 1)
+endif()
+  
+
 IF(${HAS_PARENT})
+  message("announcing RooFitUtils")
   set(HAS_RooFitUtils 1 PARENT_SCOPE)
   set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
 ENDIF()
 
-find_package( AnalysisBase ) 
-
 IF(${AnalysisBase_FOUND})
-  # Set up the usage of CTest: 
-  atlas_ctest_setup() # Set up the project: 
-  atlas_project( RooFitUtils 1.0.0 
-    USE AnalysisBase ${AnalysisBase_VERSION} ) 
-
-  # Generate an environment setup script: 
-  lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
-  install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh    DESTINATION . ) 
-
-  # Set up the usage of CPack: 
-  set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
-  atlas_cpack_setup()
+  # Set up the usage of CTest:
+  IF(NOT ${HAS_PARENT})
+    atlas_ctest_setup() # Set up the project: 
+    atlas_project( RooFitUtils 1.0.0 
+      USE AnalysisBase ${AnalysisBase_VERSION} ) 
+    
+    # Generate an environment setup script: 
+    lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
+    install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh    DESTINATION . ) 
+    
+    # Set up the usage of CPack: 
+    set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
+    atlas_cpack_setup()
+  ENDIF()
 
   # register this as a package to ASG
   atlas_subdir( RooFitUtils )
@@ -51,11 +59,11 @@ if(${AnalysisBase_FOUND})
   # this section reflects the standard ASG way of configuring CMake
   # it is executed when compiling within an ASG environment
   find_package( GTest )
-  atlas_add_root_dictionary( RooFitUtilsLib RooFitUtilsLibCintDict
+  atlas_add_root_dictionary( RooFitUtils RooFitUtilsCintDict
     ROOT_HEADERS ${RooFitUtilsHeaders} ${RooFitUtilsLinkDef}
     EXTERNAL_PACKAGES ROOT )
-  atlas_add_library( RooFitUtilsLib
-    ${RooFitUtilsHeaders} ${RooFitUtilsSources} ${RooFitUtilsLibCintDict}
+  atlas_add_library( RooFitUtils
+    ${RooFitUtilsHeaders} ${RooFitUtilsSources} ${RooFitUtilsCintDict}
     PUBLIC_HEADERS RooFitUtils
     PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS} 
     PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES}
@@ -71,16 +79,16 @@ ELSE()
   ROOT_GENERATE_DICTIONARY(G__RooFitUtils ${RooFitUtilsHeaders} LINKDEF ${RooFitUtilsLinkDef})
 
   # register the shared object to include both sources and dictionaries
-  add_library( RooFitUtilsLib SHARED ${RooFitUtilsSources} G__RooFitUtils.cxx)
+  add_library( RooFitUtils SHARED ${RooFitUtilsSources} G__RooFitUtils.cxx)
 
   # link everything together at the end
-  target_link_libraries( RooFitUtilsLib ${ROOT_LIBRARIES} )
+  target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
 ENDIF()
 
 # general post-compile installation of the package 
 # required for other packages to discover this one via CMake
 install( 
-  TARGETS RooFitUtilsLib
+  TARGETS RooFitUtils
   EXPORT RooFitUtilsConfig
   DESTINATION cmake
   )
