@@ -17,6 +17,8 @@ IF(${HAS_PARENT})
   set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
 ENDIF()
 
+find_package( AnalysisBase ) 
+
 IF(${AnalysisBase_FOUND})
   # Set up the usage of CTest:
   IF(NOT ${HAS_PARENT})
