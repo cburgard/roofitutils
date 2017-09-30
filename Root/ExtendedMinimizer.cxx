@@ -29,10 +29,10 @@
 
 ClassImp(RooFitUtils::ExtendedMinimizer)
 
-    // ____________________________________________________________________________|__________
+// ____________________________________________________________________________|__________
 
-    RooFitUtils::ExtendedMinimizer::Result::Result()
-    : eigen(NULL), fit(NULL), hesse(NULL) {
+RooFitUtils::ExtendedMinimizer::Result::Result()
+: eigen(NULL), fit(NULL), hesse(NULL) {
   // nothing here
 }
 
@@ -154,7 +154,8 @@ double RooFitUtils::ExtendedMinimizer::GetMinNll() {
 
 namespace {
 
-  RooLinkedList *makeList(const RooCmdArg &arg1 = RooCmdArg::none(),
+  RooLinkedList *makeList(bool owned,
+			  const RooCmdArg &arg1 = RooCmdArg::none(),
 			  const RooCmdArg &arg2 = RooCmdArg::none(),
 			  const RooCmdArg &arg3 = RooCmdArg::none(),
 			  const RooCmdArg &arg4 = RooCmdArg::none(),
@@ -177,26 +178,26 @@ namespace {
     // helper function
     RooLinkedList *l = new RooLinkedList();
     l->SetName("CmdList");
-    l->Add(arg1.Clone());
-    l->Add(arg2.Clone());
-    l->Add(arg3.Clone());
-    l->Add(arg4.Clone());
-    l->Add(arg5.Clone());
-    l->Add(arg6.Clone());
-    l->Add(arg7.Clone());
-    l->Add(arg8.Clone());
-    l->Add(arg9.Clone());
-    l->Add(arg10.Clone());
-    l->Add(arg11.Clone());
-    l->Add(arg12.Clone());
-    l->Add(arg13.Clone());
-    l->Add(arg14.Clone());
-    l->Add(arg15.Clone());
-    l->Add(arg16.Clone());
-    l->Add(arg17.Clone());
-    l->Add(arg18.Clone());
-    l->Add(arg19.Clone());
-    l->Add(arg20.Clone());
+    l->Add(owned?arg1 .Clone():const_cast<RooCmdArg*>(&arg1 ));
+    l->Add(owned?arg2 .Clone():const_cast<RooCmdArg*>(&arg2 ));
+    l->Add(owned?arg3 .Clone():const_cast<RooCmdArg*>(&arg3 ));
+    l->Add(owned?arg4 .Clone():const_cast<RooCmdArg*>(&arg4 ));
+    l->Add(owned?arg5 .Clone():const_cast<RooCmdArg*>(&arg5 ));
+    l->Add(owned?arg6 .Clone():const_cast<RooCmdArg*>(&arg6 ));
+    l->Add(owned?arg7 .Clone():const_cast<RooCmdArg*>(&arg7 ));
+    l->Add(owned?arg8 .Clone():const_cast<RooCmdArg*>(&arg8 ));
+    l->Add(owned?arg9 .Clone():const_cast<RooCmdArg*>(&arg9 ));
+    l->Add(owned?arg10.Clone():const_cast<RooCmdArg*>(&arg10));
+    l->Add(owned?arg11.Clone():const_cast<RooCmdArg*>(&arg11));
+    l->Add(owned?arg12.Clone():const_cast<RooCmdArg*>(&arg12));
+    l->Add(owned?arg13.Clone():const_cast<RooCmdArg*>(&arg13));
+    l->Add(owned?arg14.Clone():const_cast<RooCmdArg*>(&arg14));
+    l->Add(owned?arg15.Clone():const_cast<RooCmdArg*>(&arg15));
+    l->Add(owned?arg16.Clone():const_cast<RooCmdArg*>(&arg16));
+    l->Add(owned?arg17.Clone():const_cast<RooCmdArg*>(&arg17));
+    l->Add(owned?arg18.Clone():const_cast<RooCmdArg*>(&arg18));
+    l->Add(owned?arg19.Clone():const_cast<RooCmdArg*>(&arg19));
+    l->Add(owned?arg20.Clone():const_cast<RooCmdArg*>(&arg20));
     return l;
   }
 
@@ -218,8 +219,23 @@ namespace {
       points.push_back(currentvals);
     }
   }
-
-  inline int addAllArgs(const RooLinkedList &orig, RooLinkedList &target) {
+  
+  inline void clearContents(RooLinkedList& l, bool owned){
+    // clear the contents of the list, deleting the objects if rquested
+    if(owned){
+      RooLinkedListIter it = l.iterator();
+      while (true) {
+	TObject *obj = it.Next();
+	if (!obj)
+	  break;
+	delete obj;
+      }
+    }
+    l.Clear();
+  }
+  
+  inline int addAllArgs(const RooLinkedList &orig, RooLinkedList &target, bool clone) {
+    // add all arguments from the original list to the target list, making clones if requested
     int n = 0;
     RooLinkedListIter it = orig.iterator();
     while (true) {
@@ -229,22 +245,19 @@ namespace {
       RooCmdArg *v = dynamic_cast<RooCmdArg *>(obj);
       if (!v)
 	break;
-      if (v != &RooCmdArg::none()) {
-				target.Add(v);
-				n++;
+      if (strlen(v->GetName()) != 0){
+	if(clone)
+	  target.Add(v->Clone());
+	else
+	  target.Add(v);
+	n++;
       }
     }
     return n;
   }
   
-  void inverseFilterCmdList(RooLinkedList &cmdInList, const char *cmdNameList) {
-    RooLinkedList filterList;
-    if (!cmdNameList) {
-      cmdInList.Clear();
-      return;
-    }
-
-    // Copy command list for parsing
+  void inverseFilterCmdList(const RooLinkedList &cmdInList, RooLinkedList& filteredList, const char *cmdNameList, bool clone) {
+    // add all arguments passing the filter from the original list to the target list, making clones if requested
     char buf[1024];
     strlcpy(buf, cmdNameList, 1024);
 
@@ -252,12 +265,10 @@ namespace {
     while (name) {
       TObject *cmd = cmdInList.FindObject(name);
       if (cmd) {
-				filterList.Add(cmd);
+	filteredList.Add(clone ? cmd->Clone() : cmd);
       }
       name = strtok(0, ",");
     }
-    cmdInList.Clear();
-    addAllArgs(filterList, cmdInList);
   }
 
   void setVals(const RooAbsCollection &vars, const RooAbsCollection *snap,
@@ -368,6 +379,8 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
 
 RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer() {
   // Destructor
+  clearContents(this->fNllCmdList,true);
+  clearContents(this->fFitCmdList,true);
 }
 
 // ____________________________________________________________________________|__________
@@ -379,7 +392,7 @@ int RooFitUtils::ExtendedMinimizer::minimize(
     const RooCmdArg &arg10, const RooCmdArg &arg11, const RooCmdArg &arg12) {
   // Minimize function with iterative retry strategy adopted, simplified and
   // extended from RooAbsPdf::fitTo()
-  RooLinkedList *l = makeList(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
+  RooLinkedList *l = makeList(false, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
                               arg9, arg10, arg11, arg12);
   int status = minimize(*l);
   delete l;
@@ -462,12 +475,11 @@ void RooFitUtils::ExtendedMinimizer::setup() {
 template <class A>
 int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
   if(!this->fNll){
-    fNllCmdList.Clear();
-    addAllArgs(cmdList, fNllCmdList);
-    inverseFilterCmdList(fNllCmdList, 
+    clearContents(fNllCmdList,true);
+    inverseFilterCmdList(cmdList, fNllCmdList,
 			 "NumCPU,Constrained,Constrain,CloneData,"
 			 "GlobalObservables,GlobalObservablesTag,"
-			 "OffsetLikelihood");
+			 "OffsetLikelihood",true);
   } else {
     coutE(ObjectHandling) << "cannot change Nll config with preexisting Nll!" << std::endl;
   }
@@ -481,8 +493,9 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   // parse the configuration
   RooCmdConfig pc(Form("ExtendedMinimizer::parseFitConfig(%s)", GetName()));
   pc.allowUndefined();
- 
-  addAllArgs(cmdList, fFitCmdList);
+
+  clearContents(fFitCmdList,true);
+  addAllArgs(cmdList, fFitCmdList, true);
 
   pc.defineInt("optConst", "Optimize", 0, fOptConst);
   pc.defineInt("doOffset", "OffsetLikelihood", 0, fOffset);
