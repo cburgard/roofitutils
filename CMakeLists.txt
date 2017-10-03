@@ -78,8 +78,6 @@ ELSE()
   # register all the files and directories
   include_directories ("${PROJECT_SOURCE_DIR}" "${ROOT_INCLUDE_DIRS}")
 
-  message(${ROOT_FOUND} ${ROOT_CONFIG_DIR})
-  
   # generate the dictionary source code
   ROOT_GENERATE_DICTIONARY(G__RooFitUtils ${RooFitUtilsHeaders} LINKDEF ${RooFitUtilsLinkDef})
 
@@ -88,6 +86,11 @@ ELSE()
 
   # link everything together at the end
   target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
+
+  set(SETUP setup.sh)
+  file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}\n")
+  file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_SOURCE_DIR}/scripts\n")
+  
 ENDIF()
 
 # general post-compile installation of the package 

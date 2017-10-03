@@ -9,15 +9,18 @@ def linspace(vmin,vmax,npoints):
     print(vals)
     return vals
 
-def rootcore():
+def loadRooFitUtils():
     # retrieve the root core dir environment variable
     from os import getenv
-    from ROOT import gROOT
     rcdir = getenv ("ROOTCOREDIR")
     if rcdir:
-        gROOT.ProcessLine(".x $ROOTCOREDIR/scripts/load_packages.C")
+        from ROOT import gROOT
+        if not gROOT.ProcessLine(".x $ROOTCOREDIR/scripts/load_packages.C"):
+            raise ImportError("unable to load RootCore!")
     else:
-        raise ImportError("unable to load RootCore!")
+        from ROOT import gSystem
+        if gSystem.Load("libRooFitUtils"):
+            raise ImportError("unable to load standalone libRooFitUtils.so!")
     return rcdir
 
 def printtime(seconds):
@@ -55,7 +58,7 @@ def vec(l,t):
 def main(args):
     from time import time
     import ROOT
-    rootcore()
+    loadRooFitUtils()
 
     # setup verbosity
     ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
