@@ -10,6 +10,8 @@ cmake_standalone_compile:
   tags:
     - cvmfs
 
+  image: gitlab-registry.cern.ch/atlas-caf/cafcore:caflibs
+    
   stage: build
 
   artifacts:
