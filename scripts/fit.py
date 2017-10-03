@@ -15,7 +15,7 @@ def loadRooFitUtils():
     rcdir = getenv ("ROOTCOREDIR")
     if rcdir:
         from ROOT import gROOT
-        if not gROOT.ProcessLine(".x $ROOTCOREDIR/scripts/load_packages.C"):
+        if gROOT.ProcessLine(".x $ROOTCOREDIR/scripts/load_packages.C"):
             raise ImportError("unable to load RootCore!")
     else:
         from ROOT import gSystem
