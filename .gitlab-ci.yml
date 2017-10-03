@@ -1,8 +1,10 @@
+variables:
+  ATLAS_LOCAL_ROOT_BASE: /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase
+
 image: atlas/analysisbase:21.2.3
 
 stages:
   - build
-
 
 cmake_standalone_compile:
   before_script:
@@ -19,10 +21,15 @@ cmake_standalone_compile:
     untracked: true
     paths:
     - build
-    - cafsetup.sh
+    - setup.sh
   
   script:
-    - set +e && lsetup root; set -e && export CXX=$(which g++) && mkdir build && cd build && cmake .. && make
+    - set +e && lsetup root; set -e
+    - export CXX=$(which g++)
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
   
 cmake_asg_compile:
   stage: build
