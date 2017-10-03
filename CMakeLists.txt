@@ -17,7 +17,7 @@ IF(${HAS_PARENT})
   set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
 ENDIF()
 
-find_package( AnalysisBase ) 
+find_package( AnalysisBase QUIET) 
 
 IF(${AnalysisBase_FOUND})
   # Set up the usage of CTest:
@@ -39,7 +39,8 @@ IF(${AnalysisBase_FOUND})
   atlas_subdir( RooFitUtils )
 ENDIF()
 
-find_package( ROOT COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats )
+find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats )
+include(${ROOT_USE_FILE})
 
 # set some variables for easier handling
 set(RooFitUtilsLinkDef ${PROJECT_SOURCE_DIR}/Root/LinkDef.h)
@@ -77,6 +78,8 @@ ELSE()
   # register all the files and directories
   include_directories ("${PROJECT_SOURCE_DIR}" "${ROOT_INCLUDE_DIRS}")
 
+  message(${ROOT_FOUND} ${ROOT_CONFIG_DIR})
+  
   # generate the dictionary source code
   ROOT_GENERATE_DICTIONARY(G__RooFitUtils ${RooFitUtilsHeaders} LINKDEF ${RooFitUtilsLinkDef})
 
