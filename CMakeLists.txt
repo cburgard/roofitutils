@@ -40,7 +40,9 @@ IF(${AnalysisBase_FOUND})
 ENDIF()
 
 find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats )
-include(${ROOT_USE_FILE})
+FOREACH(incfile ${ROOT_USE_FILE})
+  include(${incfile})
+ENDFOREACH()  
 
 # set some variables for easier handling
 set(RooFitUtilsLinkDef ${PROJECT_SOURCE_DIR}/Root/LinkDef.h)
@@ -62,6 +64,7 @@ if(${AnalysisBase_FOUND})
   # this section reflects the standard ASG way of configuring CMake
   # it is executed when compiling within an ASG environment
   find_package( GTest )
+  set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc62-opt)
   atlas_add_root_dictionary( RooFitUtils RooFitUtilsCintDict
     ROOT_HEADERS ${RooFitUtilsHeaders} ${RooFitUtilsLinkDef}
     EXTERNAL_PACKAGES ROOT )

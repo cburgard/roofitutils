@@ -3,7 +3,26 @@ image: atlas/analysisbase:21.2.3
 stages:
   - build
 
-cmake_compile:
+
+cmake_standalone_compile:
+  before_script:
+    - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
+  tags:
+    - cvmfs
+
+  stage: build
+
+  artifacts:
+    expire_in: 1d
+    untracked: true
+    paths:
+    - build
+    - cafsetup.sh
+  
+  script:
+    - set +e && lsetup root; set -e && export CXX=$(which g++) && mkdir build && cd build && cmake .. && make
+  
+cmake_asg_compile:
   stage: build
 
   artifacts:
