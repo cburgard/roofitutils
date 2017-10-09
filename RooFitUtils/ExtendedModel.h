@@ -44,9 +44,12 @@ public:
   RooArgSet *GetObservables() { return fObs; }
 
   void fixNuisanceParameters();
+  void fixParametersOfInterest();
   void fixNuisanceParameters(const std::string &fixName);
   void fixNuisanceParameters(const std::vector<std::string> &parsed);
-  void fixParametersOfInterest();
+  void fixParametersOfInterest(const std::string &fixName);
+  void fixParametersOfInterest(const std::vector<std::string> &parsed);
+  void fixParameters(const std::vector<std::string> &parsed);  
   void profileParameters(const std::string &profileName);
   void profileParameters(const std::vector<std::string> &profileName);
   RooRealVar *configureParameter(const std::string &pname);

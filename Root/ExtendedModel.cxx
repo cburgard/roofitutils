@@ -267,17 +267,36 @@ void RooFitUtils::ExtendedModel::fixParametersOfInterest() {
 
 // _____________________________________________________________________________
 
-void RooFitUtils::ExtendedModel::fixNuisanceParameters(
-    const std::string &fixName) {
+void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::string &fixName) {
   // Fix a subset of the nuisance parameters at the specified values
-  fixNuisanceParameters(parseString(fixName, ","));
+  fixParameters(parseString(fixName, ","));
 }
 
 // _____________________________________________________________________________
 
-void RooFitUtils::ExtendedModel::fixNuisanceParameters(
-    const std::vector<std::string> &parsed) {
+void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
+  fixParameters(parsed);
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::fixParametersOfInterest(const std::string &fixName) {
+  // Fix a subset of the nuisance parameters at the specified values
+  fixParameters(parseString(fixName, ","));
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::fixParametersOfInterest(const std::vector<std::string> &parsed) {
+  // Fix a subset of the nuisance parameters at the specified values
+  fixParameters(parsed);
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed) {
+  // Fix a subset of the parameters at the specified values
   for (size_t i = 0; i < parsed.size(); i++) {
     TString thisName = parsed[i].c_str();
     TString thisVal;
@@ -291,7 +310,7 @@ void RooFitUtils::ExtendedModel::fixNuisanceParameters(
 
     RooRealVar *par = (RooRealVar *)fWorkspace->var(thisName.Data());
     if (!par) {
-      coutE(ObjectHandling) << "Nuisance parameter " << thisName.Data()
+      coutE(ObjectHandling) << "Parameter " << thisName.Data()
                             << " does not exist." << std::endl;
       exit(-1);
     }
@@ -302,7 +321,7 @@ void RooFitUtils::ExtendedModel::fixNuisanceParameters(
       par->setVal(value);
     }
 
-    coutI(ObjectHandling) << "Fixing nuisance parameter " << thisName.Data()
+    coutI(ObjectHandling) << "Fixing parameter " << thisName.Data()
                           << " at value " << value << std::endl;
     par->setConstant(1);
   }
