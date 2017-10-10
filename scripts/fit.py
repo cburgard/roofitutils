@@ -55,11 +55,13 @@ def vec(l,t):
         v.push_back(e)
     return v
 
-def main(args):
-    from time import time
+def setup(args):
+    # general setup and loading of modules
     import ROOT
-    loadRooFitUtils()
 
+    # load libraries
+    loadRooFitUtils()
+    
     # setup verbosity
     ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
     if args.loglevel == "DEBUG":
@@ -73,14 +75,30 @@ def main(args):
     ROOT.Math.MinimizerOptions.SetDefaultMinimizer(args.minimizerType, args.minimizerAlgo)
     ROOT.Math.MinimizerOptions.SetDefaultStrategy(args.defaultStrategy)
 
+    # patches for HCombRoot
     ROOT.RooFitUtils.RooStarMomentMorphFix = args.fixCache
     ROOT.RooFitUtils.RooMultiPdfFix = args.fixMulti
 
+
+def buildModel(args):
     # Load the model
+    import ROOT
     model = ROOT.RooFitUtils.ExtendedModel("model", args.inFileName, args.wsName,
                                            args.modelConfigName, args.dataName, args.snapshot,
                                            args.binnedLikelihood, "pdf_")
+    
+    if args.fixAllNP:          model.fixNuisanceParameters()
+    if args.setInitialError:   model.setInitialErrors()
+    if args.fixParameters:     model.fixNuisanceParameters(",".join(args.fixParameters))
 
+    model.fixParametersOfInterest()
+    model.profileParameters(",".join(args.profile))
+    
+    return model
+
+def buildMinimizer(args,model):
+    import ROOT
+    
     ws = model.GetWorkspace()
     mc = model.GetModelConfig()
     allparams = ROOT.RooArgSet()
@@ -92,13 +110,6 @@ def main(args):
     allparams.add(pois)
     obs = model.GetObservables()
 
-    if args.fixAllNP:          model.fixNuisanceParameters()
-    if args.setInitialError:   model.setInitialErrors()
-    if args.fixParameters:     model.fixNuisanceParameters(",".join(args.fixParameters))
-    model.fixParametersOfInterest()
-
-    model.profileParameters(",".join(args.profile))
-
     # Collect POIs
     poiset = ROOT.RooArgSet()
     if args.pois:
@@ -106,7 +117,7 @@ def main(args):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
-        p = model.configureParameter(poi)
+        p = model.parseParameter(poi)
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.removeRange()
@@ -133,7 +144,10 @@ def main(args):
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
     minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
-    
+    return minimizer
+
+def fit(args,minimizer):
+    from time import time
     if args.fit:
         start = time()
         if not args.dummy:
@@ -199,7 +213,7 @@ def main(args):
 
     if args.outWsName:
         ws.writeToFile(args.outWsName)
-
+               
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("run a fit")
@@ -244,4 +258,12 @@ if __name__ == "__main__":
     parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" )
     parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False )
     args = parser.parse_args()
-    main(args)
+
+    setup(args)
+    model = buildModel(args)
+    minimizer = buildMinimizer(args,model)
+
+    
+    from sys import flags
+    if not flags.interactive:
+        fit(args,minimizer)

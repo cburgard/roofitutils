@@ -52,13 +52,15 @@ public:
   void fixParameters(const std::vector<std::string> &parsed);  
   void profileParameters(const std::string &profileName);
   void profileParameters(const std::vector<std::string> &profileName);
+  RooRealVar * parseParameter(const std::string &pname);
   RooRealVar *configureParameter(const std::string &pname);
   void setInitialErrors();
 
   // _____________________________________________________________________________
 protected:
   void initialise(bool fixCache, bool fixMulti);
-
+  RooRealVar * parseParameter(const std::string &pname,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary);
+  
   // _____________________________________________________________________________
 private:
   std::string fFileName;

@@ -29,21 +29,21 @@
 
 ClassImp(RooFitUtils::ExtendedModel)
 
-    // _____________________________________________________________________________
+// _____________________________________________________________________________
 
-    RooFitUtils::ExtendedModel::ExtendedModel(
-        const std::string &ModelName, const std::string &FileName,
-        const std::string &WsName, const std::string &ModelConfigName,
-        const std::string &DataName, const std::string &SnapshotName,
-        bool binnedLikelihood, const std::string &TagAsMeasurement,
-        bool FixCache, bool FixMulti)
-    : TNamed(ModelName.c_str(), ModelName.c_str()), fFileName(FileName),
-      fWsName(WsName), fModelConfigName(ModelConfigName), fDataName(DataName),
-      fSnapshotName(SnapshotName), fBinnedLikelihood(binnedLikelihood),
-      fTagAsMeasurement(TagAsMeasurement) {
+RooFitUtils::ExtendedModel::ExtendedModel(
+					  const std::string &ModelName, const std::string &FileName,
+					  const std::string &WsName, const std::string &ModelConfigName,
+					  const std::string &DataName, const std::string &SnapshotName,
+					  bool binnedLikelihood, const std::string &TagAsMeasurement,
+					  bool FixCache, bool FixMulti)
+: TNamed(ModelName.c_str(), ModelName.c_str()), fFileName(FileName),
+  fWsName(WsName), fModelConfigName(ModelConfigName), fDataName(DataName),
+  fSnapshotName(SnapshotName), fBinnedLikelihood(binnedLikelihood),
+  fTagAsMeasurement(TagAsMeasurement) {
   // Constructor
   initialise(FixCache, FixMulti);
-
+  
   coutP(InputArguments) << "ExtendedModel::ExtendedModel(" << fName
                         << ") created" << std::endl;
 }
@@ -329,26 +329,28 @@ void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &p
 
 // _____________________________________________________________________________
 
-void RooFitUtils::ExtendedModel::profileParameters(
-    const std::string &profileName) {
+void RooFitUtils::ExtendedModel::profileParameters(const std::string &profileName) {
   // Fix a subset of the nuisance parameters at the specified values
-  profileParameters(parseString(profileName, ","));
+  this->profileParameters(parseString(profileName, ","));
 }
 
 // _____________________________________________________________________________
 
-RooRealVar *
-RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
-  // Fix a subset of the nuisance parameters at the specified values
-  TString thisName(pname.c_str());
-  TString range;
-  TString boundary;
-  int sign = 0;
+RooRealVar * RooFitUtils::ExtendedModel::parseParameter(const std::string &pname) {
+  // parse a string parameter definition and return the parameter
+  int sign = 0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;
+  return parseParameter(pname,sign,useRange,lo,hi,useBoundary,boundary);
+}
 
-  bool useRange = kFALSE;
-  bool useBoundary = kFALSE;
 
+// _____________________________________________________________________________
+
+RooRealVar * RooFitUtils::ExtendedModel::parseParameter(const std::string &pname,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary) {
+  // parse a string parameter definition and return the parameter
+  TString thisName(pname);
+  
   // Get ranges
+  TString range;
   if (thisName.Contains("[")) {
     assert(thisName.Contains("]"));
     TObjArray *thisNameArray = thisName.Tokenize("[");
@@ -356,6 +358,13 @@ RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
     range = ((TObjString *)thisNameArray->At(1))->GetString();
     range.ReplaceAll("]", "");
     assert(range.Contains(":"));
+    TObjArray *rangeArray = range.Tokenize(":");
+    rangeArray->SetOwner(true);
+    TString s_lo = ((TObjString *)rangeArray->At(0))->GetString();
+    TString s_hi = ((TObjString *)rangeArray->At(1))->GetString();
+    delete rangeArray;
+    lo = atof(s_lo.Data());
+    hi = atof(s_hi.Data());
     useRange = kTRUE;
   }
 
@@ -370,31 +379,41 @@ RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
   if (thisName.Contains(">")) {
     TObjArray *thisNameArray = thisName.Tokenize(">");
     thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-    boundary = ((TObjString *)thisNameArray->At(1))->GetString();
+    TString boundary_str = ((TObjString *)thisNameArray->At(1))->GetString();
+    boundary = atof(boundary_str);
     sign = +1;
-    useBoundary = kTRUE;
+    useBoundary = true;
   } else if (thisName.Contains("<")) {
     TObjArray *thisNameArray = thisName.Tokenize("<");
     thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-    boundary = ((TObjString *)thisNameArray->At(1))->GetString();
+    TString boundary_str = ((TObjString *)thisNameArray->At(1))->GetString();
+    boundary = atof(boundary_str);
     sign = -1;
-    useBoundary = kTRUE;
-  }
+    useBoundary = true;
+  } 
+  
+  RooRealVar *thisPoi = dynamic_cast<RooRealVar *>(this->fWorkspace->var(thisName));
+  return thisPoi;
+}
 
-  RooRealVar *thisPoi = (RooRealVar *)fWorkspace->var(thisName);
-  if (!thisPoi) {
+
+// _____________________________________________________________________________
+
+RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
+  // Fix a parameter at the specified value and/or apply ranges and boundaries
+  TString thisName(pname.c_str());
+
+  int sign = 0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;
+  RooRealVar* thisPoi = this->parseParameter(pname,sign,useRange,lo,hi,useBoundary,boundary);
+  if(!thisPoi){
     coutE(ObjectHandling) << "Parameter " << thisName << " doesn't exist!"
                           << std::endl;
     return NULL;
   }
+  double origVal = thisPoi->getVal();
 
-  if (useRange) {
-    double origVal = thisPoi->getVal();
-    TObjArray *rangeArray = range.Tokenize(":");
-    TString s_lo = ((TObjString *)rangeArray->At(0))->GetString();
-    TString s_hi = ((TObjString *)rangeArray->At(1))->GetString();
-    double lo = atof(s_lo.Data());
-    double hi = atof(s_hi.Data());
+  
+  if(useRange){
     thisPoi->setRange(lo, hi);
     if ((origVal < lo) || (origVal > hi)) {
       double newVal = (hi - lo) / 2;
@@ -402,25 +421,23 @@ RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
       coutI(ObjectHandling) << "Setting value to " << newVal << std::endl;
     }
   }
-
+  
   if (useBoundary) {
-    double tmpBoundary = atof(boundary.Data());
-    double origVal = thisPoi->getVal();
     double forigVal = fabs(thisPoi->getVal());
-    bool boundaryIsZero = AlmostEqualUlpsAndAbs(tmpBoundary, 0.0, 0.0001, 4);
+    bool boundaryIsZero = AlmostEqualUlpsAndAbs(boundary, 0.0, 0.0001, 4);
 
     if (sign > 0) {
-      thisPoi->setMin(tmpBoundary);
-      if (origVal < tmpBoundary) {
-        thisPoi->setVal(tmpBoundary);
+      thisPoi->setMin(boundary);
+      if (origVal < boundary) {
+        thisPoi->setVal(boundary);
       }
       if (boundaryIsZero && origVal < 0) {
         thisPoi->setVal(forigVal);
       }
     } else if (sign < 0) {
-      thisPoi->setMax(tmpBoundary);
-      if (origVal > tmpBoundary) {
-        thisPoi->setVal(tmpBoundary);
+      thisPoi->setMax(boundary);
+      if (origVal > boundary) {
+        thisPoi->setVal(boundary);
       }
       if (boundaryIsZero && origVal > 0) {
         thisPoi->setVal(-forigVal);
@@ -437,14 +454,12 @@ RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
 
 // _____________________________________________________________________________
 
-void RooFitUtils::ExtendedModel::profileParameters(
-    const std::vector<std::string> &parsed) {
+void RooFitUtils::ExtendedModel::profileParameters(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
-  for (size_t i = 0; i < parsed.size(); i++) {
-    RooRealVar *thisPoi = this->configureParameter(parsed[i]);
+  for (const auto& parname:parsed){
+    RooRealVar *thisPoi = this->configureParameter(parname);
     if (thisPoi) {
-      coutI(ObjectHandling)
-          << "Profiling parameter " << thisPoi->GetName() << std::endl;
+      coutI(ObjectHandling) << "Profiling parameter " << thisPoi->GetName() << std::endl;
     }
   }
 }
