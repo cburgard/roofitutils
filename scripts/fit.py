@@ -146,8 +146,10 @@ def buildMinimizer(args,model):
     minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
     return minimizer
 
-def fit(args,minimizer):
+def fit(args,model,minimizer):
     from time import time
+    import ROOT
+    
     if args.fit:
         start = time()
         if not args.dummy:
@@ -162,6 +164,16 @@ def fit(args,minimizer):
         print("NLL after minimisation: "+str(minNll))
 
         if args.makeParameterSnapshots:
+            ws = model.GetWorkspace()
+            mc = model.GetModelConfig()
+            allparams = ROOT.RooArgSet()
+            nuis = model.GetNuisanceParameters()
+            allparams.add(nuis)
+            globs = model.GetGlobalObservables()
+            allparams.add(globs)
+            pois = model.GetParametersOfInterest()
+            allparams.add(pois)
+            obs = model.GetObservables()
             # Save the snapshots of nominal parameters
             print("Saving minimum snapshots.")
             ws.saveSnapshot("minimumGlobs", globs)
@@ -266,4 +278,4 @@ if __name__ == "__main__":
     
     from sys import flags
     if not flags.interactive:
-        fit(args,minimizer)
+        fit(args,model,minimizer)
