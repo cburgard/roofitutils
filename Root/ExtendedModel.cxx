@@ -276,7 +276,7 @@ void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::string &fixNam
 
 void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
-  fixParameters(parsed);
+  fixParameters(parsed,fModelConfig->GetNuisanceParameters());
 }
 
 // _____________________________________________________________________________
@@ -290,41 +290,161 @@ void RooFitUtils::ExtendedModel::fixParametersOfInterest(const std::string &fixN
 
 void RooFitUtils::ExtendedModel::fixParametersOfInterest(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
-  fixParameters(parsed);
+  fixParameters(parsed,fModelConfig->GetParametersOfInterest());
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatNuisanceParameters() {
+  // Float all nuisance parameters
+  for (RooLinkedListIter it = fNuis->iterator();
+       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    Double_t value = v->getVal();
+    std::string name = v->GetName();
+    coutI(ObjectHandling) << "Floating nuisance parameter " << name << std::endl;
+    v->setConstant(0);
+  }
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatParametersOfInterest() {
+  // Float all parameters of interest
+  for (RooLinkedListIter it = fPOIs->iterator();
+       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    Double_t value = v->getVal();
+    std::string name = v->GetName();
+    coutI(ObjectHandling) << "Floating parameter of interest " << name << std::endl;
+    v->setConstant(0);
+  }
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatNuisanceParameters(const std::string &floatName) {
+  // Float a subset of the nuisance parameters at the specified values
+  floatParameters(parseString(floatName, ","));
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatNuisanceParameters(const std::vector<std::string> &parsed) {
+  // Float a subset of the nuisance parameters at the specified values
+  floatParameters(parsed,fModelConfig->GetNuisanceParameters());
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatParametersOfInterest(const std::string &floatName) {
+  // Float a subset of the nuisance parameters at the specified values
+  floatParameters(parseString(floatName, ","));
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatParametersOfInterest(const std::vector<std::string> &parsed) {
+  // Float a subset of the nuisance parameters at the specified values
+  floatParameters(parsed,fModelConfig->GetParametersOfInterest());
 }
 
 // _____________________________________________________________________________
 
 void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed) {
+	// Fix a subset of the parameters at the specified values
+	RooArgSet allVars(fWorkspace->allVars());
+	this->fixParameters(parsed,&allVars);
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
-  for (size_t i = 0; i < parsed.size(); i++) {
-    TString thisName = parsed[i].c_str();
-    TString thisVal;
-    if (thisName.Contains("[")) {
-      assert(thisName.Contains("]"));
-      TObjArray *thisNameArray = thisName.Tokenize("[");
-      thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-      thisVal = ((TObjString *)thisNameArray->At(1))->GetString();
-      thisVal.ReplaceAll("]", "");
-    }
+	TObject* obj;
+	for(const auto&pat:parsed){
+		RooFIter itr(params->fwdIterator());
+		int found = 0;
+		while((obj = itr.next())){
+			if(RooFitUtils::matches(obj->GetName(),pat)){
+				RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
+				if(par){
+					found ++;
 
-    RooRealVar *par = (RooRealVar *)fWorkspace->var(thisName.Data());
-    if (!par) {
-      coutE(ObjectHandling) << "Parameter " << thisName.Data()
-                            << " does not exist." << std::endl;
-      exit(-1);
-    }
+					TString thisName(pat.c_str());
+					TString thisVal;
+					if (thisName.Contains("[")) {
+						assert(thisName.Contains("]"));
+						TObjArray *thisNameArray = thisName.Tokenize("[");
+						thisName = ((TObjString *)thisNameArray->At(0))->GetString();
+						thisVal = ((TObjString *)thisNameArray->At(1))->GetString();
+						thisVal.ReplaceAll("]", "");
+					}
 
-    double value = par->getVal();
-    if (thisVal.IsFloat()) {
-      value = thisVal.Atof();
-      par->setVal(value);
-    }
+					double value = par->getVal();
+					if (thisVal.IsFloat()) {
+						value = thisVal.Atof();
+						par->setVal(value);
+					}
+					coutI(ObjectHandling) << "Fixing parameter " << par->GetName()
+																<< " at value " << value << std::endl;
+					par->setConstant(1);					
+				}
+			}
+		}
+		if (found == 0) {
+			coutE(ObjectHandling) << "Parameter " << pat
+														<< " does not exist." << std::endl;
+			exit(-1);
+		}
+	}
+}
 
-    coutI(ObjectHandling) << "Fixing parameter " << thisName.Data()
-                          << " at value " << value << std::endl;
-    par->setConstant(1);
-  }
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatParameters(const std::string &floatName){
+	// Float a subset of the parameters
+	floatParameters(parseString(floatName,","));
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::fixParameters(const std::string &fixName){
+	// Fix a subset of the parameters at the specified values
+	fixParameters(parseString(fixName,","));
+}
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatParameters(const std::vector<std::string> &parsed) {
+  // Fix a subset of the parameters at the specified values
+	RooArgSet allVars(fWorkspace->allVars());
+	floatParameters(parsed,&allVars);
+}
+	
+
+// _____________________________________________________________________________
+
+void RooFitUtils::ExtendedModel::floatParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
+  // Fix a subset of the parameters at the specified values
+	TObject* obj;
+	for(const auto&pat:parsed){
+		RooFIter itr(params->fwdIterator());
+		int found = 0;
+		while((obj = itr.next())){
+			if(RooFitUtils::matches(obj->GetName(),pat)){
+				RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
+				if(par){
+					found ++;
+					coutI(ObjectHandling) << "Floating parameter " << par->GetName() << std::endl;
+					par->setConstant(0);
+				}
+			}
+		}
+		if (found == 0) {
+			coutE(ObjectHandling) << "Parameter " << pat
+														<< " does not exist." << std::endl;
+			exit(-1);
+		}
+	}
 }
 
 // _____________________________________________________________________________

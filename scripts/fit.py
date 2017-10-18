@@ -89,7 +89,7 @@ def buildModel(args):
     
     if args.fixAllNP:          model.fixNuisanceParameters()
     if args.setInitialError:   model.setInitialErrors()
-    if args.fixParameters:     model.fixNuisanceParameters(",".join(args.fixParameters))
+    if args.fixParameters:     model.fixParameters(",".join(args.fixParameters))
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.profile))
@@ -120,6 +120,7 @@ def buildMinimizer(args,model):
         p = model.parseParameter(poi)
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
+        p.setConstant(False)
         p.removeRange()
         p.setError(0.2)
         poiset.add(p)
@@ -214,9 +215,9 @@ def fit(args,model,minimizer):
                     for p in result.parameters:
                         out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
                 for scan in result.scans:
-                    out.write((" ".join(scan.parNames)) + " nll\n")
+                    out.write((" ".join(scan.parNames)) + " nll status\n")
                     for i in range(0,len(scan.nllValues)):
-                        out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+"\n")
+                        out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
             print("wrote output to "+args.outFileName)
         else:
             print("no output requested")
@@ -279,3 +280,9 @@ if __name__ == "__main__":
     from sys import flags
     if not flags.interactive:
         fit(args,model,minimizer)
+    else:
+        print("prepared fit:")
+        print("  ExtendedModel model")
+        print("  ExtendedMinimizer minimizer")
+        print("call 'fit(args,model,minimizer)' to run!")
+              

@@ -49,7 +49,18 @@ public:
   void fixNuisanceParameters(const std::vector<std::string> &parsed);
   void fixParametersOfInterest(const std::string &fixName);
   void fixParametersOfInterest(const std::vector<std::string> &parsed);
-  void fixParameters(const std::vector<std::string> &parsed);  
+  void fixParameters(const std::string &fixName);	
+  void fixParameters(const std::vector<std::string> &parsed);
+	
+  void floatNuisanceParameters();
+  void floatParametersOfInterest();
+  void floatNuisanceParameters(const std::string &floatName);
+  void floatNuisanceParameters(const std::vector<std::string> &parsed);
+  void floatParametersOfInterest(const std::string &floatName);
+  void floatParametersOfInterest(const std::vector<std::string> &parsed);
+  void floatParameters(const std::string &floatName);
+  void floatParameters(const std::vector<std::string> &parsed);
+	
   void profileParameters(const std::string &profileName);
   void profileParameters(const std::vector<std::string> &profileName);
   RooRealVar * parseParameter(const std::string &pname);
@@ -60,7 +71,9 @@ public:
 protected:
   void initialise(bool fixCache, bool fixMulti);
   RooRealVar * parseParameter(const std::string &pname,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary);
-  
+	void fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params);
+	void floatParameters(const std::vector<std::string> &parsed, const RooArgSet* params);	
+	
   // _____________________________________________________________________________
 private:
   std::string fFileName;

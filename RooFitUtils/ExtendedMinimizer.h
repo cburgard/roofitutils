@@ -26,10 +26,11 @@ public:
     class Scan {
     public:
       Scan(const std::vector<std::string> &parnames);
-      void add(const std::vector<double> &parvals, double nllval);
+      void add(const std::vector<double> &parvals, int fitStatus, double nllval);
       void printTable();
       std::vector<std::string> parNames;
       std::vector<std::vector<double>> parValues;
+      std::vector<int> fitStatus;
       std::vector<double> nllValues;
     };
     class Parameter {

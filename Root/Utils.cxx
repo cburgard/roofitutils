@@ -315,3 +315,39 @@ void RooFitUtils::PrintTable(std::string *firstCol, std::string **matrix,
   delete[] lmatrix;
   delete[] lmatrix_pm;
 }
+
+//__________________________________________________________________________________|___________
+
+bool RooFitUtils::matches(const std::string& text, const std::string& pattern) {
+  // Performs a string match between the input string <text> and the string pattern
+  // <pattern> and returns true in case of a match and false otherwise. The string
+  // pattern may use wildcards "?" (matching exactly one character) and "*"
+  // (matching any string sequence).
+  //
+  // Examples:
+  //
+  // - matches("hello", "h?llo") returns true
+  // - matches("hallo", "h?llo") returns true
+  // - matches("hello", "h*") returns true
+  // - matches("hello", "h*a") returns false
+ 
+  if (text.size() > 0 && pattern.size() > 0) {
+    // direct and "?" match ?
+    if (text[0] == pattern[0] || pattern[0] == '?') {
+      // TODO: avoid recursion
+      return matches(text.substr(1, text.size()), pattern.substr(1, pattern.size()));
+    }
+    // "*" match ?
+    if (pattern[0] == '*') {
+      // eating leading "*" in pattern ...
+      return matches(text, pattern.substr(1, pattern.size()))
+        // ... or matching leading character in text ?
+        || matches(text.substr(1, text.size()), pattern);
+    }
+    // no match
+    return false;
+  } else {
+    // empty text and/or pattern
+    return (text.size() == 0 && (pattern == "*" || pattern.size() == 0));
+  }
+}

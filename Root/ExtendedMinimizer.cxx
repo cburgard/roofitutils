@@ -83,13 +83,13 @@ RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::ExtendedMinimizer::Result::Scan::add(
-    const std::vector<double> &parvals, double nllval) {
+void RooFitUtils::ExtendedMinimizer::Result::Scan::add(const std::vector<double> &parvals, int fitstatus, double nllval) {
   // add a new entry to a scan
   if (parvals.size() != this->parNames.size()) {
     throw std::runtime_error("cannot add parameter list with wrong length!");
   }
   this->parValues.push_back(parvals);
+  this->fitStatus.push_back(fitstatus);
   this->nllValues.push_back(nllval);
 }
 
@@ -843,7 +843,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
       for (size_t i = 0; i < params.size(); ++i) {
         vals[i] = params[i]->getVal();
       }
-      scan.add(vals, min.nll);
+      scan.add(vals, min.status, min.nll);
     }
   }
   if (scan.nllValues.size() > 0)
@@ -971,7 +971,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   int iter = 0;
   ExtendedMinimizer::Result::Scan values({par->GetName()});
   const double nllmin = result->min.nll;
-  values.add({val_mle}, nllmin);
+  values.add({val_mle}, result->min.status, nllmin);
   for (; iter < maxiter; iter++) {
     coutI(ObjectHandling)
         << "ExtendedMinimizer::findSigma(" << fName << ") "
@@ -985,7 +985,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
     Result::Minimization mini = robustMinimize();
     double nll = mini.nll;
     double poival = par->getVal();
-    values.add({poival}, nll);
+    values.add({poival}, mini.status, nll);
 
     tmu = 2.0 * (nll - nllmin);
     double sigma_guess = fabs(val_guess - val_mle);
