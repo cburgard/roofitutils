@@ -14,7 +14,6 @@ endif()
 IF(${HAS_PARENT})
   message("announcing RooFitUtils")
   set(HAS_RooFitUtils 1 PARENT_SCOPE)
-  set(ROOFITUTILS_DIR ${PROJECT_SOURCE_DIR} PARENT_SCOPE)
 ENDIF()
 
 find_package( AnalysisBase QUIET) 
@@ -28,7 +27,7 @@ IF(${AnalysisBase_FOUND})
     
     # Generate an environment setup script: 
     lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
-    install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh    DESTINATION . ) 
+    install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh DESTINATION . ) 
     
     # Set up the usage of CPack: 
     set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
