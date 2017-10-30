@@ -110,21 +110,6 @@ def buildMinimizer(args,model):
     allparams.add(pois)
     obs = model.GetObservables()
 
-    # Collect POIs
-    poiset = ROOT.RooArgSet()
-    if args.pois:
-        poinames = args.pois
-    else:
-        poinames = [ p.GetName() for p in makelist(pois) ]
-    for poi in poinames:
-        p = model.parseParameter(poi)
-        if not p:
-            raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
-        p.setConstant(False)
-        p.removeRange()
-        p.setError(0.2)
-        poiset.add(p)
-
     if args.makeParameterSnapshots:
         # Save the snapshots of nominal parameters
         print("Saving nominal snapshots.")
@@ -150,6 +135,22 @@ def buildMinimizer(args,model):
 def fit(args,model,minimizer):
     from time import time
     import ROOT
+
+    # Collect POIs
+    pois = model.GetParametersOfInterest()
+    poiset = ROOT.RooArgSet()
+    if args.pois:
+        poinames = args.pois
+    else:
+        poinames = [ p.GetName() for p in makelist(pois) ]
+    for poi in poinames:
+        p = model.parseParameter(poi)
+        if not p:
+            raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
+        p.setConstant(False)
+        p.removeRange()
+        p.setError(0.2)
+        poiset.add(p)
     
     if args.fit:
         start = time()
