@@ -453,14 +453,19 @@ void RooFitUtils::ExtendedMinimizer::setup() {
   }
 
   if (!fNll) {
-    throw std::runtime_error(
-        "[Error] ExtendedMinimizer::setup: Failed to obtain NLL");
+    throw std::runtime_error("ExtendedMinimizer::setup: Failed to obtain NLL");
   }
 
-  if (!fMinimizer || !fReuseMinimizer) {
-    if (fMinimizer)
-      delete fMinimizer;
-
+	std::cout << "reuse: " << fReuseMinimizer << std::endl;
+	std::cout << "mini: " << fMinimizer << std::endl;
+	
+	if(!fReuseMinimizer){
+    if(fMinimizer)
+			delete fMinimizer;
+		fMinimizer=NULL;
+	}
+	
+  if (!fMinimizer) {
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(fMinimizerType.c_str(),
                                                       fMinimizerAlgo.c_str());
     ROOT::Math::MinimizerOptions::SetDefaultStrategy(fDefaultStrategy);
@@ -767,8 +772,9 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     }
   }
 
-  if (!fReuseMinimizer) {
-    delete fMinimizer;
+  if(!fReuseMinimizer) {
+		if(fMinimizer)
+			delete fMinimizer;
     fMinimizer = NULL;
   }
 
