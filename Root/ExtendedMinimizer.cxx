@@ -456,9 +456,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     throw std::runtime_error("ExtendedMinimizer::setup: Failed to obtain NLL");
   }
 
-	std::cout << "reuse: " << fReuseMinimizer << std::endl;
-	std::cout << "mini: " << fMinimizer << std::endl;
-	
 	if(!fReuseMinimizer){
     if(fMinimizer)
 			delete fMinimizer;
@@ -608,22 +605,31 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
   while (true) {
     fMinimizer->setStrategy(strategy);
-    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+    std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                           << "): starting minimization with strategy "
                           << strategy << std::endl;
     status =
         fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
     const double nllval = fNll->getVal();
 
-    if ((std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)) &&
-        strategy < 2 && retry > 0) {
-      coutW(ObjectHandling)
+    if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
+      if(strategy < 2 && retry > 0) {
+        strategy++;
+        std::cout 
           << "ExtendedMinimizer::robustMinimize(" << fName
           << ") fit failed with status " << status
           << ". Retrying with strategy " << strategy << std::endl;
-      strategy++;
-      retry--;
+        retry--;
+      } else {
+        std::cout 
+          << "ExtendedMinimizer::robustMinimize(" << fName
+          << ") fit failed with status " << status << ", giving up." << std::endl;
+        break;
+      }
     } else {
+      std::cout 
+        << "ExtendedMinimizer::robustMinimize(" << fName
+        << ") fit succeeded with status " << status << std::endl;
       break;
     }
   }
