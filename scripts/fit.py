@@ -121,6 +121,8 @@ def buildMinimizer(args,model):
     argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
                 ROOT.RooFit.Strategy(args.defaultStrategy), 
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll), 
                 ROOT.RooFit.Constrain(nuis), 
                 ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
@@ -267,6 +269,10 @@ if __name__ == "__main__":
     parser.add_argument( "--eigen"         , action='store_true',   dest="eigendecomposition"         , help="Eigenvalues and vectors.", default=False )
     parser.add_argument( "--offset"        , action='store_true',   dest="offsetting"                 , help="Offset likelihood.", default=True )
     parser.add_argument( "--no-offset"     , action='store_false',  dest="offsetting"                 , help="Do not offset likelihood.", default=False )
+    parser.add_argument( "--reuse-minimizer"        , action='store_true',   dest="reuseMinimizer"                 , help="Allow to reuse the minimizer.", default=False )
+    parser.add_argument( "--no-reuse-minimizer"     , action='store_false',  dest="reuseMinimizer"                 , help="Do not allow to reuse the minimizer.", default=True )
+    parser.add_argument( "--reuse-nll"        , action='store_true',   dest="reuseNll"                 , help="Allow to reuse the nll.", default=False )
+    parser.add_argument( "--no-reuse-nll"     , action='store_false',  dest="reuseNll"                 , help="Do not allow to reuse the nll.", default=True )
     parser.add_argument( "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False )
     parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2)
     parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" )

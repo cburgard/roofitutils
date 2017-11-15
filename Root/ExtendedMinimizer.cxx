@@ -411,44 +411,38 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     throw std::runtime_error("[Error] ExtendedMinimizer::setup: No Data set!");
   }
 
-  if (!fReuseNLL || !fNll) {
-    if (fReuseNLL) {
-      coutW(InputArguments)
-          << "ExtendedMinimizer::createMinimizer: NLL is supposed to be "
-             "re-used but not present, creating new NLL!"
-          << std::endl;
-    }
-    coutI(InputArguments) << "Creating new Nll" << std::endl;
-    if (fNll) {
-      coutW(InputArguments)
-          << "ExtendedMinimizer::createMinimizer: deleting previous NLL!"
-          << std::endl;
+  if (!fReuseNLL) {
+    if(fNll){
+      coutW(InputArguments) << "deleting previous NLL!" << std::endl;
       delete fNll;
     }
-
+    fNll = NULL;
+  }
+  if(!fNll){
+    coutI(InputArguments) << "Creating new Nll" << std::endl;
+    
     if (fWorkspace) {
       if (RooFitUtils::RooStarMomentMorphFix) {
         int n = fixRooStarMomentMorph(fWorkspace);
         if (n > 0)
           coutP(InputArguments)
-              << "Fixed cache of " << n << " instances of RooStarMomentMorph"
-              << std::endl;
+            << "Fixed cache of " << n << " instances of RooStarMomentMorph"
+            << std::endl;
       }
     }
-
+    
     fNll = fPdf->createNLL(*fData, fNllCmdList);
-
   } else {
     coutI(InputArguments) << "Using existing Nll" << std::endl;
   }
-
+  
   if (fWorkspace) {
     if (RooFitUtils::RooStarMomentMorphFix) {
       int n = fixRooStarMomentMorph(fWorkspace);
       if (n > 0)
         coutP(InputArguments)
-            << "Re-Fixed cache of " << n << " instances of RooStarMomentMorph"
-            << std::endl;
+          << "Re-Fixed cache of " << n << " instances of RooStarMomentMorph"
+          << std::endl;
     }
   }
 
@@ -457,18 +451,23 @@ void RooFitUtils::ExtendedMinimizer::setup() {
   }
 
 	if(!fReuseMinimizer){
-    if(fMinimizer)
+    if(fMinimizer){
+      coutW(InputArguments) << "deleting previous Minimizer!" << std::endl;
 			delete fMinimizer;
+    }
 		fMinimizer=NULL;
 	}
 	
   if (!fMinimizer) {
+    coutI(InputArguments) << "Creating new Minimizer" << std::endl;
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(fMinimizerType.c_str(),
                                                       fMinimizerAlgo.c_str());
     ROOT::Math::MinimizerOptions::SetDefaultStrategy(fDefaultStrategy);
     ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(fPrintLevel);
 
     fMinimizer = new RooMinimizer(*fNll);
+  } else {
+    coutI(InputArguments) << "Using existing Minimizer" << std::endl;
   }
 }
 
