@@ -591,17 +591,23 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
   int retry = fRetry;
   int status = -1;
 
-  fMinimizer->setPrintLevel(fPrintLevel);
-  fMinimizer->optimizeConst(fOptConst);
-  fMinimizer->setMinimizerType(fMinimizerType.c_str());
-  fMinimizer->setEvalErrorWall(fDoEEWall);
-  fMinimizer->setOffsetting(fOffset);
-  fMinimizer->setPrintEvalErrors(fNumee);
-  fMinimizer->setVerbose(fVerbose);
-  fMinimizer->setProfile(fTimer);
-  fMinimizer->setStrategy(fDefaultStrategy);
-  fMinimizer->setEps(fEps);
-
+  try {
+    fMinimizer->setPrintLevel(fPrintLevel);
+    fMinimizer->optimizeConst(fOptConst);
+    fMinimizer->setMinimizerType(fMinimizerType.c_str());
+    fMinimizer->setEvalErrorWall(fDoEEWall);
+    fMinimizer->setOffsetting(fOffset);
+    fMinimizer->setPrintEvalErrors(fNumee);
+    fMinimizer->setVerbose(fVerbose);
+    fMinimizer->setProfile(fTimer);
+    fMinimizer->setStrategy(fDefaultStrategy);
+    fMinimizer->setEps(fEps);
+  } catch (std::string& s){
+    throw std::runtime_error(s);
+  }
+    
+  std::cout << "options set" << std::endl;
+  
   while (true) {
     fMinimizer->setStrategy(strategy);
     std::cout << "ExtendedMinimizer::robustMinimize(" << fName
@@ -688,7 +694,6 @@ int RooFitUtils::ExtendedMinimizer::minimize() {
 RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   // run the actual minimization
   Result *r = new Result();
-
   r->min = robustMinimize();
 
   // Evaluate errors with Hesse
