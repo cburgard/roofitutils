@@ -587,11 +587,12 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
   // Robust minimization, using an iterative retry strategy
   if (!fMinimizer)
     throw std::runtime_error("no minimizer set!");
-  int strategy = fDefaultStrategy;
-  int retry = fRetry;
-  int status = -1;
 
   try {
+    int strategy = fDefaultStrategy;
+    int retry = fRetry;
+    int status = -1;
+
     fMinimizer->setPrintLevel(fPrintLevel);
     fMinimizer->optimizeConst(fOptConst);
     fMinimizer->setMinimizerType(fMinimizerType.c_str());
@@ -602,60 +603,60 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setProfile(fTimer);
     fMinimizer->setStrategy(fDefaultStrategy);
     fMinimizer->setEps(fEps);
+  
+    while (true) {
+      fMinimizer->setStrategy(strategy);
+      std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                << "): starting minimization with strategy "
+                          << strategy << std::endl;
+      status =
+        fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+      const double nllval = fNll->getVal();
+      
+      if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
+        if(strategy < 2 && retry > 0) {
+          strategy++;
+          std::cout 
+            << "ExtendedMinimizer::robustMinimize(" << fName
+            << ") fit failed with status " << status
+            << ". Retrying with strategy " << strategy << std::endl;
+        retry--;
+        } else {
+          std::cout 
+            << "ExtendedMinimizer::robustMinimize(" << fName
+            << ") fit failed with status " << status << ", giving up." << std::endl;
+          break;
+        }
+      } else {
+        std::cout 
+          << "ExtendedMinimizer::robustMinimize(" << fName
+          << ") fit succeeded with status " << status << std::endl;
+        break;
+      }
+    }
+    
+    Result::Minimization mini;
+    mini.status = status;
+    mini.strategy = strategy;
+    mini.nll = fNll->getVal();
+    
+    if (!mini.ok()) {
+      coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+                            << ") fit failed with status " << status << std::endl;
+    } else {
+      coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+                            << ") fit completed with status " << status
+                            << std::endl;
+    }
+    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+                          << "): Evaluating Nll" << std::endl;
+    
+    return mini;
+    
   } catch (std::string& s){
     throw std::runtime_error(s);
   }
     
-  std::cout << "options set" << std::endl;
-  
-  while (true) {
-    fMinimizer->setStrategy(strategy);
-    std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-                          << "): starting minimization with strategy "
-                          << strategy << std::endl;
-    status =
-        fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
-    const double nllval = fNll->getVal();
-
-    if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
-      if(strategy < 2 && retry > 0) {
-        strategy++;
-        std::cout 
-          << "ExtendedMinimizer::robustMinimize(" << fName
-          << ") fit failed with status " << status
-          << ". Retrying with strategy " << strategy << std::endl;
-        retry--;
-      } else {
-        std::cout 
-          << "ExtendedMinimizer::robustMinimize(" << fName
-          << ") fit failed with status " << status << ", giving up." << std::endl;
-        break;
-      }
-    } else {
-      std::cout 
-        << "ExtendedMinimizer::robustMinimize(" << fName
-        << ") fit succeeded with status " << status << std::endl;
-      break;
-    }
-  }
-
-  Result::Minimization mini;
-  mini.status = status;
-  mini.strategy = strategy;
-  mini.nll = fNll->getVal();
-
-  if (!mini.ok()) {
-    coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                          << ") fit failed with status " << status << std::endl;
-  } else {
-    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                          << ") fit completed with status " << status
-                          << std::endl;
-  }
-  coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
-                        << "): Evaluating Nll" << std::endl;
-
-  return mini;
 }
 
 // ____________________________________________________________________________|__________
