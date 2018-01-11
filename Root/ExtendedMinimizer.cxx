@@ -766,7 +766,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                           << ") saving results as " << name << std::endl;
     r->fit = fMinimizer->save(name.c_str(), title.c_str());
-    if (!r->hesse)
+    if (r->fit && !r->hesse)
       r->fit->setCovQual(-1);
   }
 
