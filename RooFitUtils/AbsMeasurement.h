@@ -146,6 +146,7 @@ public:
   bool isPrunable() { return fIsPrunable; }
 
   RooWorkspace *GetWorkspace() { return fWorkSpace; }
+  RooAbsData *GetAsimovData() { return fAsimovData; }
 
   void SetPrunedNuisanceParameters(std::string parameters);
   void SetPrunedNuisanceParameters(std::list<std::string> parameters) {
