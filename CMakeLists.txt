@@ -90,8 +90,10 @@ ELSE()
   target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
 
   set(SETUP setup.sh)
-  file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}\n")
-  file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_SOURCE_DIR}/scripts\n")
+  file(WRITE ${SETUP} "#!/bin/bash\n")
+  file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
+  file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
+  file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_CURRENT_SOURCE_DIR}/scripts\n")
   
 ENDIF()
 
