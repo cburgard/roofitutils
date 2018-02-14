@@ -11,6 +11,14 @@ except ImportError:
   print("  $HOME/.local/bin/pip install fuzzywuzzy --user")
   exit(1)
 
+import sys
+if sys.version_info >= (3, 0):
+  def iteritems(d):
+    return d.items()
+else:
+  def iteritems(d):
+    return d.iteritems()  
+  
 # argparse is for argument parsing
 import argparse
 # ROOT is needed to read the workspace
@@ -29,8 +37,13 @@ def convertCamelCaseToSnakeCase(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
-def preprocess(s):
-  return sorted(re.split('_+',convertCamelCaseToSnakeCase(s.replace("ATLAS","").strip("_"))))
+nulltokens = []
+  
+def preprocess(instring):
+  s = convertCamelCaseToSnakeCase(instring)
+  for tok in nulltokens:
+    s = s.replace(tok,"").strip("_")
+  return sorted(re.split('_+',s))
 
 def bestmatch(a,b,cutoff,func):
   best = 0
@@ -46,8 +59,8 @@ def bestmatch(a,b,cutoff,func):
   return xf,yf,best
 
 def comparesets(a,b,cutoff,func):
-  ntok = min(len(a),len(b))
-  if ntok < 1: return 0
+  ntok = max(len(a),len(b))
+  if min(len(a),len(b)) < 1: return 0
   mya = [ x for x in a ]
   myb = [ y for y in b ]
   totalscore = 0.
@@ -70,12 +83,12 @@ def matchsets(a,b,cutoff):
   while len(mya)>0 and len(myb)>0:
     ea,eb,score = bestmatch(mya,myb,cutoff,lambda x, y: comparesets(preprocess(x),preprocess(y),cutoff,fuzz.ratio))
     if score < cutoff:
-      return (matches,totalscore/ntok)
+      return (matches,totalscore)
     totalscore = totalscore + score
     mya.remove(ea)
     myb.remove(eb)
     matches.append((ea,eb,score))
-  return (matches,totalscore/ntok)
+  return (matches,totalscore)
 
 def mkitr(orig):
   # convert anything into a list
@@ -147,17 +160,27 @@ def printMatches(triplets):
   for orig,new,score in triplets:
     print("\t{:s} = {:s} (@{:.2f}%)".format(orig,new,score))
 
+def printMissing(triplets,allpars):
+  params = [ p for p in allpars ]
+  for name,match,score in triplets:
+    try:
+      params.remove(name)
+    except ValueError:
+      pass
+  for p in params:
+    print("\t"+p)
+
 def checkExperimentalParameters(params,infilenames,threshold=80):
   # identify experimental parameters based on the python/json file(s)
   print("Attempting to identify experimental NP Schemes...")
   results = []
   for pyjs in infilenames:
     with open(pyjs,"r") as f:
-      for groupname,npgroup in json.load(f).iteritems():
+      for groupname,npgroup in iteritems(json.load(f)):
         highscore = 0.
         bestset = None
         mappings = []
-        for setname,npset in npgroup.iteritems():
+        for setname,npset in iteritems(npgroup):
           matches,score = matchsets(npset,params,threshold)
           if score > highscore:
             mappings = matches
@@ -165,10 +188,10 @@ def checkExperimentalParameters(params,infilenames,threshold=80):
             bestset = setname
         if bestset:
           bestgroup = npgroup[bestset]
-          print("Identified '{:s}': '{:s}' (matched {:.2f}/{:.2f}%):".format(groupname,bestset,
-                                                                             float(highscore),
-                                                                             float(100.*len(bestgroup))))
+          print("Identified '{:s}': '{:s}' (matched {:.2f}/{:d}):".format(groupname,bestset,float(highscore/100),int(len(bestgroup))))
           printMatches(mappings)
+          print("  missing parameters are")
+          printMissing(mappings,npgroup[bestset])
           results = results + mappings
           for new,old,score in mappings:
             params.remove(old)
@@ -194,12 +217,15 @@ def checkTheoryParameters(params,infilenames,threshold=80):
     theoparams.remove(name)
   print("The following parameters were found and identified in the workspace: ({:d} total) ".format(len(matches)))
   printMatches(matches)
-  print("The following parameters were not found in the workspace: {:s} ({:d} total)".format(",".join(theoparams),len(theoparams)))
+  print("The following parameters were not found in the workspace: ({:d} total)".format(len(theoparams)))
+  printMissing(matches,theoparams)
   return matches
           
 def main(args):
   # main steering function
-
+  global nulltokens
+  nulltokens = args.nulltokens
+  
   # get the workspace
   ws = getWorkspace(args.workspace)
 
@@ -227,7 +253,7 @@ def main(args):
 
   # print a summary
   print("\nSummary:")
-  print("The following parameters in the workspace could not be identified: {:s} ({:d} total)".format(",".join(params),len(params)))
+  print("The following parameters in the workspace could not be identified: {:s} ({:d} total)".format(",".join(sorted(params)),len(params)))
   print("The following expressions were blacklisted: {:s} ({:d} objects suppressed)".format(",".join(args.blacklist),len(suppressed)))
 
   #exit
@@ -241,8 +267,9 @@ if __name__ == "__main__":
   parser.add_argument("--xmlThresholds",dest="xmlThresholds",type=int,help="threshold to be used for matching with XMLs",default=95)
   parser.add_argument("--py",dest="json",default=[],nargs="*",help="list of python/json files to be used")
   parser.add_argument("--pyThresholds",dest="pyThresholds",type=int,help="threshold to be used for matching with python/json",default=80)
-  parser.add_argument("--blacklist",dest="blacklist",default=["obs_.*","binWidth_obs_.*",".*gamma_stat_.*","nom_.*",".*sampleNorm.*"],required=False,help="list of expressions to be ignored")
+  parser.add_argument("--blacklist",dest="blacklist",nargs="*",default=["obs_.*","binWidth_obs_.*",".*gamma_stat_.*","nom_.*",".*sampleNorm.*"],required=False,help="list of expressions to be ignored")
   parser.add_argument("--write",dest="write",default=None,metavar="FILE.TXT NAME",nargs=2,type=str,help="output file/name to write the correlations to")
   parser.add_argument('--quick', action='store_true',help="run in quick mode and only use the parameters present in the ModelConfig")
+  parser.add_argument("--ignore",dest="nulltokens",nargs="*",default=["ATLAS","alpha"],required=False,help="list of name components to be ignored")
   # call the main function
   main(parser.parse_args())
