@@ -3,13 +3,6 @@
 #include "TFile.h"
 #include "TMath.h"
 #include "TMatrixDSymEigen.h"
-#include <math.h>
-// unfortunately, this is needed
-#define private public
-#define protected public
-#include "RooFitResult.h"
-#undef private
-#undef protected
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
@@ -17,17 +10,74 @@
 #include "RooNLLVar.h"
 #include "RooRealVar.h"
 
+#include "RooStats/RooStatsUtils.h"
+
 #include "RooFitUtils/Utils.h"
 #include "RooFitUtils/ExtendedModel.h"
 
-#include "RooStats/RooStatsUtils.h"
-
 #include <limits>
+#include <math.h>
 
 #define nan std::numeric_limits<double>::quiet_NaN()
 #define inf std::numeric_limits<double>::infinity()
 
 ClassImp(RooFitUtils::ExtendedMinimizer)
+
+
+namespace {
+  //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar. 
+  template <typename RooMinimizerTag>
+  struct RooMinimizerHackResult {
+    typedef typename RooMinimizerTag::type type;
+    static type ptr;
+  };
+  
+  template <typename RooMinimizerTag>
+  typename RooMinimizerHackResult<RooMinimizerTag>::type RooMinimizerHackResult<RooMinimizerTag>::ptr;
+  
+  template<typename RooMinimizerTag, typename RooMinimizerTag::type p>
+  struct RooMinimizerRob : RooMinimizerHackResult<RooMinimizerTag> {
+    struct RooMinimizerFiller {
+      RooMinimizerFiller() {RooMinimizerHackResult<RooMinimizerTag>::ptr = p;}
+    };
+    static RooMinimizerFiller RooMinimizerfiller_obj;
+  };
+  
+  template<typename RooMinimizerTag, typename RooMinimizerTag::type p>
+  typename RooMinimizerRob<RooMinimizerTag, p>::RooMinimizerFiller RooMinimizerRob<RooMinimizerTag, p>::RooMinimizerfiller_obj;
+  
+  //now expose some members of RooMinimizer that we need to access
+  struct RooMinimizergetNPar { typedef Int_t(RooMinimizer::*type)() const; };
+  template class RooMinimizerRob<RooMinimizergetNPar, &RooMinimizer::getNPar>;
+}
+
+
+namespace {
+  //somewhat complex but apparently standard conform hack to access RooFitResult::setCovQual. 
+  template <typename RooFitResultTag>
+  struct RooFitResultHackResult {
+    typedef typename RooFitResultTag::type type;
+    static type ptr;
+  };
+  
+  template <typename RooFitResultTag>
+  typename RooFitResultHackResult<RooFitResultTag>::type RooFitResultHackResult<RooFitResultTag>::ptr;
+  
+  template<typename RooFitResultTag, typename RooFitResultTag::type p>
+  struct RooFitResultRob : RooFitResultHackResult<RooFitResultTag> {
+    struct RooFitResultFiller {
+      RooFitResultFiller() {RooFitResultHackResult<RooFitResultTag>::ptr = p;}
+    };
+    static RooFitResultFiller RooFitResultfiller_obj;
+  };
+  
+  template<typename RooFitResultTag, typename RooFitResultTag::type p>
+  typename RooFitResultRob<RooFitResultTag, p>::RooFitResultFiller RooFitResultRob<RooFitResultTag, p>::RooFitResultfiller_obj;
+  
+  //now expose some members of RooFitResult that we need to access
+  struct RooFitResultsetCovQual { typedef void(RooFitResult::*type)(Int_t); };
+  template class RooFitResultRob<RooFitResultsetCovQual, &RooFitResult::setCovQual>;
+}
 
 // ____________________________________________________________________________|__________
 
@@ -270,7 +320,7 @@ namespace {
       name = strtok(0, ",");
     }
   }
-
+  
   void setVals(const RooAbsCollection &vars, const RooAbsCollection *snap,
 	       bool setConstant = false) {
     if (!snap)
@@ -606,11 +656,20 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
   
     while (true) {
       fMinimizer->setStrategy(strategy);
-      std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-                << "): starting minimization with strategy "
-                          << strategy << std::endl;
-      status =
-        fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+
+      // the following line is nothing but
+      // int ndim = fMinimizer->getNPar();
+      int ndim = (fMinimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
+      if(ndim > 0){
+        std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                  << "): starting minimization with strategy "
+                  << strategy << std::endl;
+        status =
+          fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+      } else {
+        status = 0;
+      }
+      
       const double nllval = fNll->getVal();
       
       if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
@@ -697,10 +756,11 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
+  RooFitResult* myresult = fMinimizer->lastMinuitFit();
+  
   // Evaluate errors with Hesse
-  if (fHesse) {
-    const int covqual = fMinimizer->lastMinuitFit()->covQual();
-    //    TMatrixDSym test = fMinimizer->lastMinuitFit()->covarianceMatrix();
+  if (fHesse && myresult) {
+    const int covqual = myresult->covQual();
     if (covqual == 0) {
       coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                             << "): Covariance quality is " << covqual
@@ -714,7 +774,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                           << "): attempting to invert covariance matrix... "
                           << std::endl;
-    TMatrixDSym origG = fMinimizer->lastMinuitFit()->covarianceMatrix();
+    TMatrixDSym origG = myresult->covarianceMatrix();
     TMatrixDSym G = origG.Invert(&determ);
     if (determ == 0 || std::isnan(determ)) {
       coutE(ObjectHandling)
@@ -767,7 +827,9 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
                           << ") saving results as " << name << std::endl;
     r->fit = fMinimizer->save(name.c_str(), title.c_str());
     if (r->fit && !r->hesse)
-      r->fit->setCovQual(-1);
+      // the following line is nothing but
+      // r->fit->setCovQual(-1);
+      (r->fit->*RooFitResultHackResult<RooFitResultsetCovQual>::ptr)(-1);
   }
 
   if (fCondSet) {
