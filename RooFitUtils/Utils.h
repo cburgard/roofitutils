@@ -24,7 +24,7 @@ namespace RooFitUtils {
   
   bool ensureDirectory(const TString &path);
   bool ensureDirectoryForFile(const TString &file);
-  RooWorkspace* makeCleanWorkspace(RooWorkspace* oldWS, const char* newName = "");
+  RooWorkspace* makeCleanWorkspace(RooWorkspace* oldWS, const char* newName = NULL);
   
   void PrintTable(std::string *firstCol, std::string **matrix,
                   std::string **matrixErr, std::string *header, int nrRows,
