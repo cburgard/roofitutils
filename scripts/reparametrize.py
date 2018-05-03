@@ -62,7 +62,7 @@ def main(args):
         workspaces = [o.GetName() for o in wsfile.GetListOfKeys() if o.GetClassName() == "RooWorkspace"]
         if len(workspaces) == 1:
             workspace = wsfile.Get(workspaces[0])
-            raise print("unable to find workspace '{:s}' in file '{:s}', using RooWorkspace {:s} instead".format(args.workspace,args.inFileName,workspace.GetName()))
+            raise RuntimeError("unable to find workspace '{:s}' in file '{:s}', using RooWorkspace {:s} instead".format(args.workspace,args.inFileName,workspace.GetName()))
         elif len(workspaces) > 0:
             raise IOError("unable to find workspace '{:s}' in file '{:s}', available objects of type RooWorkspace are: {:s}".format(args.workspace,args.inFileName,",".join(workspaces)))
         else:
@@ -123,10 +123,11 @@ def main(args):
         if not newpdf:
             raise RuntimeError("something went wrong when editing the Pdf")
 
+    print("finalizing workspace")
     ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.ObjectHandling)
     newws = ROOT.RooFitUtils.makeCleanWorkspace(workspace)
     newmc = newws.obj(mc.GetName())
-    newpoinames = sorted(set(new_pois+orig_pois))
+    newpoinames = sorted(set(new_pois))
     for poi in newpoinames:
         p = newws.var(poi)
         if p:
