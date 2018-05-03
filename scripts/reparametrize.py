@@ -75,6 +75,9 @@ def main(args):
     orig_pois = namelist(mc.GetParametersOfInterest())
     orig_nps  = namelist(mc.GetNuisanceParameters())
     orig_globs= namelist(mc.GetGlobalObservables())
+
+    for poi in orig_pois:
+        workspace.var(poi).setConstant(True)
     
     pdf = mc.GetPdf()
     pdfName = pdf.GetName()
@@ -123,7 +126,12 @@ def main(args):
     ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.ObjectHandling)
     newws = ROOT.RooFitUtils.makeCleanWorkspace(workspace)
     newmc = newws.obj(mc.GetName())
-    newmc.SetParametersOfInterest(",".join(sorted(set(new_pois+orig_pois))))
+    newpoinames = sorted(set(new_pois+orig_pois))
+    for poi in newpoinames:
+        p = newws.var(poi)
+        if p:
+            p.setConstant(False)
+    newmc.SetParametersOfInterest(",".join(newpoinames))
     newmc.SetNuisanceParameters(",".join(sorted(set(new_nps+orig_nps))))
     newmc.SetGlobalObservables(",".join(sorted(set(new_globs+orig_globs))))
     print("writing output to "+args.outFileName)

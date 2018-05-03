@@ -1,0 +1,9 @@
+kV[1.0,0.0,10]
+ku[1.0,0.0,10]
+kd[1.0,0.0,10]
+mu_XS_VBFVH=kV
+mu_BR_V=kV
+mu_BR_cc=ku
+mu_XS_ttHtH=ku
+mu_BR_bb=kd
+mu_XS_bbH=kd
