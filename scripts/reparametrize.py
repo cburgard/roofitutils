@@ -49,6 +49,30 @@ def loadRooFitUtils():
     ROOT.RooFitUtils.ExtendedMinimizer
     return rcdir
 
+def parseItems(expressions):
+    insertions = []
+    assignments = []
+    for expression in expressions:
+        if not expression.strip() or expression.startswith("#"):
+            continue
+        if "=" in expression:
+            assignments.append(expression.strip())
+        else:
+            insertions.append(expression.strip())
+    return insertions,assignments
+
+def parseTXT(modelfile):
+    with open(m,"rt") as modelfile:
+        expressions = [ e for e in modelfile ]
+    return parseItems(expressions)
+
+def parseXML(modelfile):
+    from BeautifulSoup import BeautifulStoneSoup
+    handler = open(modelfile).read()
+    soup = BeautifulStoneSoup(handler)
+    expressions = [ item["name"] for item in soup.findAll() if item.name == "item" ]
+    return parseItems(expressions)
+
 def main(args):
     import ROOT
     loadRooFitUtils()
@@ -89,30 +113,23 @@ def main(args):
     new_globs = []    
     
     for m in args.modelFiles:
-        with open(m,"rt") as modelfile:
-            insertions = []
-            assignments = []
-            for expression in modelfile:
-                if not expression.strip() or expression.startswith("#"):
-                    continue
-                if "=" in expression:
-                    assignments.append(expression.strip())
-                else:
-                    insertions.append(expression.strip())
-                pass
+        if m.endswith(".xml"):
+            insertions,assignments = parseXML(m)
+        else:
+            insertions,assignments = parseTXT(m)
 
-            for expression in insertions:
-                print("inserting new object into workspace using expression '{:s}'".format(expression))
-                newobj = workspace.factory(expression);
-                if not newobj:
-                    raise RuntimeError("error evaluating expression '{:s}'".format(expression))
-                if newobj.InheritsFrom(ROOT.RooRealVar.Class()):
-                    new_pois.append(newobj.GetName())
+        for expression in insertions:
+            print("inserting new object into workspace using expression '{:s}'".format(expression))
+            newobj = workspace.factory(expression);
+            if not newobj:
+                raise RuntimeError("error evaluating expression '{:s}'".format(expression))
+            if newobj.InheritsFrom(ROOT.RooRealVar.Class()):
+                new_pois.append(newobj.GetName())
 
-            editstr = "EDIT::" + pdfName + "(" + pdfName
-            for expression in assignments:
-                editstr = editstr + "," + expression.strip()
-            editstr = editstr + ")"
+        editstr = "EDIT::" + pdfName + "(" + pdfName
+        for expression in assignments:
+            editstr = editstr + "," + expression.strip()
+        editstr = editstr + ")"
 
         # replacement
         print("editing PDF with command '{:s}'".format(editstr))
