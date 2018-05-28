@@ -777,8 +777,8 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     TMatrixDSym origG = myresult->covarianceMatrix();
     TMatrixDSym G = origG.Invert(&determ);
     if (determ == 0 || std::isnan(determ)) {
-      coutE(ObjectHandling)
-          << "ExtendedMinimizer::minimize(" << fName
+      //coutE(ObjectHandling)
+       std::cout   << "ExtendedMinimizer::minimize(" << fName
           << "): covariance matrix is singular! " << std::endl;
     } else {
       r->hesse = new TMatrixDSym(G);
@@ -826,10 +826,11 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                           << ") saving results as " << name << std::endl;
     r->fit = fMinimizer->save(name.c_str(), title.c_str());
-    if (r->fit && !r->hesse)
+    if (false && r->fit && !r->hesse) {
       // the following line is nothing but
       // r->fit->setCovQual(-1);
       (r->fit->*RooFitResultHackResult<RooFitResultsetCovQual>::ptr)(-1);
+    }
   }
 
   if (fCondSet) {
