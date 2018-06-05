@@ -70,17 +70,25 @@ RooFitUtils::CombinedMeasurement::~CombinedMeasurement() {
   coutI(InputArguments) << "CombinedMeasurement::~CombinedMeasurement(" << fName
                         << ") cleaning up" << std::endl;
 
-  fNuisanceParameters->Delete();
-  delete fNuisanceParameters;
+  if(fNuisanceParameters){
+    //    fNuisanceParameters->Delete();
+    delete fNuisanceParameters;
+  }
 
-  fObservables->Delete();
-  delete fObservables;
+  if(fObservables){
+    //    fObservables->Delete();
+    delete fObservables;
+  }
 
-  fGlobalObservables->Delete();
-  delete fGlobalObservables;
+  if(fGlobalObservables){  
+    //    fGlobalObservables->Delete();
+    delete fGlobalObservables;
+  }
 
-  fParametersOfInterest->Delete();
-  delete fParametersOfInterest;
+  if(fParametersOfInterest){
+    //    fParametersOfInterest->Delete();
+    delete fParametersOfInterest;
+  }
 }
 
 // ____________________________________________________________________________|__________
@@ -521,7 +529,6 @@ void RooFitUtils::CombinedMeasurement::MakeCleanWorkspace() {
 
   std::string tmpPdfName = fPdf->GetName();
   tmpWorkspace->import(*fPdf, RooFit::RecycleConflictNodes());
-  delete fPdf;
   fPdf = tmpWorkspace->pdf(tmpPdfName.c_str());
 
   tmpWorkspace->import(*fData);
