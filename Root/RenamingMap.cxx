@@ -41,11 +41,13 @@ void RooFitUtils::RenamingMap::RenameParameter(
 
   // Check if the parameter exists already in the renaming map
   if (fRenamingMap.find(OldParameterName) != fRenamingMap.end()) {
-    coutF(InputArguments) << "RenamingMap::AddRenamedParameter(" << fName
-                          << ") " << OldParameterName
-                          << " already exists! [Hint: renamed to "
-                          << fRenamingMap[OldParameterName] << "]" << std::endl;
-    exit(-1);
+    std::stringstream ss;   
+    ss << "RenamingMap::AddRenamedParameter(" << fName
+       << ") " << OldParameterName
+       << " already exists! [Hint: renamed to "
+       << fRenamingMap[OldParameterName] << "]" << std::endl;
+    coutF(InputArguments) << ss.str() << std::endl;
+    throw std::runtime_error(ss.str());    
   }
 
   // Add to renaming map
@@ -85,13 +87,14 @@ void RooFitUtils::RenamingMap::SetAttribute(
     break;
   }
   default: {
-    coutF(InputArguments) << "RenamingMap::SetAttribute(" << fName << ") "
-                          << thisMeasurementType
-                          << " not recognised. Ignoring attribute "
-                          << AttributeNames[thisAttribute] << " = "
-                          << AttributeValue << " for parameter" << ParameterName
-                          << std::endl;
-    exit(-1);
+    std::stringstream ss;
+    ss << "RenamingMap::SetAttribute(" << fName << ") "
+       << thisMeasurementType
+       << " not recognised. Ignoring attribute "
+       << AttributeNames[thisAttribute] << " = "
+       << AttributeValue << " for parameter" << ParameterName;
+    coutF(InputArguments) << ss.str() << std::endl;
+    throw std::runtime_error(ss.str());
   }
   }
 }
@@ -115,12 +118,14 @@ RooFitUtils::RenamingMap::GetAttribute(const std::string &ParameterName,
     break;
   }
   default: {
-    coutF(InputArguments) << "RenamingMap::GetAttribute(" << fName << ") "
-                          << thisMeasurementType
-                          << " not recognised. Ignoring attribute "
-                          << AttributeNames[thisAttribute] << " for parameter"
-                          << ParameterName << std::endl;
-    exit(-1);
+    std::stringstream ss;    
+    ss << "RenamingMap::GetAttribute(" << fName << ") "
+       << thisMeasurementType
+       << " not recognised. Ignoring attribute "
+       << AttributeNames[thisAttribute] << " for parameter"
+       << ParameterName;
+    coutF(InputArguments) << ss.str() << std::endl;
+    throw std::runtime_error(ss.str());
   }
   }
 
@@ -622,7 +627,7 @@ std::string RooFitUtils::RenamingMap::FactoryExpression(
 
   std::string thisExpression = "";
 
-  if (thisConstraintType == "unconstrained") {
+  if (thisConstraintType == "unconstrained" || thisConstraintType.size()==0 ) {
     thisExpression = TString::Format("%s%s", thisObservableName.c_str(),
                                      thisObservableRange.c_str())
                          .Data();
@@ -649,11 +654,13 @@ std::string RooFitUtils::RenamingMap::FactoryExpression(
                           << thisConstraintType << " not implemented yet."
                           << std::endl;
   } else {
-    coutF(InputArguments) << "RenamingMap::FactoryExpression(" << fName << ") "
-                          << thisConstraintType
-                          << " not recognised for parameter " << ParameterName
-                          << std::endl;
-    exit(-1);
+    std::stringstream ss;        
+    ss << "RenamingMap::FactoryExpression(" << fName << ") "
+       << thisConstraintType
+       << " not recognised for parameter " << ParameterName
+       << std::endl;
+    coutF(InputArguments) << ss.str() << std::endl;
+    throw std::runtime_error(ss.str());
   }
 
   if (thisExpression == "") {
@@ -675,10 +682,12 @@ void RooFitUtils::RenamingMap::FindUniqueProdComponents(RooProdPdf *Pdf,
   counter++;
 
   if (counter > 50) {
-    coutE(ObjectHandling) << "RenamingMap::FindUniqueProdComponents(" << fName
-                          << ") detected infinite loop. Please check."
-                          << std::endl;
-    exit(1);
+    std::stringstream ss;            
+    ss << "RenamingMap::FindUniqueProdComponents(" << fName
+       << ") detected infinite loop. Please check."
+       << std::endl;
+    coutF(InputArguments) << ss.str() << std::endl;
+    throw std::runtime_error(ss.str());    
   }
 
   RooArgList pdfList = Pdf->pdfList();

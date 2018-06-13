@@ -228,6 +228,7 @@ def fit(args,model,minimizer):
         print("received invalid result")
 
     if args.outWsName:
+        ws = model.GetWorkspace()        
         ws.writeToFile(args.outWsName)
                
 if __name__ == "__main__":
