@@ -59,6 +59,10 @@ else()
     )
 endif()
 
+set(SETUP setup.sh)
+file(WRITE ${SETUP} "#!/bin/bash\n")
+file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
+
 if(${AnalysisBase_FOUND})
   # this section reflects the standard ASG way of configuring CMake
   # it is executed when compiling within an ASG environment
@@ -73,6 +77,11 @@ if(${AnalysisBase_FOUND})
     PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS} 
     PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES}
     )
+
+  file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
+  file(APPEND ${SETUP} "export DYLD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
+  file(APPEND ${SETUP} "export ROOT_INCLUDE_PATH=\${ROOT_INCLUDE_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/include\n")
+
 ELSE()
   # this section is a standalone compilation segment
   # it is executed when compiling outside an ASG environment
@@ -89,9 +98,6 @@ ELSE()
   # link everything together at the end
   target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
 
-  set(SETUP setup.sh)
-  file(WRITE ${SETUP} "#!/bin/bash\n")
-  file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
   file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_CURRENT_SOURCE_DIR}/scripts\n")
   
