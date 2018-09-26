@@ -55,6 +55,7 @@ public:
       int status;
       int strategy;
       double nll;
+      int ndim;
     };
     std::vector<Scan> scans;
     std::vector<Parameter> parameters;
