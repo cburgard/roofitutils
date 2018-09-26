@@ -50,7 +50,7 @@ def bestmatch(a,b,cutoff,func):
   xf,yf = None,None
   for x in a:
     for y in b:
-      s = func(x,y)
+      s = func(x.lower(),y.lower())
       if s > best:
         best = s
         xf,yf = x,y
@@ -248,7 +248,6 @@ def main(args):
   if args.write:
     with open(args.write[0],"w") as outfile:
       for new,old,score in mappings:
-        if old == new: continue
         outfile.write("{:s}::{:s}>>{:s}\n".format(args.write[1],old,new))
 
   # print a summary
