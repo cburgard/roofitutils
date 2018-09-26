@@ -1,6 +1,8 @@
 #include "RooFitUtils/CorrelationScheme.h"
 #include "RooFitUtils/Utils.h"
 
+#include <fstream>
+
 // ____________________________________________________________________________|__________
 
 RooFitUtils::CorrelationScheme::CorrelationScheme(
@@ -498,22 +500,60 @@ void RooFitUtils::CorrelationScheme::IntroduceCorrelation(
 
 void RooFitUtils::CorrelationScheme::Print() {
   // Print the correlation scheme as table
-  std::set<std::string> allMeasurements;
-  typedef std::map<std::string, RenamingMap>::iterator it_type;
-  for (it_type corrItr = fCorrelationMap.begin();
-       corrItr != fCorrelationMap.end(); ++corrItr) {
-    allMeasurements.insert(corrItr->first);
-  }
-  Print(allMeasurements);
+
+  coutI(ObjectHandling) << "CorrelationScheme::Print(" << fName
+                        << ") printing correlations scheme" << std::endl;
+
+  printToStream(std::cout);
 }
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::CorrelationScheme::Print(
-    std::set<std::string> thisMeasurements) {
-  // Print the correlation scheme as table for given numbers of measurements
+void RooFitUtils::CorrelationScheme::Print(const std::set<std::string>& thisMeasurements) {
+  // Print the correlation scheme as table
+
   coutI(ObjectHandling) << "CorrelationScheme::Print(" << fName
                         << ") printing correlations scheme" << std::endl;
+
+  printToStream(std::cout,thisMeasurements);
+}
+
+// ____________________________________________________________________________|__________
+
+void RooFitUtils::CorrelationScheme::printToFile(const char* filename, bool standalone){
+  // Print the correlation scheme as table
+  std::ofstream outfile(filename);
+  if(!outfile.is_open()) throw std::runtime_error("unable to open output file!");
+  if(standalone){
+    outfile << "\\documentclass{standalone}\n";
+    outfile << "\\usepackage{underscore}\n";
+    outfile << "\\begin{document}\n";
+  }
+  this->printToStream(outfile);
+  if(standalone){
+    outfile << "\\end{document}\n";
+  }
+  outfile.close();
+}
+
+// ____________________________________________________________________________|__________
+
+
+void RooFitUtils::CorrelationScheme::printToStream(std::ostream& out) {
+  // Print the correlation scheme as table
+  std::set<std::string> allMeasurements;
+  for (auto corrItr = fCorrelationMap.begin();
+       corrItr != fCorrelationMap.end(); ++corrItr) {
+    allMeasurements.insert(corrItr->first);
+  }
+  printToStream(out,allMeasurements);
+}
+
+// ____________________________________________________________________________|__________
+
+void RooFitUtils::CorrelationScheme::printToStream(std::ostream& out,
+    const std::set<std::string>& thisMeasurements) {
+  // Print the correlation scheme as table for given numbers of measurements
 
   int nrMeasurements = thisMeasurements.size();
   if (nrMeasurements == 0) {
@@ -526,11 +566,9 @@ void RooFitUtils::CorrelationScheme::Print(
   std::map<std::string, std::vector<std::string>> correlationMap;
   std::string *header = new std::string[nrMeasurements];
 
-  typedef std::map<std::string, RenamingMap>::iterator it_type1;
-  typedef std::map<std::string, std::string>::iterator it_type2;
   int iMeas = 0;
 
-  for (it_type1 corrItr = fCorrelationMap.begin();
+  for (auto corrItr = fCorrelationMap.begin();
        corrItr != fCorrelationMap.end(); ++corrItr) {
     if (thisMeasurements.find(corrItr->first) == thisMeasurements.end()) {
       continue;
@@ -541,7 +579,7 @@ void RooFitUtils::CorrelationScheme::Print(
     RenamingMap thisRenamingMap = corrItr->second;
     std::map<std::string, std::string> thisRenamingMapMap =
         thisRenamingMap.GetRenamingMap();
-    for (it_type2 parItr = thisRenamingMapMap.begin();
+    for (auto parItr = thisRenamingMapMap.begin();
          parItr != thisRenamingMapMap.end(); ++parItr) {
       std::string thisNewObservableName = parItr->second;
       correlationMap[thisNewObservableName].push_back(corrItr->first);
@@ -565,7 +603,7 @@ void RooFitUtils::CorrelationScheme::Print(
        iterator != correlationMap.end(); ++iterator) {
     firstCol[irow] = iterator->first;
     int icol = 0;
-    for (it_type1 corrItr = fCorrelationMap.begin();
+    for (auto corrItr = fCorrelationMap.begin();
          corrItr != fCorrelationMap.end(); ++corrItr) {
       if (thisMeasurements.find(corrItr->first) == thisMeasurements.end()) {
         continue;
@@ -584,13 +622,13 @@ void RooFitUtils::CorrelationScheme::Print(
                         << ") the following correlation scheme is used"
                         << std::endl;
 
-  std::cout << "\\begin{tabular}{l";
+  out << "\\begin{tabular}{l";
   for (int i = 0; i < nrMeasurements; i++)
-    std::cout << "|c";
-  std::cout << "}\n";
+    out << "|c";
+  out << "}\n";
   RooFitUtils::PrintTable(firstCol, matrix, NULL, header, nrNuis,
-                          nrMeasurements, 0, std::cout);
-  std::cout << "\\end{tabular}\n";
+                          nrMeasurements, 0, out);
+  out << "\\end{tabular}\n";
 
   delete[] header;
   delete[] firstCol;
