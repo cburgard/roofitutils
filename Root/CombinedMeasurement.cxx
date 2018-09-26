@@ -592,8 +592,8 @@ void RooFitUtils::CombinedMeasurement::MakeAsimovData(
   }
 
   // Set the value of the POI for Asimov data generation
-  RooRealVar *mu =
-      (RooRealVar *)fModelConfig->GetParametersOfInterest()->first();
+  RooRealVar *mu = (RooRealVar *)fModelConfig->GetParametersOfInterest()->first();
+  if(!mu) return;
   double muVal = mu->getVal();
 
   if (generateAt == background) {
@@ -708,8 +708,8 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
                         << ") making snapshots." << std::endl;
 
   // Set the value of the POI for (conditional) profiling
-  RooRealVar *mu =
-      (RooRealVar *)fModelConfig->GetParametersOfInterest()->first();
+  RooRealVar *mu = (RooRealVar *)fModelConfig->GetParametersOfInterest()->first();
+  if(!mu) return;
   double muVal = mu->getVal();
   if (Snapshot == background) {
     muVal = 0;
@@ -735,9 +735,9 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
     muStr = "_muhat";
   }
 
-  RooArgSet mc_obs = *fModelConfig->GetObservables();
-  RooArgSet mc_globs = *fModelConfig->GetGlobalObservables();
-  RooArgSet mc_nuis = *fModelConfig->GetNuisanceParameters();
+  RooArgSet mc_obs(*fModelConfig->GetObservables());
+  RooArgSet mc_globs(*fModelConfig->GetGlobalObservables());
+  RooArgSet mc_nuis(*fModelConfig->GetNuisanceParameters());
 
   // Pair the nuisance parameters and global observables
   RooArgSet mc_nuis_tmp = mc_nuis;
@@ -755,8 +755,7 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
   RooAbsArg *arg;
   while ((arg = (RooAbsArg *)cIter->Next())) {
     RooAbsPdf *pdf = (RooAbsPdf *)arg;
-    if (!pdf)
-      continue;
+    if (!pdf) continue;
 
     TIterator *nIter = mc_nuis.createIterator();
     RooRealVar *thisNui = NULL;
@@ -773,31 +772,33 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
     // In this case, see which variable is dependent on the nuisance parameter
     // and use that.
     RooArgSet *components = pdf->getComponents();
-    components->remove(*pdf);
-    if (components->getSize()) {
-      TIterator *itr1 = components->createIterator();
-      RooAbsArg *arg1;
-      while ((arg1 = (RooAbsArg *)itr1->Next())) {
-        TIterator *itr2 = components->createIterator();
-        RooAbsArg *arg2;
-        while ((arg2 = (RooAbsArg *)itr2->Next())) {
-          if (arg1 == arg2)
-            continue;
-          if (arg2->dependsOn(*arg1)) {
-            components->remove(*arg1);
+    if(components){
+      components->remove(*pdf);
+      if (components->getSize()) {
+        TIterator *itr1 = components->createIterator();
+        RooAbsArg *arg1;
+        while ((arg1 = (RooAbsArg *)itr1->Next())) {
+          TIterator *itr2 = components->createIterator();
+          RooAbsArg *arg2;
+          while ((arg2 = (RooAbsArg *)itr2->Next())) {
+            if (arg1 == arg2)
+              continue;
+            if (arg2->dependsOn(*arg1)) {
+              components->remove(*arg1);
+            }
           }
+          delete itr2;
         }
-        delete itr2;
+        delete itr1;
       }
-      delete itr1;
-    }
-    if (components->getSize() > 1) {
-      coutE(ObjectHandling)
+      if (components->getSize() > 1) {
+        coutE(ObjectHandling)
           << "CombinedMeasurement::MakeSnapshots(" << fName
           << ") Failed to isolate proper nuisance parameter." << std::endl;
-      return;
-    } else if (components->getSize() == 1) {
-      thisNui = (RooRealVar *)components->first();
+        return;
+      } else if (components->getSize() == 1) {
+        thisNui = (RooRealVar *)components->first();
+      }
     }
 
     TIterator *gIter = mc_globs.createIterator();
