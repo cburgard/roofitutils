@@ -89,7 +89,7 @@ RooFitUtils::ExtendedMinimizer::Result::Result()
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization()
-    : status(-1), strategy(-1), nll(nan) {
+  : status(-1), strategy(-1), nll(nan), ndim(0) {
   // nothing here
 }
 
@@ -642,7 +642,8 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int strategy = fDefaultStrategy;
     int retry = fRetry;
     int status = -1;
-
+    int ndim = 0;
+    
     fMinimizer->setPrintLevel(fPrintLevel);
     fMinimizer->optimizeConst(fOptConst);
     fMinimizer->setMinimizerType(fMinimizerType.c_str());
@@ -659,7 +660,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
       // the following line is nothing but
       // int ndim = fMinimizer->getNPar();
-      int ndim = (fMinimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
+      ndim = (fMinimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
       if(ndim > 0){
         std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                   << "): starting minimization with strategy "
@@ -667,6 +668,8 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         status =
           fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
       } else {
+        std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                  << "): skipping minimization, no free parameters given!" << std::endl;
         status = 0;
       }
       
@@ -693,12 +696,11 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         break;
       }
     }
-    
+       
     Result::Minimization mini;
     mini.status = status;
     mini.strategy = strategy;
-    mini.nll = fNll->getVal();
-    
+    mini.ndim = ndim;
     if (!mini.ok()) {
       coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
                             << ") fit failed with status " << status << std::endl;
@@ -707,8 +709,10 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
                             << ") fit completed with status " << status
                             << std::endl;
     }
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+
+    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
                           << "): Evaluating Nll" << std::endl;
+    mini.nll = fNll->getVal();
     
     return mini;
     
@@ -756,7 +760,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
-  RooFitResult* myresult = fMinimizer->lastMinuitFit();
+  RooFitResult* myresult = r->min.ndim > 0 ? fMinimizer->lastMinuitFit() : NULL;
   
   // Evaluate errors with Hesse
   if (fHesse && myresult) {
@@ -819,7 +823,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   }
 
   // Return fit result
-  if (fSave) {
+  if (fSave && myresult) {
     std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
     std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
                              GetName(), fData->GetName());
