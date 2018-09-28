@@ -79,6 +79,23 @@ namespace {
   template class RooFitResultRob<RooFitResultsetCovQual, &RooFitResult::setCovQual>;
 }
 
+namespace {
+  int countFloatParams(RooArgSet* args){
+    int n = 0;
+    RooAbsArg* obj;
+    RooFIter itr(args->fwdIterator());
+    while((obj = itr.next())){
+      RooRealVar* v = dynamic_cast<RooRealVar*>(obj);
+      if(!v) continue;
+      if(!v->isConstant()) ++n;
+    } 
+    return n;
+  }
+  int countFloatParams(RooMinimizer* minimizer){
+    return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
+  }
+}
+
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Result()
@@ -468,6 +485,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     }
     fNll = NULL;
   }
+  int ndim = 0;
   if(!fNll){
     coutI(InputArguments) << "Creating new Nll" << std::endl;
     
@@ -482,8 +500,15 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     }
     
     fNll = fPdf->createNLL(*fData, fNllCmdList);
+    RooArgSet* args = fNll->getVariables();
+    ndim = ::countFloatParams(args);
+    delete args;
+    coutI(InputArguments) << "Created new Nll with " << ndim << " parameters" << std::endl;
   } else {
-    coutI(InputArguments) << "Using existing Nll" << std::endl;
+    RooArgSet* args = fNll->getVariables();
+    ndim = ::countFloatParams(args);
+    delete args;
+    coutI(InputArguments) << "Using existing Nll with " << ndim << " parameters" << std::endl;
   }
   
   if (fWorkspace) {
@@ -516,7 +541,13 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(fPrintLevel);
 
     fMinimizer = new RooMinimizer(*fNll);
+    if(ndim != countFloatParams(fMinimizer)){
+      throw std::runtime_error("construction of minimizer failed, number of parameters does not match!");
+    }
   } else {
+    if(ndim != countFloatParams(fMinimizer)){
+      throw std::runtime_error("minimizer seems to have wrong Nll set, number of parameters does not match!");
+    }
     coutI(InputArguments) << "Using existing Minimizer" << std::endl;
   }
 }
@@ -642,7 +673,12 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int strategy = fDefaultStrategy;
     int retry = fRetry;
     int status = -1;
-    int ndim = 0;
+    RooArgSet* args = fNll->getVariables();
+    int ndim = ::countFloatParams(args);
+    delete args;
+    if(ndim != ::countFloatParams(fMinimizer)){
+      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",ndim,::countFloatParams(fMinimizer)).Data());
+    }
     
     fMinimizer->setPrintLevel(fPrintLevel);
     fMinimizer->optimizeConst(fOptConst);
@@ -660,7 +696,6 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
       // the following line is nothing but
       // int ndim = fMinimizer->getNPar();
-      ndim = (fMinimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
       if(ndim > 0){
         std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                   << "): starting minimization with strategy "
@@ -701,6 +736,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     mini.status = status;
     mini.strategy = strategy;
     mini.ndim = ndim;
+
     if (!mini.ok()) {
       coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
                             << ") fit failed with status " << status << std::endl;
@@ -760,8 +796,12 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
-  RooFitResult* myresult = r->min.ndim > 0 ? fMinimizer->lastMinuitFit() : NULL;
+  RooFitResult* myresult = fMinimizer->save("tmp","tmp");
   
+  if(r->min.ndim != myresult->floatParsFinal().getSize()){
+    throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
+  }
+
   // Evaluate errors with Hesse
   if (fHesse && myresult) {
     const int covqual = myresult->covQual();
@@ -779,6 +819,11 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
                           << "): attempting to invert covariance matrix... "
                           << std::endl;
     TMatrixDSym origG = myresult->covarianceMatrix();
+    
+    if(origG.GetNcols() != r->min.ndim){
+      throw std::runtime_error("inconsistency detected: correlation matrix size inconsistent with float parameters!");
+    }
+    
     TMatrixDSym G = origG.Invert(&determ);
     if (determ == 0 || std::isnan(determ)) {
       //coutE(ObjectHandling)
@@ -822,21 +867,6 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     }
   }
 
-  // Return fit result
-  if (fSave && myresult) {
-    std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
-    std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
-                             GetName(), fData->GetName());
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
-                          << ") saving results as " << name << std::endl;
-    r->fit = fMinimizer->save(name.c_str(), title.c_str());
-    if (false && r->fit && !r->hesse) {
-      // the following line is nothing but
-      // r->fit->setCovQual(-1);
-      (r->fit->*RooFitResultHackResult<RooFitResultsetCovQual>::ptr)(-1);
-    }
-  }
-
   if (fCondSet) {
     coutP(ObjectHandling) << "Editing conditional set" << std::endl;
     RooArgSet *attachedSet = fNll->getVariables();
@@ -850,12 +880,26 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     }
   }
 
+  // Return fit result
+  if (r->min.ndim > 0 && fSave) {
+    std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
+    std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
+                             GetName(), fData->GetName());
+    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+                          << ") saving results as " << name << std::endl;
+    r->fit = fMinimizer->save(name.c_str(), title.c_str());
+
+    if(r->fit->correlationMatrix().GetNcols() != r->fit->floatParsFinal().getSize()) throw std::runtime_error("blab!");
+  }
+  delete myresult;
+
   if(!fReuseMinimizer) {
 		if(fMinimizer)
 			delete fMinimizer;
     fMinimizer = NULL;
   }
-
+  
+ 
   return r;
 }
 
