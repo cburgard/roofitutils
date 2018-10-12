@@ -543,12 +543,14 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(fPrintLevel);
 
     fMinimizer = new RooMinimizer(*fNll);
-    if(ndim != countFloatParams(fMinimizer)){
-      throw std::runtime_error("construction of minimizer failed, number of parameters does not match!");
+    int npar = countFloatParams(fMinimizer);
+    if(ndim != npar){
+      throw std::runtime_error(TString::Format("construction of minimizer failed, number of parameters does not match between Nll (npar=%d) and minimizer (npar=%d)!",ndim,npar).Data());
     }
   } else {
-    if(ndim != countFloatParams(fMinimizer)){
-      throw std::runtime_error("minimizer seems to have wrong Nll set, number of parameters does not match!");
+    int npar = countFloatParams(fMinimizer);
+    if(ndim != npar){
+      throw std::runtime_error(TString::Format("minimizer seems to have wrong Nll set, number of parameters does not match between Nll (npar=%d) and minimizer (npar=%d)!",ndim,npar).Data());
     }
     coutI(InputArguments) << "Using existing Minimizer" << std::endl;
   }
