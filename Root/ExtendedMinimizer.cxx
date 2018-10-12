@@ -448,6 +448,8 @@ RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer() {
   // Destructor
   clearContents(this->fNllCmdList,true);
   clearContents(this->fFitCmdList,true);
+  if(fNll) delete fNll;
+  if(fMinimizer) delete fMinimizer;
 }
 
 // ____________________________________________________________________________|__________
