@@ -448,8 +448,8 @@ RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer() {
   // Destructor
   clearContents(this->fNllCmdList,true);
   clearContents(this->fFitCmdList,true);
-  if(fNll) delete fNll;
-  if(fMinimizer) delete fMinimizer;
+//  if(fNll) delete fNll;
+//  if(fMinimizer) delete fMinimizer;
 }
 
 // ____________________________________________________________________________|__________
@@ -680,9 +680,9 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     RooArgSet* args = fNll->getVariables();
     int ndim = ::countFloatParams(args);
     delete args;
-    if(ndim != ::countFloatParams(fMinimizer)){
-      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",ndim,::countFloatParams(fMinimizer)).Data());
-    }
+//    if(ndim != ::countFloatParams(fMinimizer)){
+//      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",ndim,::countFloatParams(fMinimizer)).Data());
+//    }
     
     fMinimizer->setPrintLevel(fPrintLevel);
     fMinimizer->optimizeConst(fOptConst);
