@@ -131,6 +131,21 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.Precision(args.precision)]
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
+
+
+    # Collect POIs
+    pois = model.GetParametersOfInterest()
+    poiset = ROOT.RooArgSet()
+    if args.pois:
+        poinames = args.pois
+    else:
+        poinames = [ p.GetName() for p in makelist(pois) ]
+    for poi in poinames:
+        p = model.parseParameter(poi)
+        if not p:
+            raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
+        p.setConstant(False)
+
     minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
     return minimizer
 
