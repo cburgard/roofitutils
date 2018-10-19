@@ -11,17 +11,9 @@ def linspace(vmin,vmax,npoints):
 
 def loadRooFitUtils():
     # retrieve the root core dir environment variable
-    from os import getenv
-    rcdir = getenv ("ROOTCOREDIR")
-    if rcdir:
-        from ROOT import gROOT
-        if gROOT.ProcessLine(".x $ROOTCOREDIR/scripts/load_packages.C"):
-            raise ImportError("unable to load RootCore!")
-    else:
-        from ROOT import gSystem
-        if gSystem.Load("libRooFitUtils"):
-            raise ImportError("unable to load standalone libRooFitUtils.so!")
-    return rcdir
+    from ROOT import gSystem
+    if gSystem.Load("libRooFitUtils"):
+        raise ImportError("unable to load standalone libRooFitUtils.so!")
 
 def printtime(seconds):
     s = "{0:.3f}s".format(mod(seconds,60))
