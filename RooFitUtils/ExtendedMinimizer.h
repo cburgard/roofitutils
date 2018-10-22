@@ -56,6 +56,7 @@ public:
       int strategy;
       double nll;
       int ndim;
+      ROOT::Fit::FitConfig config;
     };
     std::vector<Scan> scans;
     std::vector<Parameter> parameters;
@@ -182,7 +183,7 @@ protected:
   RooAbsReal *fNll = NULL;
   RooMinimizer *fMinimizer = NULL;
 
-	std::vector<RooCmdArg> fOwnedArgs;
+  std::vector<RooCmdArg> fOwnedArgs;
   RooLinkedList fNllCmdList;
   RooLinkedList fFitCmdList;
 

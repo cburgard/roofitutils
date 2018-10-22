@@ -49,6 +49,10 @@ namespace {
   //now expose some members of RooMinimizer that we need to access
   struct RooMinimizergetNPar { typedef Int_t(RooMinimizer::*type)() const; };
   template class RooMinimizerRob<RooMinimizergetNPar, &RooMinimizer::getNPar>;
+
+  struct RooMinimizerfitterFcn { typedef RooMinimizerFcn*(RooMinimizer::*type)(); };
+  template class RooMinimizerRob<RooMinimizerfitterFcn, &RooMinimizer::fitterFcn>;
+  
 }
 
 
@@ -94,6 +98,10 @@ namespace {
   int countFloatParams(RooMinimizer* minimizer){
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
+  RooMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
+    return (minimizer->*RooMinimizerHackResult<RooMinimizerfitterFcn>::ptr)();
+  }
+  
 }
 
 // ____________________________________________________________________________|__________
@@ -488,6 +496,11 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     fNll = NULL;
   }
   int ndim = 0;
+
+//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+//    fWorkspace->Print();
+//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+
   if(!fNll){
     coutI(InputArguments) << "Creating new Nll" << std::endl;
     
@@ -527,14 +540,18 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     throw std::runtime_error("ExtendedMinimizer::setup: Failed to obtain NLL");
   }
 
-	if(!fReuseMinimizer){
+  if(!fReuseMinimizer){
     if(fMinimizer){
       coutW(InputArguments) << "deleting previous Minimizer!" << std::endl;
-			delete fMinimizer;
+      delete fMinimizer;
     }
-		fMinimizer=NULL;
-	}
-	
+    fMinimizer=NULL;
+  }
+  
+  //    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+  //    fWorkspace->Print();
+  //    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+
   if (!fMinimizer) {
     coutI(InputArguments) << "Creating new Minimizer" << std::endl;
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(fMinimizerType.c_str(),
@@ -543,17 +560,21 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(fPrintLevel);
 
     fMinimizer = new RooMinimizer(*fNll);
-    //    int npar = countFloatParams(fMinimizer);
-    //    if(ndim > npar){
-    //      throw std::runtime_error(TString::Format("construction of minimizer failed, number of parameters does not match between Nll (npar=%d) and minimizer (npar=%d)!",ndim,npar).Data());
-    //    }
+    int npar = countFloatParams(fMinimizer);
+    if(ndim > npar){
+      throw std::runtime_error(TString::Format("construction of minimizer failed, number of parameters does not match between Nll (npar=%d) and minimizer (npar=%d)!",ndim,npar).Data());
+    }
   } else {
-    //    int npar = countFloatParams(fMinimizer);
-    //    if(ndim > npar){
-    //      throw std::runtime_error(TString::Format("minimizer seems to have wrong Nll set, number of parameters does not match between Nll (npar=%d) and minimizer (npar=%d)!",ndim,npar).Data());
-    //    }
+    int npar = countFloatParams(fMinimizer);
+    if(ndim > npar){
+      throw std::runtime_error(TString::Format("minimizer seems to have wrong Nll set, number of parameters does not match between Nll (npar=%d) and minimizer (npar=%d)!",ndim,npar).Data());
+    }
     coutI(InputArguments) << "Using existing Minimizer" << std::endl;
   }
+//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+//    fWorkspace->Print();
+//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+
 }
 
 // ____________________________________________________________________________|__________
@@ -680,9 +701,6 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     RooArgSet* args = fNll->getVariables();
     int ndim = ::countFloatParams(args);
     delete args;
-//    if(ndim != ::countFloatParams(fMinimizer)){
-//      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",ndim,::countFloatParams(fMinimizer)).Data());
-//    }
     
     fMinimizer->setPrintLevel(fPrintLevel);
     fMinimizer->optimizeConst(fOptConst);
@@ -735,11 +753,16 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         break;
       }
     }
-       
+
+//    if(ndim != ::countFloatParams(fMinimizer)){
+//      //      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",::countFloatParams(fMinimizer),ndim).Data());
+//    }
+    
     Result::Minimization mini;
     mini.status = status;
     mini.strategy = strategy;
     mini.ndim = ndim;
+    mini.config = fMinimizer->fitter()->Config();
 
     if (!mini.ok()) {
       coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
@@ -893,7 +916,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
                           << ") saving results as " << name << std::endl;
     r->fit = fMinimizer->save(name.c_str(), title.c_str());
 
-    if(r->fit->correlationMatrix().GetNcols() != r->fit->floatParsFinal().getSize()) throw std::runtime_error("blab!");
+    if(r->fit->correlationMatrix().GetNcols() < r->fit->floatParsFinal().getSize()) throw std::runtime_error(TString::Format("fit result size %d is inconsistent with correlation matrix size %d!",r->fit->floatParsFinal().getSize(),r->fit->correlationMatrix().GetNcols()).Data());
   }
   delete myresult;
 
