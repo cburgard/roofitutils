@@ -1,7 +1,7 @@
 variables:
   ATLAS_LOCAL_ROOT_BASE: /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase
 
-image: atlas/analysisbase:21.2.3
+image: atlas/analysisbase:21.2.49
 
 stages:
   - build
