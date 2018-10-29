@@ -702,7 +702,6 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                   << "): starting minimization with strategy "
                   << strategy << std::endl;
-                  fMinimizer->Print();
         status =
           fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
       } else {
