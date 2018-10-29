@@ -698,6 +698,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int strategy = fDefaultStrategy;
     int retry = fRetry;
     int status = -1;
+    
     RooArgSet* args = fNll->getVariables();
     int ndim = ::countFloatParams(args);
     delete args;
@@ -712,7 +713,8 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setProfile(fTimer);
     fMinimizer->setStrategy(fDefaultStrategy);
     fMinimizer->setEps(fEps);
-  
+    
+    //fNll->printTree(std::cout);
     while (true) {
       fMinimizer->setStrategy(strategy);
 
@@ -728,6 +730,12 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                   << "): skipping minimization, no free parameters given!" << std::endl;
         status = 0;
+      }
+
+      if (fHesse) {
+        std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
+        fMinimizer->hesse();
+        std::cout<<"Done!"<<std::endl;
       }
       
       const double nllval = fNll->getVal();
@@ -832,12 +840,12 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   // Evaluate errors with Hesse
   if (fHesse && myresult) {
     const int covqual = myresult->covQual();
-    if (covqual == 0) {
-      coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+    //if (covqual != -1) {
+      /*coutP(ObjectHandling)*/ std::cout << "ExtendedMinimizer::minimize(" << fName
                             << "): Covariance quality is " << covqual
-                            << ". Running Hesse... " << std::endl;
-      fMinimizer->hesse();
-    }
+                            << ". " << std::endl;
+      //fMinimizer->hesse(); //don't run hesse here, fNll->getVal() seems to slightly mess with the Nll
+    //}
 
     // Obtain Hessian matrix either from patched Minuit or after inversion
     // TMatrixDSym G = Minuit2::MnHesse::lastHessian();
