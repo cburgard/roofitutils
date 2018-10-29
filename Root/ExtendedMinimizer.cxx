@@ -824,6 +824,22 @@ int RooFitUtils::ExtendedMinimizer::minimize() {
   return this->fResult->min.status;
 }
 
+namespace {
+  TMatrixDSym reduce(const TMatrixDSym& mat){
+    std::vector<int> keepRows;
+    for(int i=0; i<mat.GetNcols(); ++i){
+      if(mat(i,i) != 0) keepRows.push_back(i);
+    }
+    TMatrixDSym reduced(keepRows.size());
+    for(size_t i=0; i<keepRows.size(); ++i){
+      for(size_t j=0; j<keepRows.size(); ++j){
+        reduced(i,j) = mat(keepRows[i],keepRows[j]);
+      }    
+    }
+    return reduced;
+  }
+}
+
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
@@ -838,7 +854,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   }
 
   // Evaluate errors with Hesse
-  if (fHesse && myresult) {
+  if (r->min.ndim>1 && fHesse && myresult) {
     const int covqual = myresult->covQual();
     //if (covqual != -1) {
       /*coutP(ObjectHandling)*/ std::cout << "ExtendedMinimizer::minimize(" << fName
@@ -850,10 +866,10 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     // Obtain Hessian matrix either from patched Minuit or after inversion
     // TMatrixDSym G = Minuit2::MnHesse::lastHessian();
     Double_t determ = 0;
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
-                          << "): attempting to invert covariance matrix... "
-                          << std::endl;
-    TMatrixDSym origG = myresult->covarianceMatrix();
+    std::cout << "ExtendedMinimizer::minimize(" << fName
+              << "): attempting to invert covariance matrix... "
+              << std::endl;
+    TMatrixDSym origG(::reduce(myresult->covarianceMatrix()));
     
     if(origG.GetNcols() != r->min.ndim){
       throw std::runtime_error("inconsistency detected: correlation matrix size inconsistent with float parameters!");
