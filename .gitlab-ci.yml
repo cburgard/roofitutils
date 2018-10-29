@@ -30,6 +30,32 @@ cmake_standalone_compile:
     - cd build
     - cmake ..
     - make
+
+cmake_hcomb_compile:
+  before_script:
+    - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
+  tags:
+    - cvmfs
+
+  image: gitlab-registry.cern.ch/atlas-caf/cafcore:caflibs
+    
+  stage: build
+
+  artifacts:
+    expire_in: 1d
+    untracked: true
+    paths:
+    - build
+    - setup.sh
+  
+  script:
+    - set +e && lsetup "root 6.04.16-HiggsComb-x86_64-slc6-gcc49-opt"; set -e
+    - export CXX=$(which g++)
+    - mkdir build
+    - cd build
+    - cmake -DCMAKE_MODULE_PATH=$ROOTSYS/etc/cmake .. 
+    - make
+
   
 cmake_asg_compile:
   stage: build
