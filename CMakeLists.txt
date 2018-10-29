@@ -38,15 +38,16 @@ IF(${AnalysisBase_FOUND})
   atlas_subdir( RooFitUtils )
 ENDIF()
 
+include_directories ("${PROJECT_SOURCE_DIR}")
 find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats )
 FOREACH(incfile ${ROOT_USE_FILE})
   include(${incfile})
 ENDFOREACH()  
 
 # set some variables for easier handling
-set(RooFitUtilsLinkDef ${PROJECT_SOURCE_DIR}/Root/LinkDef.h)
-file(GLOB RooFitUtilsSources Root/[A-Z]*.cxx)
-file(GLOB RooFitUtilsHeaders RooFitUtils/[A-Z]*.h)
+set(RooFitUtilsLinkDef Root/LinkDef.h)
+file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_SOURCE_DIR} Root/[A-Z]*.cxx)
+file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_SOURCE_DIR} RooFitUtils/[A-Z]*.h)
 
 if(EXISTS ${TQPATH})
   # generate the definitions.h
