@@ -46,8 +46,8 @@ ENDFOREACH()
 
 # set some variables for easier handling
 set(RooFitUtilsLinkDef Root/LinkDef.h)
-file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_SOURCE_DIR} Root/[A-Z]*.cxx)
-file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_SOURCE_DIR} RooFitUtils/[A-Z]*.h)
+file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} Root/[A-Z]*.cxx)
+file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} RooFitUtils/[A-Z]*.h)
 
 if(EXISTS ${TQPATH})
   # generate the definitions.h
