@@ -56,7 +56,13 @@ int RooFitUtils::fixRooStarMomentMorph(RooWorkspace *workspace) {
 #endif
   return retval;
 }
+// ____________________________________________________________________________
 
+void RooFitUtils::addArgSet(RooArgSet* args, const RooArgSet* addArgs){
+
+  // convert const RooArgSet* to RooArgSet*
+  args->add(*args);
+}
 // _____________________________________________________________________________
 
 bool RooFitUtils::AlmostEqualUlpsAndAbs(float A, float B, float maxDiff,

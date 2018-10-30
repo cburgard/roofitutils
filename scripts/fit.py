@@ -95,11 +95,11 @@ def buildMinimizer(args,model):
     mc = model.GetModelConfig()
     allparams = ROOT.RooArgSet()
     nuis = model.GetNuisanceParameters()
-    allparams.add(nuis)
-    globs = model.GetGlobalObservables()
-    allparams.add(globs)
     pois = model.GetParametersOfInterest()
-    allparams.add(pois)
+    globs = model.GetGlobalObservables()
+    ROOT.RooFitUtils.addArgSet(allparams, nuis)
+    ROOT.RooFitUtils.addArgSet(allparams, pois)
+    ROOT.RooFitUtils.addArgSet(allparams, globs)
     obs = model.GetObservables()
 
     if args.makeParameterSnapshots:
