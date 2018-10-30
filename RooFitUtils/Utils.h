@@ -15,7 +15,9 @@ namespace RooFitUtils {
   extern bool RooMultiPdfFix;
   
   int fixRooStarMomentMorph(RooWorkspace *workspace);
-  
+
+  void addArgSet(RooArgSet* args, const RooArgSet* addArgs);
+
   bool AlmostEqualUlpsAndAbs(float A, float B, float maxDiff, int maxUlpsDiff);
   void PrintResourcesUsed(const TTime &progStart);
   std::vector<std::string> parseString(const std::string &str,
