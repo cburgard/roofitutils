@@ -17,6 +17,7 @@
 
 #include <limits>
 #include <math.h>
+#include <cmath>
 
 #define nan std::numeric_limits<double>::quiet_NaN()
 #define inf std::numeric_limits<double>::infinity()
@@ -515,10 +516,19 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     }
     
     fNll = fPdf->createNLL(*fData, fNllCmdList);
+    double nllval = fNll->getVal();
+    if(isinf(nllval)){
+//      RooAbsReal* rrv = fWorkspace->function("alpha_ATLAS_EL_EFF_ID_CorrUncertaintyNP14Constraint");
+//      std::cout << rrv->getVal() << std::endl;
+//      rrv->Print("t");
+//      rrv->Print("v");      
+      //      fNll->Print("t");
+      throw std::runtime_error("starting value of nll is inf!");
+    }
     RooArgSet* args = fNll->getVariables();
     ndim = ::countFloatParams(args);
     delete args;
-    coutI(InputArguments) << "Created new Nll with " << ndim << " parameters" << std::endl;
+    coutI(InputArguments) << "Created new Nll with " << ndim << " parameters, starting value " << nllval << std::endl;
   } else {
     RooArgSet* args = fNll->getVariables();
     ndim = ::countFloatParams(args);
