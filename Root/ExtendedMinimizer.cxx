@@ -1,3 +1,7 @@
+#include <limits>
+#include <math.h>
+#include <cmath>
+
 #include "RooFitUtils/ExtendedMinimizer.h"
 
 #include "TFile.h"
@@ -14,10 +18,6 @@
 
 #include "RooFitUtils/Utils.h"
 #include "RooFitUtils/ExtendedModel.h"
-
-#include <limits>
-#include <math.h>
-#include <cmath>
 
 #define nan std::numeric_limits<double>::quiet_NaN()
 #define inf std::numeric_limits<double>::infinity()
@@ -82,6 +82,36 @@ namespace {
   //now expose some members of RooFitResult that we need to access
   struct RooFitResultsetCovQual { typedef void(RooFitResult::*type)(Int_t); };
   template class RooFitResultRob<RooFitResultsetCovQual, &RooFitResult::setCovQual>;
+}
+
+
+
+
+namespace {
+  //somewhat complex but apparently standard conform hack to access RooAbsPdf::_norm. 
+  template <typename RooAbsPdfTag>
+  struct RooAbsPdfHackResult {
+    typedef typename RooAbsPdfTag::type type;
+    static type ptr;
+  };
+  
+  template <typename RooAbsPdfTag>
+  typename RooAbsPdfHackResult<RooAbsPdfTag>::type RooAbsPdfHackResult<RooAbsPdfTag>::ptr;
+  
+  template<typename RooAbsPdfTag, typename RooAbsPdfTag::type p>
+  struct RooAbsPdfRob : RooAbsPdfHackResult<RooAbsPdfTag> {
+    struct RooAbsPdfFiller {
+      RooAbsPdfFiller() {RooAbsPdfHackResult<RooAbsPdfTag>::ptr = p;}
+    };
+    static RooAbsPdfFiller RooAbsPdffiller_obj;
+  };
+  
+  template<typename RooAbsPdfTag, typename RooAbsPdfTag::type p>
+  typename RooAbsPdfRob<RooAbsPdfTag, p>::RooAbsPdfFiller RooAbsPdfRob<RooAbsPdfTag, p>::RooAbsPdffiller_obj;
+  
+  //now expose some members of RooAbsPdf that we need to access
+  struct RooAbsPdf_norm { typedef RooAbsReal*(RooAbsPdf::*type); };
+  template class RooAbsPdfRob<RooAbsPdf_norm, &RooAbsPdf::_norm>;
 }
 
 namespace {
@@ -339,9 +369,10 @@ namespace {
 
     char *name = strtok(buf, ",");
     while (name) {
-      TObject *cmd = cmdInList.FindObject(name);
+      RooCmdArg *cmd = (RooCmdArg*)(cmdInList.FindObject(name));
       if (cmd) {
-	filteredList.Add(clone ? cmd->Clone() : cmd);
+        RooCmdArg* cl = (RooCmdArg*)(clone ? cmd->Clone() : cmd);
+        filteredList.Add(cl);
       }
       name = strtok(0, ",");
     }
@@ -517,12 +548,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     
     fNll = fPdf->createNLL(*fData, fNllCmdList);
     double nllval = fNll->getVal();
-    if(isinf(nllval)){
-//      RooAbsReal* rrv = fWorkspace->function("alpha_ATLAS_EL_EFF_ID_CorrUncertaintyNP14Constraint");
-//      std::cout << rrv->getVal() << std::endl;
-//      rrv->Print("t");
-//      rrv->Print("v");      
-      //      fNll->Print("t");
+    if(std::isinf(nllval)){
       throw std::runtime_error("starting value of nll is inf!");
     }
     RooArgSet* args = fNll->getVariables();
@@ -600,6 +626,11 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
   } else {
     coutE(ObjectHandling) << "cannot change Nll config with preexisting Nll!" << std::endl;
   }
+//  fNllCmdList.Print("v");
+//  for(int i=0; i<fNllCmdList.GetSize(); ++i){
+//    RooCmdArg* arg = (RooCmdArg*)(fNllCmdList.At(i));
+//    std::cout << TString::Format("%s %s: %d %d %f %f %s %s",arg->GetName(),arg->opcode(),arg->getInt(0),arg->getInt(1),arg->getDouble(0),arg->getDouble(1),arg->getString(0),arg->getString(1)) << std::endl;
+//  }
   return fNllCmdList.GetSize();
 }
 
