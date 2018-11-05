@@ -24,7 +24,7 @@ cmake_standalone_compile:
     - setup.sh
   
   script:
-    - set +e && lsetup root; set -e
+    - set +e && lsetup root; lsetup cmake; set -e
     - export CXX=$(which g++)
     - mkdir build
     - cd build
