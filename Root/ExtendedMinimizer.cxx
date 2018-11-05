@@ -773,14 +773,19 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         status = 0;
       }
 
-      if (fHesse) {
-        std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
-        fMinimizer->hesse();
-        std::cout<<"Done!"<<std::endl;
+      if(status == 0 || status == 1){
+        std::cout 
+          << "ExtendedMinimizer::robustMinimize(" << fName
+          << ") fit succeeded with status " << status << std::endl;
+        
+        if (fHesse) {
+          std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
+          fMinimizer->hesse();
+          std::cout<<"Done!"<<std::endl;
+        }
       }
       
       const double nllval = fNll->getVal();
-      
       if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
         if(strategy < 2 && retry > 0) {
           strategy++;
@@ -796,10 +801,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
           break;
         }
       } else {
-        std::cout 
-          << "ExtendedMinimizer::robustMinimize(" << fName
-          << ") fit succeeded with status " << status << std::endl;
-        break;
+         break;
       }
     }
 
