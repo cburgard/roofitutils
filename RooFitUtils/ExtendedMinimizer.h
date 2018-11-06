@@ -132,6 +132,9 @@ public:
   static RooCmdArg NumRetryFit(Int_t retry) {
     return RooCmdArg("NumRetryFit", retry, 0, 0, 0, 0, 0, 0, 0);
   }
+  static RooCmdArg MaxCalls(Int_t maxcalls) {
+    return RooCmdArg("MaxCalls", maxcalls, 0, 0, 0, 0, 0, 0, 0);
+  }
   static RooCmdArg Eps(double eps) {
     return RooCmdArg("Eps", 0, 0, eps, 0, 0, 0, 0, 0);
   }
@@ -203,6 +206,7 @@ protected:
   Int_t fEigen;
   Int_t fReuseMinimizer;
   Int_t fReuseNLL;
+  Int_t fMaxIterations;
   Double_t fEps;
   Double_t fNsigma;
   Double_t fPrecision;

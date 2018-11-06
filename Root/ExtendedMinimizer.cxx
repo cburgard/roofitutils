@@ -318,8 +318,8 @@ namespace {
 	       std::vector<double> &currentvals, size_t idx) {
     if (idx < parnames.size()) {
       for (auto val : params.at(parnames[idx])) {
-	currentvals[idx] = val;
-	addAllPoints(points, parnames, params, currentvals, idx + 1);
+        currentvals[idx] = val;
+        addAllPoints(points, parnames, params, currentvals, idx + 1);
       }
     } else {
       points.push_back(currentvals);
@@ -465,7 +465,7 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
       fOffset(0), fOptConst(2), fVerbose(0), fSave(0), fTimer(1),
       fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinos(0), fScan(0),
       fNumee(5), fDoEEWall(1), fRetry(0), fEigen(0), fReuseMinimizer(0),
-      fReuseNLL(0), fEps(1.0), fNsigma(1), // 1sigma 1dof
+      fReuseNLL(0), fMaxIterations(10000), fEps(1.0), fNsigma(1), // 1sigma 1dof
       fPrecision(0.005),
       fMinimizerType("Minuit2"), fMinimizerAlgo("Migrad") {
   // Constructor
@@ -658,6 +658,7 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineInt("numee", "PrintEvalErrors", 0, fNumee);
   pc.defineInt("doEEWall", "EvalErrorWall", 0, fDoEEWall);
   pc.defineInt("retry", "NumRetryFit", 0, fRetry);
+  pc.defineInt("maxcalls", "MaxCalls", 0, fMaxIterations);
   pc.defineInt("eigen", "Eigen", 0, fEigen);
   pc.defineInt("reminim", "ReuseMinimizer", 0, fReuseMinimizer);
   pc.defineInt("renll", "ReuseNLL", 0, fReuseNLL);
@@ -690,6 +691,7 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fNumee = pc.getInt("numee");
   fDoEEWall = pc.getInt("doEEWall");
   fRetry = pc.getInt("retry");
+  fMaxIterations = pc.getInt("maxcalls");
   fEigen = pc.getInt("eigen");
   fReuseMinimizer = pc.getInt("reminim");
   fReuseNLL = pc.getInt("renll");
@@ -744,6 +746,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int ndim = ::countFloatParams(args);
     delete args;
     
+    fMinimizer->setMaxIterations(fMaxIterations);
     fMinimizer->setPrintLevel(fPrintLevel);
     fMinimizer->optimizeConst(fOptConst);
     fMinimizer->setMinimizerType(fMinimizerType.c_str());
@@ -765,8 +768,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                   << "): starting minimization with strategy "
                   << strategy << std::endl;
-        status =
-          fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+        status = fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
       } else {
         std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                   << "): skipping minimization, no free parameters given!" << std::endl;
@@ -777,7 +779,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         std::cout 
           << "ExtendedMinimizer::robustMinimize(" << fName
           << ") fit succeeded with status " << status << std::endl;
-        
+
         if (fHesse) {
           std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
           fMinimizer->hesse();
@@ -793,7 +795,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
             << "ExtendedMinimizer::robustMinimize(" << fName
             << ") fit failed with status " << status
             << ". Retrying with strategy " << strategy << std::endl;
-        retry--;
+          retry--;
         } else {
           std::cout 
             << "ExtendedMinimizer::robustMinimize(" << fName
