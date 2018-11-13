@@ -80,6 +80,7 @@ def buildModel(args):
                                            args.binnedLikelihood, "pdf_")
     
     if args.fixAllNP:          model.fixNuisanceParameters()
+#   if args.breakdownErrors:   model.breakdownErrors()
     if args.setInitialError:   model.setInitialErrors()
     if args.fixParameters:     model.fixParameters(",".join(args.fixParameters))
 
@@ -103,7 +104,7 @@ def buildMinimizer(args,model):
     obs = model.GetObservables()
 
     if args.makeParameterSnapshots:
-        # Save the snapshots of nominal parameters
+       # Save the snapshots of nominal parameters
         print("Saving nominal snapshots.")
         ws.saveSnapshot("nominalGlobs", globs)
         ws.saveSnapshot("nominalNuis", nuis)
@@ -165,7 +166,10 @@ def fit(args,model,minimizer):
         start = time()
         if not args.dummy:
             if args.findSigma:
-                minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
+		if args.nohesse:
+		    minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Save())
+		else:	
+                    minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
             else:
                 minimizer.minimize(ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
         
@@ -179,12 +183,12 @@ def fit(args,model,minimizer):
             mc = model.GetModelConfig()
             allparams = ROOT.RooArgSet()
             nuis = model.GetNuisanceParameters()
+            allparams.add(nuis)
             globs = model.GetGlobalObservables()
+            allparams.add(globs)
             pois = model.GetParametersOfInterest()
+            allparams.add(pois)
             obs = model.GetObservables()
-            ROOT.RooFitUtils.addArgSet(allparams, nuis)
-            ROOT.RooFitUtils.addArgSet(allparams, pois)
-            ROOT.RooFitUtils.addArgSet(allparams, globs)
             # Save the snapshots of nominal parameters
             print("Saving minimum snapshots.")
             ws.saveSnapshot("minimumGlobs", globs)
@@ -237,7 +241,7 @@ def fit(args,model,minimizer):
     if args.outWsName:
         ws = model.GetWorkspace()        
         ws.writeToFile(args.outWsName)
-               
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("run a fit")
@@ -263,6 +267,7 @@ if __name__ == "__main__":
     parser.add_argument( "--data"          , type=str,     dest="dataName"                   , help="Data to use.", default="combData" )
     parser.add_argument( "--minimizerType" , type=str,     dest="minimizerType"              , help="Minimizer type.", default="Minuit2" )
     parser.add_argument( "--minimizerAlgo" , type=str,     dest="minimizerAlgo"              , help="Minimizer algorithm.", default="Migrad" )
+    parser.add_argument( "--no-hesse"      , action='store_true',   dest="nohesse"	     , help="disable HESSE", default=False )
     parser.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=0 )
     parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 )
     parser.add_argument( "--numThreads"    , type=int,     dest="numThreads"                 , help="Number of CPU Threads.", default=3 )
@@ -285,8 +290,8 @@ if __name__ == "__main__":
     parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2)
     parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" )
     parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False )
+#   parser.add_argument( "--breakdownErrors", action='store_true',   dest="breakdownErrors"  , help="Breakdown uncertainities into stat., exp. and theo.", default=False )
     args = parser.parse_args()
-
     setup(args)
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
@@ -300,4 +305,3 @@ if __name__ == "__main__":
         print("  ExtendedModel model")
         print("  ExtendedMinimizer minimizer")
         print("call 'fit(args,model,minimizer)' to run!")
-              
