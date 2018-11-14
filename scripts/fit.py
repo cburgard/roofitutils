@@ -1,4 +1,45 @@
 #!/bin/env python
+try:
+    isinstance("", basestring)
+    def isstr(s):
+        return isinstance(s, basestring)
+except NameError:
+    def isstr(s):
+        return isinstance(s, str)
+
+def concat(pieces,delim=" "):
+    """concatenate a list of strings to a single string"""
+    if isstr(pieces):
+        return pieces
+    else:
+        return delim.join(pieces)
+
+def shellexec(command,inputs=[],verbose=False,allowErrors=True):
+    """execute a command by invoking it in a shell"""
+    if verbose:
+        print(concat(command))
+        for inputline in inputs:
+            if len(inputline) > 0: print("> "+concat(inputline))
+            pass
+        pass
+    command = concat(command).split()
+    stdinlines = [ concat(pieces) for pieces in inputs if len(pieces) > 0]
+    s = concat(stdinlines,"\n")
+
+    from subprocess import Popen, PIPE
+    p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    b = s.encode('ascii')
+    stdout_data, stderr_data = p.communicate(input=b)
+    if len(stderr_data) > 0:
+        if allowErrors and verbose:
+            QFramework.ERROR("Error from binary '"+concat(command)+"': "+concat(stderr_data))
+        if not allowErrors:
+            QFramework.BREAK("Error from binary '"+concat(command)+"': "+concat(stderr_data))
+    return stdout_data
+
+def mkdir(path):
+    """call 'mkdir -p' on the given path"""
+    shellexec(["mkdir","-p",path])
 
 def mod(a,b):
     return a%b
@@ -122,6 +163,7 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.Offset(args.offsetting), 
                 ROOT.RooFit.Optimize(args.constOpt),
                 ROOT.RooFit.Precision(args.precision)]
+    noDelete(argelems)
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
 
@@ -164,14 +206,12 @@ def fit(args,model,minimizer):
     
     if args.fit:
         start = time()
+        hesse = not args.nohesse
         if not args.dummy:
             if args.findSigma:
-		if args.nohesse:
-		    minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Save())
-		else:	
-                    minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
+                minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
             else:
-                minimizer.minimize(ROOT.RooFit.Hesse(), ROOT.RooFit.Save())
+                minimizer.minimize(ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
         
         end = time()
         print("Fitting time: " + printtime(end-start))
@@ -221,6 +261,8 @@ def fit(args,model,minimizer):
 
     if result:
         if args.outFileName:
+            outpath,outfile  = os.path.split(args.outFileName)
+            mkdir(outpath)
             with open(args.outFileName,'w') as out:
                 if args.fit and result.min.nll:
                     out.write("Minimization: minNll = ")
@@ -295,7 +337,6 @@ if __name__ == "__main__":
     setup(args)
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
-
     
     from sys import flags
     if not flags.interactive:
