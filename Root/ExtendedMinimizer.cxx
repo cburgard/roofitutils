@@ -894,7 +894,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
 
   RooFitResult* myresult = fMinimizer->save("tmp","tmp");
   
-  if(r->min.ndim != myresult->floatParsFinal().getSize()){
+  if(r->min.ndim > 0 && r->min.ndim != myresult->floatParsFinal().getSize()){
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
 
