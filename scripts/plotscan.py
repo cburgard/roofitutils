@@ -59,6 +59,7 @@ def collectresults(files):
             with open(filename,'r') as infile:
                 lines = [ line for line in infile ]
                 for lineno in range(0,len(lines)):
+		    i=i+1
                     line = lines[lineno]
                     parts = line.split()
                     nllmatch = nllpat.match(line)
@@ -69,7 +70,7 @@ def collectresults(files):
                         pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
                         result = (float(cv),float(ed),float(eu))
                         results[pname] = result
-                    elif parts[-1].strip() == "nll":
+                    elif parts[-2].strip() == "nll":
                         scanp = parts[0]
                         if scanp not in scans.keys():
                             scans[scanp] = {}

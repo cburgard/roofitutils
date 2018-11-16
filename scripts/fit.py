@@ -1,4 +1,8 @@
-#!/bin/env python
+#!/bin/env python -tt
+
+import sys
+
+#if args.logsave:
 
 _noDelete = []
 def noDelete(something):
@@ -180,7 +184,9 @@ def buildMinimizer(args,model):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
-        p = model.parseParameter(poi)
+        
+        p = model.configureParameter(poi)
+
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
@@ -215,12 +221,13 @@ def fit(args,model,minimizer):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
-        p = model.parseParameter(poi)
+        p = model.configureParameter(poi)
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
-        p.removeRange()
-        p.setError(0.2)
+#	p.Print()
+#       p.removeRange()
+#       p.setError(0.2)
         poiset.add(p)
     
     if args.fit:
@@ -347,7 +354,6 @@ def createScanJobs(args,arglist):
             idx = idx+1
     print("wrote "+args.writeSubmit)
 
-
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("run a fit")
@@ -398,6 +404,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False ))
     arglist.append(parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2))
     arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" ))
+    arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
 
     args = parser.parse_args()
@@ -406,15 +413,26 @@ if __name__ == "__main__":
         createScanJobs(args,arglist)
         exit(0)
 
+    if not flags.interactive:
+        if args.logsave:
+            log_file = open(args.outFileName+".log","w")
+            sys.stdout = log_file
+
     setup(args)
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
-    
+ 
     from sys import flags
     if not flags.interactive:
         fit(args,model,minimizer)
+
+        if args.logsave:
+            sys.stdout = sys.__stdout__ 
+            log_file.close()
     else:
         print("prepared fit:")
         print("  ExtendedModel model")
         print("  ExtendedMinimizer minimizer")
         print("call 'fit(args,model,minimizer)' to run!")
+
+
