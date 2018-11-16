@@ -334,6 +334,9 @@ def createScanJobs(args,arglist):
     name = sys.argv[0]
     coords = generateCoordsDict(args.scan)
     idx = 0
+    import os
+    outpath,outfile  = os.path.split(args.writeSubmit)
+    mkdir(outpath)
     with open(args.writeSubmit,"wt") as jobs:
         for coord in coords:
             point = ",".join([k+"="+str(v) for k,v in coord.items()])
