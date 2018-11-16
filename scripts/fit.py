@@ -1,8 +1,6 @@
-#!/bin/env python -tt
+#!/bin/env python 
 
 import sys
-
-#if args.logsave:
 
 _noDelete = []
 def noDelete(something):
@@ -413,6 +411,7 @@ if __name__ == "__main__":
         createScanJobs(args,arglist)
         exit(0)
 
+    from sys import flags
     if not flags.interactive:
         if args.logsave:
             log_file = open(args.outFileName+".log","w")
@@ -422,7 +421,6 @@ if __name__ == "__main__":
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
  
-    from sys import flags
     if not flags.interactive:
         fit(args,model,minimizer)
 
