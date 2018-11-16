@@ -28,7 +28,7 @@ cmake_standalone_compile:
     - export CXX=$(which g++)
     - mkdir build
     - cd build
-    - cmake ..
+    - cmake -DCMAKE_MODULE_PATH=$ROOTSYS/etc/cmake ..
     - make
 
 cmake_hcomb_compile:
