@@ -1,4 +1,8 @@
-#!/bin/env python
+#!/bin/env python -tt
+
+import sys
+
+#if args.logsave:
 
 def mod(a,b):
     return a%b
@@ -134,7 +138,9 @@ def buildMinimizer(args,model):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
-        p = model.parseParameter(poi)
+        
+        p = model.configureParameter(poi)
+
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
@@ -154,12 +160,13 @@ def fit(args,model,minimizer):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
-        p = model.parseParameter(poi)
+        p = model.configureParameter(poi)
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
-        p.removeRange()
-        p.setError(0.2)
+#	p.Print()
+#       p.removeRange()
+#       p.setError(0.2)
         poiset.add(p)
     
     if args.fit:
@@ -242,6 +249,8 @@ def fit(args,model,minimizer):
         ws = model.GetWorkspace()        
         ws.writeToFile(args.outWsName)
 
+#    if args.logsave == True:
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("run a fit")
@@ -287,16 +296,25 @@ if __name__ == "__main__":
     parser.add_argument( "--reuse-nll"        , action='store_true',   dest="reuseNll"                 , help="Allow to reuse the nll.", default=False )
     parser.add_argument( "--no-reuse-nll"     , action='store_false',  dest="reuseNll"                 , help="Do not allow to reuse the nll.", default=True )
     parser.add_argument( "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False )
-    parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2)
+    parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2 )
     parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" )
+    parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False )
     parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False )
 #   parser.add_argument( "--breakdownErrors", action='store_true',   dest="breakdownErrors"  , help="Breakdown uncertainities into stat., exp. and theo.", default=False )
     args = parser.parse_args()
+
+    if args.logsave:
+      log_file = open(args.outFileName+".log","w")
+      sys.stdout = log_file
+
     setup(args)
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
 
-    
+    if args.logsave:
+      sys.stdout = sys.__stdout__ 
+      log_file.close()
+  
     from sys import flags
     if not flags.interactive:
         fit(args,model,minimizer)
