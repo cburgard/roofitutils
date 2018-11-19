@@ -294,6 +294,17 @@ def fit(args,model,minimizer):
                     out.write("\n")
                     for p in result.parameters:
                         out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
+                if result.fit and args.hesse:
+                    matrix = result.fit.correlationHist()
+                    out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
+                    for i in range (0,matrix.GetXaxis().GetNbins()):
+                        out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+                    out.write("\n")
+                    for i in range (0,matrix.GetNbinsX()):
+                        out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+                        for j in range(0,matrix.GetNbinsY()):
+                            out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
+                        out.write("\n")                   
                 for scan in result.scans:
                     out.write((" ".join(scan.parNames)) + " nll status\n")
                     for i in range(0,len(scan.nllValues)):
