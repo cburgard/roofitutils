@@ -1051,7 +1051,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
     }
     params.push_back(v);
   }
-
+  bool hesse = fHesse;
   ExtendedMinimizer::Result::Scan scan(parnames);
   for (const auto &point : points) {
     if (point.size() != parnames.size()) {
@@ -1061,6 +1061,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
       params[i]->setVal(point[i]);
       params[i]->setConstant(true);
     }
+    fHesse = false;
     auto min = this->robustMinimize();
     if (min.ok()) {
       std::vector<double> vals(params.size());
@@ -1072,6 +1073,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
   }
   if (scan.nllValues.size() > 0)
     r->scans.push_back(scan);
+  fHesse = hesse;
 }
 
 // ____________________________________________________________________________|__________
@@ -1192,6 +1194,8 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
     precision = 5.0 * eps / (nsigma * nsigma);
   }
 
+  bool hesse = fHesse;
+  fHesse = false;
   int iter = 0;
   ExtendedMinimizer::Result::Scan values({par->GetName()});
   const double nllmin = result->min.nll;
@@ -1281,6 +1285,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
       break;
   }
   bool ok = (!(iter >= maxiter));
+  fHesse = hesse;
 
   par->setConstant(isConst);
 

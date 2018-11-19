@@ -198,12 +198,6 @@ def generateCoordsDict(scan):
     parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
     return [ {parname:val} for val in parrange ]
 
-def generateCoordsVec(scan):
-    parname = args.scan[0]
-    parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
-    parnames = vec([parname],"string")
-    return vec([ vec([val],"double") for val in parrange],"vector<double>")
-
 def parsePoint(line):
     return { n.strip():float(v) for (n,v) in [x.split("=") for x in line.split(",") ]}
 
@@ -230,7 +224,7 @@ def fit(args,model,minimizer):
     
     if args.fit:
         start = time()
-        hesse = not args.nohesse
+        hesse = args.hesse
         if not args.dummy:
             if args.findSigma:
                 minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
@@ -265,7 +259,10 @@ def fit(args,model,minimizer):
     parnames = None
     coords = None
     if args.scan:
-        coords = generateCoordsVec(args.scan)
+        parname = args.scan[0]
+        parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
+        parnames = vec([parname],"string")
+        coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
 
     if args.points != None:
         with open(args.points) as infile:
@@ -287,6 +284,7 @@ def fit(args,model,minimizer):
 
     if result:
         if args.outFileName:
+            import os
             outpath,outfile  = os.path.split(args.outFileName)
             mkdir(outpath)
             with open(args.outFileName,'w') as out:
@@ -346,7 +344,8 @@ def createScanJobs(args,arglist):
         for coord in coords:
             point = ",".join([k+"="+str(v) for k,v in coord.items()])
             options["--singlepoint"]=point
-            options["--output"]=args.outFileName+".part"+str(idx)
+            if args.outFileName:
+                options["--output"]=args.outFileName+".part"+str(idx)
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
             jobs.write(name+" "+cmd+"\n")
             idx = idx+1
@@ -379,11 +378,12 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--data"          , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
     arglist.append(parser.add_argument( "--minimizerType" , type=str,     dest="minimizerType"              , help="Minimizer type.", default="Minuit2" ))
     arglist.append(parser.add_argument( "--minimizerAlgo" , type=str,     dest="minimizerAlgo"              , help="Minimizer algorithm.", default="Migrad" ))
-    arglist.append(parser.add_argument( "--no-hesse"      , action='store_true',   dest="nohesse"	     , help="disable HESSE", default=False ))
+    arglist.append(parser.add_argument( "--hesse"         , action='store_true',    dest="hesse"       , help="enable HESSE", default=False ))
+    arglist.append(parser.add_argument( "--no-hesse"      , action='store_false',   dest="hesse"	     , help="disable HESSE", default=False ))
     arglist.append(parser.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=0 ))
     arglist.append(parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
     arglist.append(parser.add_argument( "--numThreads"    , type=int,     dest="numThreads"                 , help="Number of CPU Threads.", default=3 ))
-    arglist.append(parser.add_argument( "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", default="jobs.txt" ))
+    arglist.append(parser.add_argument( "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", metavar="jobs.txt" ))
     arglist.append(parser.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True ))
     arglist.append(parser.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False ))
     arglist.append(parser.add_argument( "--starfix"       , action='store_true',    dest="fixCache"                   , help="Fix StarMomentMorph cache.", default=True ))
