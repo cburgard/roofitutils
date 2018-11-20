@@ -53,13 +53,18 @@ def collectresults(files):
     nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife-]+)")
     results = {}
     scans = {}
-    for filename in files:
-        if not filename.endswith(".txt"): continue
+    import glob
+    filenames = []
+    for expression in files:
+        filenames.extend(glob.glob(expression))
+    if len(filenames) == 0:
+        print("no results found in "+expression)
+        exit(0)
+    for filename in filenames:
         if os.path.isfile(filename):
             with open(filename,'r') as infile:
                 lines = [ line for line in infile ]
                 for lineno in range(0,len(lines)):
-		    i=i+1
                     line = lines[lineno]
                     parts = line.split()
                     nllmatch = nllpat.match(line)
@@ -83,12 +88,10 @@ def collectresults(files):
                         scans[p][results[p][0]]=minnll;
     return scans,results
 
-def writescan(par,allpoints,outfilename,ymax=None):
-    nllmin = min(allpoints.values())
-    nllmax = max(allpoints.values())
+def writescans(par,allscans,outfilename,ymax=None):
     with open(outfilename,"w") as outfile:
         writehead(outfile)
-        domain = "domain={0:f}:{1:f}".format(min(allpoints.keys()),max(allpoints.keys()))
+        domain = "domain={0:f}:{1:f}".format(min([ v for scan in allscans.values() for v in scan.keys() ]),max([ v for scan in allscans.values() for v in scan.keys() ]))
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    ymin=0,\n")
@@ -97,40 +100,49 @@ def writescan(par,allpoints,outfilename,ymax=None):
         outfile.write("    "+domain+",\n")
         outfile.write("    xlabel=${0:s}$, ylabel=$\\Delta \\log L$\n".format(par))
         outfile.write("]\n")
-        outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
-        points =  getvals(allpoints,nllmin)
-        for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
-        outfile.write("};\n")
-        outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
-        for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
-        outfile.write("};\n")
-        outfile.write("\\addplot[red] {0.5};\n")
-
-        cv1,down1,up1 = findcrossings(points,0.5)
-        if not isnan(down1):
-            outfile.write("\\draw[green] (axis cs:"+str(cv1-down1)+",0) -- (axis cs:"+str(cv1-down1)+",0.5);\n")
-        if not isnan(up1):
-            outfile.write("\\draw[green] (axis cs:"+str(cv1+up1)+",0) -- (axis cs:"+str(cv1+up1)+",0.5);\n")
-        cv2,down2,up2 = findcrossings(points,2)
-        if not isnan(down2):
-            outfile.write("\\draw[blue] (axis cs:"+str(cv2-down2)+",0) -- (axis cs:"+str(cv2-down2)+",2.);\n")
-        if not isnan(up2):
-            outfile.write("\\draw[blue] (axis cs:"+str(cv2+up2)+",0) -- (axis cs:"+str(cv2+up2)+",2.);\n")
-        print("POI = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(cv1,up1,down1,up2,down2))
+        for pname,scan in allscans.items():
+            writescan(pname,scan,outfile,ymax)
 
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
+
+    
+def writescan(par,allpoints,outfile,ymax=None):
+    outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
+    nllmin = min(allpoints.values())
+    points =  getvals(allpoints,nllmin)
+    for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
+    outfile.write("};\n")
+    outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
+    for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
+    outfile.write("};\n")
+    outfile.write("\\addplot[red] {0.5};\n")
+
+    cv1,down1,up1 = findcrossings(points,0.5)
+    if not isnan(down1):
+        outfile.write("\\draw[green] (axis cs:"+str(cv1-down1)+",0) -- (axis cs:"+str(cv1-down1)+",0.5);\n")
+    if not isnan(up1):
+        outfile.write("\\draw[green] (axis cs:"+str(cv1+up1)+",0) -- (axis cs:"+str(cv1+up1)+",0.5);\n")
+    cv2,down2,up2 = findcrossings(points,2)
+    if not isnan(down2):
+        outfile.write("\\draw[blue] (axis cs:"+str(cv2-down2)+",0) -- (axis cs:"+str(cv2-down2)+",2.);\n")
+    if not isnan(up2):
+        outfile.write("\\draw[blue] (axis cs:"+str(cv2+up2)+",0) -- (axis cs:"+str(cv2+up2)+",2.);\n")
+    print("{:s} = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(par,cv1,up1,down1,up2,down2))
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot a likelihood scan")
     parser.add_argument("input",type=str,help="text files with the input information",nargs="+")
     parser.add_argument("--label",type=str,help="label of the x-axis",default="\\mu")
+    parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=None)
     parser.add_argument("--output",type=str,help="output file name",default="scan.tex")
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
     args = parser.parse_args()
 
     scans,results = collectresults(args.input)
-    for scan in scans.values():
-        writescan(args.label,scan,args.output,args.ymax)
+    if not args.poi:
+        writescans(args.label,scans,args.output,args.ymax)
+    else:
+        writescans(args.label,{p:scans[p] for p in args.poi},args.output,args.ymax)            
