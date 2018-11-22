@@ -158,21 +158,6 @@ def buildMinimizer(args,model):
         ws.saveSnapshot("nominalPois", pois)
         ws.saveSnapshot("nominalAll", allparams)
 
-    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
-                ROOT.RooFit.Strategy(args.defaultStrategy), 
-                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll), 
-                ROOT.RooFit.Constrain(nuis), 
-                ROOT.RooFit.GlobalObservables(globs),
-                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
-                ROOT.RooFit.Offset(args.offsetting), 
-                ROOT.RooFit.Optimize(args.constOpt),
-                ROOT.RooFit.Precision(args.precision)]
-    noDelete(argelems)
-    arglist = ROOT.RooLinkedList()
-    for arg in argelems: arglist.Add(arg)
-
 
     # Collect POIs
     pois = model.GetParametersOfInterest()
@@ -189,6 +174,26 @@ def buildMinimizer(args,model):
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
 
+    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
+                ROOT.RooFit.Strategy(args.defaultStrategy), 
+                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll), 
+                ROOT.RooFit.Constrain(nuis), 
+                ROOT.RooFit.GlobalObservables(globs),
+                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
+                ROOT.RooFit.Offset(args.offsetting), 
+                ROOT.RooFit.Optimize(args.constOpt),
+                ROOT.RooFit.Precision(args.precision),
+                ROOT.RooFit.Hesse(args.hesse),
+                ROOT.RooFit.Save()]
+    if args.findSigma:
+        argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset)) 
+
+    noDelete(argelems)
+    arglist = ROOT.RooLinkedList()
+    for arg in argelems: arglist.Add(arg)
+        
     minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
     return minimizer
 
@@ -201,13 +206,36 @@ def generateCoordsDict(scan):
 def parsePoint(line):
     return { n.strip():float(v) for (n,v) in [x.split("=") for x in line.split(",") ]}
 
+def writeResult(out,result):
+    if result.min.nll:
+        out.write("Minimization: minNll = ")
+        out.write(str(result.min.nll))
+        out.write("\n")
+        for p in result.parameters:
+            out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
+    if result.fit and args.hesse:
+        matrix = result.fit.correlationHist()
+        out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
+        for i in range (0,matrix.GetXaxis().GetNbins()):
+            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+        out.write("\n")
+        for i in range (0,matrix.GetNbinsX()):
+            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+            for j in range(0,matrix.GetNbinsY()):
+                out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
+            out.write("\n")                   
+    for scan in result.scans:
+        out.write((" ".join(scan.parNames)) + " nll status\n")
+        for i in range(0,len(scan.nllValues)):
+            out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
+
+
 def fit(args,model,minimizer):
     from time import time
     import ROOT
 
     # Collect POIs
     pois = model.GetParametersOfInterest()
-    poiset = ROOT.RooArgSet()
     if args.pois:
         poinames = args.pois
     else:
@@ -217,19 +245,11 @@ def fit(args,model,minimizer):
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
-#	p.Print()
-#       p.removeRange()
-#       p.setError(0.2)
-        poiset.add(p)
-    
+
     if args.fit:
         start = time()
-        hesse = args.hesse
         if not args.dummy:
-            if args.findSigma:
-                minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
-            else:
-                minimizer.minimize(ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
+            minimizer.minimize()
         
         end = time()
         print("Fitting time: " + printtime(end-start))
@@ -275,6 +295,8 @@ def fit(args,model,minimizer):
         parnames = vec(sorted(point.keys()),"string")
         coords = vec( [ vec( [ point[p] for p in parnames ] , "double") ], "vector<double>")
 
+    print(parnames,coords)
+        
     if parnames and coords and not args.dummy:
         minimizer.scan(parnames,coords)
     else:
@@ -288,27 +310,7 @@ def fit(args,model,minimizer):
             outpath,outfile  = os.path.split(args.outFileName)
             mkdir(outpath)
             with open(args.outFileName,'w') as out:
-                if args.fit and result.min.nll:
-                    out.write("Minimization: minNll = ")
-                    out.write(str(result.min.nll))
-                    out.write("\n")
-                    for p in result.parameters:
-                        out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
-                if result.fit and args.hesse:
-                    matrix = result.fit.correlationHist()
-                    out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
-                    for i in range (0,matrix.GetXaxis().GetNbins()):
-                        out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
-                    out.write("\n")
-                    for i in range (0,matrix.GetNbinsX()):
-                        out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
-                        for j in range(0,matrix.GetNbinsY()):
-                            out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
-                        out.write("\n")                   
-                for scan in result.scans:
-                    out.write((" ".join(scan.parNames)) + " nll status\n")
-                    for i in range(0,len(scan.nllValues)):
-                        out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
+                writeResult(out,result)
             print("wrote output to "+args.outFileName)
         else:
             print("no output requested")

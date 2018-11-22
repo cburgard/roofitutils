@@ -885,6 +885,15 @@ namespace {
   }
 }
 
+namespace {
+  bool find(const std::vector<RooFitUtils::ExtendedMinimizer::Result::Parameter>& pars,const char* name){
+    for(const auto& p:pars){
+      if(p.name == name) return true;
+    }
+    return false;
+  }
+}
+
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
@@ -953,16 +962,19 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                           << "): Running Scan" << std::endl;
     findSigma(r, *fScanSet);
-  } else {
-    RooArgSet *vars = fNll->getVariables();
-    for (RooLinkedListIter it = vars->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+  }
+
+  
+  RooArgSet *vars = fNll->getVariables();
+  for (RooLinkedListIter it = vars->iterator();
+       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    if(!::find(r->parameters,v->GetName()) && !v->isConstant()){
       Result::Parameter poi(v->GetName(), v->getVal(), v->getErrorHi(),
                             v->getErrorLo());
       r->parameters.push_back(poi);
     }
   }
-
+  
   if (fCondSet) {
     coutP(ObjectHandling) << "Editing conditional set" << std::endl;
     RooArgSet *attachedSet = fNll->getVariables();
