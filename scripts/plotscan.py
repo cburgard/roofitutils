@@ -19,7 +19,17 @@ def getvals(d,nllmin):
     yvals = [ max(d[k] - nllmin,0) for k in xvals ]
     return zip(xvals,yvals)
         
-
+def findminimum(points):
+    from scipy.interpolate import PchipInterpolator as interpolate
+    from scipy.optimize import minimize
+    from numpy import array
+    xvals = sorted(points.keys())
+    yvals = [ points[x] for x in xvals ]
+    interp = interpolate(xvals, yvals, extrapolate=True)
+    minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]))
+    print(minimum)
+    return minimum.fun
+    
 def findcrossings(points,nllval):
     from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
@@ -98,19 +108,21 @@ def writescans(par,allscans,outfilename,ymax=None):
         if ymax:
             outfile.write("    ymax="+str(ymax)+",\n")
         outfile.write("    "+domain+",\n")
+        outfile.write("    legend pos=north east,legend style={draw=none},\n")
         outfile.write("    xlabel=${0:s}$, ylabel=$\\Delta \\log L$\n".format(par))
         outfile.write("]\n")
         for pname,scan in allscans.items():
-            writescan(pname,scan,outfile,ymax)
-
+            writescan(pname,par,scan,outfile,ymax)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
 
     
-def writescan(par,allpoints,outfile,ymax=None):
+def writescan(parname,parlabel,allpoints,outfile,ymax=None):
     outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
-    nllmin = min(allpoints.values())
+    othermin = min(allpoints.values())
+    nllmin = findminimum(allpoints)
+    print(othermin,nllmin)
     points =  getvals(allpoints,nllmin)
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
@@ -129,7 +141,8 @@ def writescan(par,allpoints,outfile,ymax=None):
         outfile.write("\\draw[blue] (axis cs:"+str(cv2-down2)+",0) -- (axis cs:"+str(cv2-down2)+",2.);\n")
     if not isnan(up2):
         outfile.write("\\draw[blue] (axis cs:"+str(cv2+up2)+",0) -- (axis cs:"+str(cv2+up2)+",2.);\n")
-    print("{:s} = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(par,cv1,up1,down1,up2,down2))
+    outfile.write("\\addlegendentry{{${:s} = {:.3f}^{{+{:.3f}}}_{{{:.3f}}}$}}".format(parlabel,cv1,up1,down1))
+    print("{:s} = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(parname,cv1,up1,down1,up2,down2))
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
