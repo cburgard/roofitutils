@@ -9,6 +9,8 @@ def writehead(stream):
     stream.write("\\documentclass{standalone}\n")
     stream.write("\\usepackage{pgfplots,tikz}\n")
     stream.write("\\usetikzlibrary{calc}\n")
+    stream.write("\\usetikzlibrary{shapes.misc}\n")
+    stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
     stream.write("\\begin{document}\n")
 
 def writefoot(stream):
@@ -27,9 +29,60 @@ def findminimum(points):
     yvals = [ points[x] for x in xvals ]
     interp = interpolate(xvals, yvals, extrapolate=True)
     minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]))
-    print(minimum)
     return minimum.fun
     
+def findcontours(points,values):
+    from numpy import array
+    keys = sorted(points.keys())
+
+    xvals = [ p[0] for p in keys ]
+    yvals = [ p[1] for p in keys ]
+    zvals = [ points[p] for p in keys ]
+
+    npoints = 100
+    
+    from scipy.interpolate import griddata
+    from numpy import mgrid
+    grid_x, grid_y = mgrid[min(xvals):max(xvals):complex(npoints), min(yvals):max(yvals):complex(npoints)]
+
+    grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='cubic')
+
+    nllmin = float("inf")
+    for i in range(0,npoints):
+        for j in range(0,npoints):
+            zval = grid_z[i][j]
+            if zval < nllmin:
+                nllmin = zval
+                xval = grid_x[i][j]
+                yval = grid_y[i][j]
+    minimum = (xval,yval)
+                
+    from skimage import measure
+    allcontours = []
+    for v in values:
+        imgcontours = measure.find_contours(grid_z, v+nllmin)
+        contours = []
+        for c in imgcontours:
+            realc = []
+            for i,j in c:
+                realc.append((i/npoints * (max(xvals)-min(xvals)) + min(xvals),j/npoints * (max(yvals)-min(yvals)) + min(yvals)))
+            contours.append(realc)
+        allcontours.append(contours)
+    return allcontours,minimum
+
+#    # Display the image and plot all contours found
+#    import matplotlib.pyplot as plt
+#    fig, ax = plt.subplots()
+#    ax.imshow(grid_z, interpolation='nearest', cmap=plt.cm.gray)
+#    for contours in allcontours.values():
+#        for n, contour in enumerate(contours):
+#            ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
+#        
+#    ax.axis('image')
+#    ax.set_xticks([])
+#    ax.set_yticks([])
+#    plt.show() 
+
 def findcrossings(points,nllval):
     from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
@@ -55,7 +108,6 @@ def findcrossings(points,nllval):
     elif interp(xrr) > nllval:      up   = solve(lambda x : interp(x) - nllval,x0,xrr)
     r = (x0,x0-down,up-x0)
     return r
-
 
 def collectresults(files):
     import re
@@ -86,22 +138,24 @@ def collectresults(files):
                         result = (float(cv),float(ed),float(eu))
                         results[pname] = result
                     elif parts[-2].strip() == "nll":
-                        scanp = parts[0]
-                        if scanp not in scans.keys():
-                            scans[scanp] = {}
+                        npars = len(parts)-2
+                        scanps = parts[0:npars]
+                        key = tuple(scanps)
+                        if key not in scans.keys():
+                            scans[key] = {}
                     else:
-                        pval   = float(parts[0])
-                        nllval = float(parts[1])
-                        scans[scanp][pval] = nllval
+                        pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
+                        nllval = float(parts[-2])
+                        scans[key][pvals] = nllval
                 for p in scans.keys():
                     if p in results.keys():
                         scans[p][results[p][0]]=minnll;
     return scans,results
 
-def writescans(par,allscans,outfilename,ymax=None):
+def writescans1d(par,allscans,outfilename,ymax=None):
     with open(outfilename,"w") as outfile:
         writehead(outfile)
-        domain = "domain={0:f}:{1:f}".format(min([ v for scan in allscans.values() for v in scan.keys() ]),max([ v for scan in allscans.values() for v in scan.keys() ]))
+        domain = "domain={0:f}:{1:f}".format(min([ v[0] for scan in allscans.values() for v in scan.keys() ]),max([ v[0] for scan in allscans.values() for v in scan.keys() ]))
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    ymin=0,\n")
@@ -111,18 +165,45 @@ def writescans(par,allscans,outfilename,ymax=None):
         outfile.write("    legend pos=north east,legend style={draw=none},\n")
         outfile.write("    xlabel=${0:s}$, ylabel=$\\Delta \\log L$\n".format(par))
         outfile.write("]\n")
-        for pname,scan in allscans.items():
-            writescan(pname,par,scan,outfile,ymax)
+        for pnamelist,scan in allscans.items():
+            writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,ymax)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
 
-    
-def writescan(parname,parlabel,allpoints,outfile,ymax=None):
+
+def writescans2d(labels,allscans,outfilename,contours):
+    with open(outfilename,"w") as outfile:
+        writehead(outfile)
+        domain = "domain={0:f}:{1:f}".format(min([ v[0] for scan in allscans.values() for v in scan.keys() ]),max([ v[0] for scan in allscans.values() for v in scan.keys() ]))
+        outfile.write("\\begin{tikzpicture}\n")
+        outfile.write("\\begin{axis}[\n")
+        if len(labels) == 2:
+            outfile.write("    xlabel="+labels[0]+",\n")
+            outfile.write("    ylabel="+labels[1]+",\n")
+        outfile.write("]\n")
+        for pnamelist,scan in allscans.items():
+            writescan2d(scan,outfile,contours,"color=red")
+        outfile.write("\\end{axis}\n")
+        outfile.write("\\end{tikzpicture}\n")
+        writefoot(outfile)
+
+def writescan2d(allpoints,outfile,contourdefs,style):
+    thresholds = sorted(contourdefs.keys())
+    contours,minimum = findcontours(allpoints,thresholds)
+    outfile.write("\\draw (axis cs:{:f},{:f}) node[cross,".format(minimum[0],minimum[1])+style+"] {};\n")
+    for v,conts in zip(thresholds,contours):
+        for c in conts:
+            outfile.write("% contour of {:f}\n".format(v))
+            outfile.write("\\addplot["+style+","+contourdefs[v]+",mark=none,smooth] coordinates {\n")
+            for x,y in c:
+                outfile.write("    ({:f},{:f})\n".format(x,y))
+            outfile.write("};\n")
+
+def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
     othermin = min(allpoints.values())
     nllmin = findminimum(allpoints)
-    print(othermin,nllmin)
     points =  getvals(allpoints,nllmin)
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
@@ -148,14 +229,23 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot a likelihood scan")
     parser.add_argument("input",type=str,help="text files with the input information",nargs="+")
-    parser.add_argument("--label",type=str,help="label of the x-axis",default="\\mu")
-    parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=None)
+    parser.add_argument("--label",type=str,help="label of the parameter axis",nargs="*",default=["\\mu"])
+    parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
     parser.add_argument("--output",type=str,help="output file name",default="scan.tex")
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
     args = parser.parse_args()
 
     scans,results = collectresults(args.input)
-    if not args.poi:
-        writescans(args.label,scans,args.output,args.ymax)
-    else:
-        writescans(args.label,{p:scans[p] for p in args.poi},args.output,args.ymax)            
+
+    pois = [tuple(p.split(",")) for p in args.poi]
+
+    scans1d = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
+    scans2d = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
+
+
+    if len(scans1d) > 0:
+        writescans1d(args.label[0],scans1d,args.output,args.ymax)
+    if len(scans2d) > 0:
+	# 1 sigma (=68.26895% CL):  2.296
+	# 2 sigma (=95.44997% CL):  6.180
+        writescans2d(args.label,scans2d,args.output,{0.5*2.296:"solid",0.5*6.180:"dashed"})
