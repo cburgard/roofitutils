@@ -199,9 +199,12 @@ def buildMinimizer(args,model):
 
 
 def generateCoordsDict(scan):
-    parname = args.scan[0]
-    parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
-    return [ {parname:val} for val in parrange ]
+    val = scan.split()
+    nvar = int((len(val)))
+    parname = [ val[i] for i in range(0,nvar,4) ]
+    parrange = [ linspace(float(val[i+2]),float(val[i+3]),int(val[i+1])) for i in range(0,nvar,4) ]
+    if nvar == 4 :return [ {parname[0]:val} for val in parrange ]
+    if nvar == 8 :return [ {",".join(parname):(x1,x2)} for x1 in parrange[0] for x2 in parrange[1] ]
 
 def parsePoint(line):
     return { n.strip():float(v) for (n,v) in [x.split("=") for x in line.split(",") ]}
@@ -344,6 +347,12 @@ def stringify(s):
     if isinstance(s,list): return " ".join(['"'+v+'"' for v in s])
     return str(s)
 
+def makepoint(coord):
+    for k,v in coord.items():
+	k = k.split(",")
+	if len(k) == 1: return ",".join(k[0]+"="+str(v))
+	if len(k) == 2: return ",".join([k[0]+"="+str(v[0]),k[1]+"="+str(v[1])])
+
 def createScanJobs(args,arglist):
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit"])
     import sys
@@ -351,18 +360,28 @@ def createScanJobs(args,arglist):
     coords = generateCoordsDict(args.scan)
     idx = 0
     import os
-    outpath,outfile  = os.path.split(args.writeSubmit)
+    outpath,outfile = os.path.split(args.writeSubmit)
     mkdir(outpath)
-    with open(args.writeSubmit,"wt") as jobs:
-        for coord in coords:
-            point = ",".join([k+"="+str(v) for k,v in coord.items()])
-            options["--singlepoint"]=point
-            if args.outFileName:
-                options["--output"]=args.outFileName+".part"+str(idx)
-            cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-            jobs.write(name+" "+cmd+"\n")
-            idx = idx+1
+    idx = 0
+    ipoints = 0
+    pointspath =outpath+"/coords_0.txt"
+    for coord in coords:
+        ipoints = ipoints + 1
+        if  ipoints % 40 == 0:  
+	    pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
+            with open(args.writeSubmit,"a") as jobs:
+	        options["--points"]=pointspath
+                if args.outFileName:
+                    options["--output"]=args.outFileName+".part"+str(idx)
+                cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
+                jobs.write(name+" "+cmd+"\n")
+	    idx = idx + 1
+        with open(pointspath,"a") as coordlist:
+          point = makepoint(coord)
+          coordlist.write(point+"\n")
+   
     print("wrote "+args.writeSubmit)
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -371,7 +390,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
     arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt"))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
-    arglist.append(parser.add_argument( "--scan"          , nargs=4,      dest="scan"                       , help="POI range to scan the Nll.", metavar=("POI","n","min","max"), default=None))
+    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar="\"POI_A N_A min_A max_A POI_B N_B min_B max_B\"", default=None))
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
@@ -445,5 +464,4 @@ if __name__ == "__main__":
         print("  ExtendedModel model")
         print("  ExtendedMinimizer minimizer")
         print("call 'fit(args,model,minimizer)' to run!")
-
 
