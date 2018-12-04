@@ -16,7 +16,7 @@ In order to compile with CMake, type
 
     mkdir build
     cd build
-    cmake ..
+    cmake .. -DCMAKE_MODULE_PATH=$ROOTSYS/cmake/
     make -j4
     cd ..
     source setup.sh
@@ -28,15 +28,18 @@ Now, you are ready to use the package. Don't forget to
 every time you create a new shell.
 
 It is recommended to have python 2.7 or higher.
-scipy is required for plotting likelihood results. 
+scipy and scikit-image packages are required 
+for plotting likelihood results. 
+
 First make sure you have pip installed
 
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     python get-pip.py
 
-and then install scipy by typing
+and then install the packages by typing
 
     pip install --user scipy
+    pip install --user scikit-image
 
 ## Usage
 
