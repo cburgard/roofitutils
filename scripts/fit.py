@@ -158,21 +158,6 @@ def buildMinimizer(args,model):
         ws.saveSnapshot("nominalPois", pois)
         ws.saveSnapshot("nominalAll", allparams)
 
-    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
-                ROOT.RooFit.Strategy(args.defaultStrategy), 
-                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll), 
-                ROOT.RooFit.Constrain(nuis), 
-                ROOT.RooFit.GlobalObservables(globs),
-                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
-                ROOT.RooFit.Offset(args.offsetting), 
-                ROOT.RooFit.Optimize(args.constOpt),
-                ROOT.RooFit.Precision(args.precision)]
-    noDelete(argelems)
-    arglist = ROOT.RooLinkedList()
-    for arg in argelems: arglist.Add(arg)
-
 
     # Collect POIs
     pois = model.GetParametersOfInterest()
@@ -189,21 +174,64 @@ def buildMinimizer(args,model):
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
 
+    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
+                ROOT.RooFit.Strategy(args.defaultStrategy), 
+                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll), 
+                ROOT.RooFit.Constrain(nuis), 
+                ROOT.RooFit.GlobalObservables(globs),
+                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
+                ROOT.RooFit.Offset(args.offsetting), 
+                ROOT.RooFit.Optimize(args.constOpt),
+                ROOT.RooFit.Precision(args.precision),
+                ROOT.RooFit.Hesse(args.hesse),
+                ROOT.RooFit.Save()]
+    if args.findSigma:
+        argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset)) 
+
+    noDelete(argelems)
+    arglist = ROOT.RooLinkedList()
+    for arg in argelems: arglist.Add(arg)
+        
     minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
     return minimizer
 
 
 def generateCoordsDict(scan):
     val = scan.split()
-    parname = val[0]
-    nvar = int((len(val)))
+    nvar =int((len(val)))
     parname = [ val[i] for i in range(0,nvar,4) ]
     parrange = [ linspace(float(val[i+2]),float(val[i+3]),int(val[i+1])) for i in range(0,nvar,4) ]
-    if nvar == 4 :return [ {parname[0]:val} for val in parrange[0] ]
+    if nvar == 4 :return [ {parname[0]:val} for val in parrange ]
     if nvar == 8 :return [ {",".join(parname):(x1,x2)} for x1 in parrange[0] for x2 in parrange[1] ]
 
 def parsePoint(line):
     return { n.strip():float(v) for (n,v) in [x.split("=") for x in line.split(",") ]}
+
+def writeResult(out,result):
+    if result.min.nll:
+        out.write("Minimization: minNll = ")
+        out.write(str(result.min.nll))
+        out.write("\n")
+        for p in result.parameters:
+            out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
+    if result.fit and args.hesse:
+        matrix = result.fit.correlationHist()
+        out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
+        for i in range (0,matrix.GetXaxis().GetNbins()):
+            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+        out.write("\n")
+        for i in range (0,matrix.GetNbinsX()):
+            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+            for j in range(0,matrix.GetNbinsY()):
+                out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
+            out.write("\n")                   
+    for scan in result.scans:
+        out.write((" ".join(scan.parNames)) + " nll status\n")
+        for i in range(0,len(scan.nllValues)):
+            out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
+
 
 def fit(args,model,minimizer):
     from time import time
@@ -211,7 +239,6 @@ def fit(args,model,minimizer):
 
     # Collect POIs
     pois = model.GetParametersOfInterest()
-    poiset = ROOT.RooArgSet()
     if args.pois:
         poinames = args.pois
     else:
@@ -221,19 +248,11 @@ def fit(args,model,minimizer):
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
-#	p.Print()
-#       p.removeRange()
-#       p.setError(0.2)
-        poiset.add(p)
-    
+
     if args.fit:
         start = time()
-        hesse = args.hesse
         if not args.dummy:
-            if args.findSigma:
-                minimizer.minimize(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset), ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
-            else:
-                minimizer.minimize(ROOT.RooFit.Hesse(hesse), ROOT.RooFit.Save())
+            minimizer.minimize()
         
         end = time()
         print("Fitting time: " + printtime(end-start))
@@ -263,7 +282,6 @@ def fit(args,model,minimizer):
     parnames = None
     coords = None
     if args.scan:
-        args.scan.split()
         parname = args.scan[0]
         parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
         parnames = vec([parname],"string")
@@ -280,6 +298,8 @@ def fit(args,model,minimizer):
         parnames = vec(sorted(point.keys()),"string")
         coords = vec( [ vec( [ point[p] for p in parnames ] , "double") ], "vector<double>")
 
+    print(parnames,coords)
+        
     if parnames and coords and not args.dummy:
         minimizer.scan(parnames,coords)
     else:
@@ -293,27 +313,7 @@ def fit(args,model,minimizer):
             outpath,outfile  = os.path.split(args.outFileName)
             mkdir(outpath)
             with open(args.outFileName,'w') as out:
-                if args.fit and result.min.nll:
-                    out.write("Minimization: minNll = ")
-                    out.write(str(result.min.nll))
-                    out.write("\n")
-                    for p in result.parameters:
-                        out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
-                if result.fit and args.hesse:
-                    matrix = result.fit.correlationHist()
-                    out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
-                    for i in range (0,matrix.GetXaxis().GetNbins()):
-                        out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
-                    out.write("\n")
-                    for i in range (0,matrix.GetNbinsX()):
-                        out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
-                        for j in range(0,matrix.GetNbinsY()):
-                            out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
-                        out.write("\n")                   
-                for scan in result.scans:
-                    out.write((" ".join(scan.parNames)) + " nll status\n")
-                    for i in range(0,len(scan.nllValues)):
-                        out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
+                writeResult(out,result)
             print("wrote output to "+args.outFileName)
         else:
             print("no output requested")
@@ -349,11 +349,9 @@ def stringify(s):
 
 def makepoint(coord):
     for k,v in coord.items():
-        k = k.split(",")
-        print(k)
-	print(v)
+	k = k.split(",")
 	if len(k) == 1: return ",".join(k[0]+"="+str(v))
-        if len(k) == 2: return ",".join([k[0]+"="+str(v[0]),k[1]+"="+str(v[1])])
+	if len(k) == 2: return ",".join([k[0]+"="+str(v[0]),k[1]+"="+str(v[1])])
 
 def createScanJobs(args,arglist):
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit"])
@@ -362,18 +360,55 @@ def createScanJobs(args,arglist):
     coords = generateCoordsDict(args.scan)
     idx = 0
     import os
-    outpath,outfile  = os.path.split(args.writeSubmit)
+    outpath,outfile = os.path.split(args.writeSubmit)
     mkdir(outpath)
-    with open(args.writeSubmit,"wt") as jobs:
-        for coord in coords:
-            point = makepoint(coord)
-	    options["--singlepoint"]=point
-            if args.outFileName:
-                options["--output"]=args.outFileName+".part"+str(idx)
-            cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-            jobs.write(name+" "+cmd+"\n")
-            idx = idx+1
+    idx = 0
+    ipoints = 0
+    pointspath ="coords_0.txt"
+    for coord in coords:
+        ipoints = ipoints + 1
+        if  ipoints % 40 == 0:  
+	    pointspath ="coords" +"_"+str(idx)+".txt"
+            with open(outfile,"a") as jobs:
+	        options["--points"]=pointspath
+                if args.outFileName:
+                    options["--output"]=args.outFileName+".part"+str(idx)
+                cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
+                jobs.write(name+" "+cmd+"\n")
+	    idx = idx + 1
+        with open(pointspath,"a") as coordlist:
+          point = makepoint(coord)
+          coordlist.write(point+"\n")
+   
+    print(ipoints)
     print("wrote "+args.writeSubmit)
+
+#def createtwoDimScanJobs(args,arglist):
+#    options = reconstructCall(args,arglist,["twoDimScan","writeSubmit"])
+#    import sys
+#    name = sys.argv[0]
+#    coords = generateCoordsDict(args.twoDimScan)
+#    idx = 0
+#    import os
+#    outpath,outfile  = os.path.split(args.writeSubmit)
+#    mkdir(outpath)
+#    pointspath = outpath+"/"+args.outFileName+"_coord.txt"
+#    with open(pointspath,"wt") as coordlist:
+#        for coord in coords:
+#	   point = makepoint(coord)
+#	   print(point)
+#           coordlist.write(point+"\n")
+
+#    with open(outpath+"/2dscan_2.txt","wt") as jobs:
+#        options["--points"]=pointspath
+#        if args.outFileName:
+#            options["--output"]=args.outFileName+".part"+str(idx)
+#        cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
+#        jobs.write(name+" "+cmd+"\n")
+#        idx = idx+1 #
+#	print(name)
+#	print(cmd)
+#    print("wrote coords "+args.writeSubmit)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -382,7 +417,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
     arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt"))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
-    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI range to scan the Nll.", default=None))
+    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", default=None))
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
@@ -435,6 +470,10 @@ if __name__ == "__main__":
         createScanJobs(args,arglist)
         exit(0)
 
+    if args.writeSubmit and args.twoDimScan:
+        createtwoDimScanJobs(args,arglist)
+        exit(0)
+
     from sys import flags
     if not flags.interactive:
         if args.logsave:
@@ -456,5 +495,4 @@ if __name__ == "__main__":
         print("  ExtendedModel model")
         print("  ExtendedMinimizer minimizer")
         print("call 'fit(args,model,minimizer)' to run!")
-
 
