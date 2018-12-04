@@ -200,7 +200,7 @@ def buildMinimizer(args,model):
 
 def generateCoordsDict(scan):
     val = scan.split()
-    nvar =int((len(val)))
+    nvar = int((len(val)))
     parname = [ val[i] for i in range(0,nvar,4) ]
     parrange = [ linspace(float(val[i+2]),float(val[i+3]),int(val[i+1])) for i in range(0,nvar,4) ]
     if nvar == 4 :return [ {parname[0]:val} for val in parrange ]
@@ -364,12 +364,12 @@ def createScanJobs(args,arglist):
     mkdir(outpath)
     idx = 0
     ipoints = 0
-    pointspath ="coords_0.txt"
+    pointspath =outpath+"/coords_0.txt"
     for coord in coords:
         ipoints = ipoints + 1
         if  ipoints % 40 == 0:  
-	    pointspath ="coords" +"_"+str(idx)+".txt"
-            with open(outfile,"a") as jobs:
+	    pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
+            with open(args.writeSubmit,"a") as jobs:
 	        options["--points"]=pointspath
                 if args.outFileName:
                     options["--output"]=args.outFileName+".part"+str(idx)
@@ -380,35 +380,8 @@ def createScanJobs(args,arglist):
           point = makepoint(coord)
           coordlist.write(point+"\n")
    
-    print(ipoints)
     print("wrote "+args.writeSubmit)
 
-#def createtwoDimScanJobs(args,arglist):
-#    options = reconstructCall(args,arglist,["twoDimScan","writeSubmit"])
-#    import sys
-#    name = sys.argv[0]
-#    coords = generateCoordsDict(args.twoDimScan)
-#    idx = 0
-#    import os
-#    outpath,outfile  = os.path.split(args.writeSubmit)
-#    mkdir(outpath)
-#    pointspath = outpath+"/"+args.outFileName+"_coord.txt"
-#    with open(pointspath,"wt") as coordlist:
-#        for coord in coords:
-#	   point = makepoint(coord)
-#	   print(point)
-#           coordlist.write(point+"\n")
-
-#    with open(outpath+"/2dscan_2.txt","wt") as jobs:
-#        options["--points"]=pointspath
-#        if args.outFileName:
-#            options["--output"]=args.outFileName+".part"+str(idx)
-#        cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-#        jobs.write(name+" "+cmd+"\n")
-#        idx = idx+1 #
-#	print(name)
-#	print(cmd)
-#    print("wrote coords "+args.writeSubmit)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -417,7 +390,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
     arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt"))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
-    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", default=None))
+    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar="\"POI_A N_A min_A max_A POI_B N_B min_B max_B\"", default=None))
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
@@ -468,10 +441,6 @@ if __name__ == "__main__":
 
     if args.writeSubmit and args.scan:
         createScanJobs(args,arglist)
-        exit(0)
-
-    if args.writeSubmit and args.twoDimScan:
-        createtwoDimScanJobs(args,arglist)
         exit(0)
 
     from sys import flags
