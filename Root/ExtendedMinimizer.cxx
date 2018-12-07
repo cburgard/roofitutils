@@ -284,26 +284,26 @@ namespace {
     // helper function
     RooLinkedList *l = new RooLinkedList();
     l->SetName("CmdList");
-    l->Add(owned?arg1 .Clone():const_cast<RooCmdArg*>(&arg1 ));
-    l->Add(owned?arg2 .Clone():const_cast<RooCmdArg*>(&arg2 ));
-    l->Add(owned?arg3 .Clone():const_cast<RooCmdArg*>(&arg3 ));
-    l->Add(owned?arg4 .Clone():const_cast<RooCmdArg*>(&arg4 ));
-    l->Add(owned?arg5 .Clone():const_cast<RooCmdArg*>(&arg5 ));
-    l->Add(owned?arg6 .Clone():const_cast<RooCmdArg*>(&arg6 ));
-    l->Add(owned?arg7 .Clone():const_cast<RooCmdArg*>(&arg7 ));
-    l->Add(owned?arg8 .Clone():const_cast<RooCmdArg*>(&arg8 ));
-    l->Add(owned?arg9 .Clone():const_cast<RooCmdArg*>(&arg9 ));
-    l->Add(owned?arg10.Clone():const_cast<RooCmdArg*>(&arg10));
-    l->Add(owned?arg11.Clone():const_cast<RooCmdArg*>(&arg11));
-    l->Add(owned?arg12.Clone():const_cast<RooCmdArg*>(&arg12));
-    l->Add(owned?arg13.Clone():const_cast<RooCmdArg*>(&arg13));
-    l->Add(owned?arg14.Clone():const_cast<RooCmdArg*>(&arg14));
-    l->Add(owned?arg15.Clone():const_cast<RooCmdArg*>(&arg15));
-    l->Add(owned?arg16.Clone():const_cast<RooCmdArg*>(&arg16));
-    l->Add(owned?arg17.Clone():const_cast<RooCmdArg*>(&arg17));
-    l->Add(owned?arg18.Clone():const_cast<RooCmdArg*>(&arg18));
-    l->Add(owned?arg19.Clone():const_cast<RooCmdArg*>(&arg19));
-    l->Add(owned?arg20.Clone():const_cast<RooCmdArg*>(&arg20));
+    l->Add(!owned?arg1 .Clone():const_cast<RooCmdArg*>(&arg1 ));
+    l->Add(!owned?arg2 .Clone():const_cast<RooCmdArg*>(&arg2 ));
+    l->Add(!owned?arg3 .Clone():const_cast<RooCmdArg*>(&arg3 ));
+    l->Add(!owned?arg4 .Clone():const_cast<RooCmdArg*>(&arg4 ));
+    l->Add(!owned?arg5 .Clone():const_cast<RooCmdArg*>(&arg5 ));
+    l->Add(!owned?arg6 .Clone():const_cast<RooCmdArg*>(&arg6 ));
+    l->Add(!owned?arg7 .Clone():const_cast<RooCmdArg*>(&arg7 ));
+    l->Add(!owned?arg8 .Clone():const_cast<RooCmdArg*>(&arg8 ));
+    l->Add(!owned?arg9 .Clone():const_cast<RooCmdArg*>(&arg9 ));
+    l->Add(!owned?arg10.Clone():const_cast<RooCmdArg*>(&arg10));
+    l->Add(!owned?arg11.Clone():const_cast<RooCmdArg*>(&arg11));
+    l->Add(!owned?arg12.Clone():const_cast<RooCmdArg*>(&arg12));
+    l->Add(!owned?arg13.Clone():const_cast<RooCmdArg*>(&arg13));
+    l->Add(!owned?arg14.Clone():const_cast<RooCmdArg*>(&arg14));
+    l->Add(!owned?arg15.Clone():const_cast<RooCmdArg*>(&arg15));
+    l->Add(!owned?arg16.Clone():const_cast<RooCmdArg*>(&arg16));
+    l->Add(!owned?arg17.Clone():const_cast<RooCmdArg*>(&arg17));
+    l->Add(!owned?arg18.Clone():const_cast<RooCmdArg*>(&arg18));
+    l->Add(!owned?arg19.Clone():const_cast<RooCmdArg*>(&arg19));
+    l->Add(!owned?arg20.Clone():const_cast<RooCmdArg*>(&arg20));
     return l;
   }
 
@@ -947,9 +947,9 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
 
   if (r->min.status >= 0) {
     // Evaluate errors with Minos
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
-                          << "): Running Minos" << std::endl;
     if (fMinos) {
+      coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+                            << "): Running Minos" << std::endl;
       if (fMinosSet) {
         fMinimizer->minos(*fMinosSet);
       } else {
@@ -958,6 +958,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     }
   }
 
+  
   if (fScan) {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                           << "): Running Scan" << std::endl;

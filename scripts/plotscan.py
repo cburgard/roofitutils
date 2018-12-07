@@ -152,11 +152,15 @@ def collectresults(files):
                         scans[p][results[p][0]]=minnll;
     return scans,results
 
-def writescans1d(par,allscans,outfilename,ymax=None):
+def writeATLAS(label,outfile):
+    outfile.write("% atlas label goes here\n")
+
+def writescans1d(atlas,par,allscans,outfilename,ymax=None):
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         domain = "domain={0:f}:{1:f}".format(min([ v[0] for scan in allscans.values() for v in scan.keys() ]),max([ v[0] for scan in allscans.values() for v in scan.keys() ]))
         outfile.write("\\begin{tikzpicture}\n")
+        if(atlas) writeATLAS(atlas,outfile)
         outfile.write("\\begin{axis}[\n")
         outfile.write("    ymin=0,\n")
         if ymax:
@@ -172,11 +176,12 @@ def writescans1d(par,allscans,outfilename,ymax=None):
         writefoot(outfile)
 
 
-def writescans2d(labels,allscans,outfilename,contours):
+def writescans2d(atlas,labels,allscans,outfilename,contours):
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         domain = "domain={0:f}:{1:f}".format(min([ v[0] for scan in allscans.values() for v in scan.keys() ]),max([ v[0] for scan in allscans.values() for v in scan.keys() ]))
         outfile.write("\\begin{tikzpicture}\n")
+        if(atlas) writeATLAS(atlas,outfile)
         outfile.write("\\begin{axis}[\n")
         if len(labels) == 2:
             outfile.write("    xlabel="+labels[0]+",\n")
@@ -229,6 +234,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot a likelihood scan")
     parser.add_argument("input",type=str,help="text files with the input information",nargs="+")
+    parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--label",type=str,help="label of the parameter axis",nargs="*",default=["\\mu"])
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
     parser.add_argument("--output",type=str,help="output file name",default="scan.tex")
@@ -244,8 +250,8 @@ if __name__ == '__main__':
 
 
     if len(scans1d) > 0:
-        writescans1d(args.label[0],scans1d,args.output,args.ymax)
+        writescans1d(args.atlas,args.label[0],scans1d,args.output,args.ymax)
     if len(scans2d) > 0:
 	# 1 sigma (=68.26895% CL):  2.296
 	# 2 sigma (=95.44997% CL):  6.180
-        writescans2d(args.label,scans2d,args.output,{0.5*2.296:"solid",0.5*6.180:"dashed"})
+        writescans2d(args.atlas,args.label,scans2d,args.output,{0.5*2.296:"solid",0.5*6.180:"dashed"})

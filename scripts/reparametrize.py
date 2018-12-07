@@ -61,7 +61,7 @@ def parseItems(expressions):
             insertions.append(expression.strip())
     return insertions,assignments
 
-def parseTXT(modelfile):
+def parseTXT(m):
     with open(m,"rt") as modelfile:
         expressions = [ e for e in modelfile ]
     return parseItems(expressions)
@@ -128,7 +128,7 @@ def main(args):
 
         editstr = "EDIT::" + pdfName + "(" + pdfName
         for expression in assignments:
-            editstr = editstr + "," + expression.strip()
+            editstr = editstr + ",\n" + expression.replace(" ","")
         editstr = editstr + ")"
 
         # replacement
