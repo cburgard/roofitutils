@@ -282,8 +282,9 @@ def fit(args,model,minimizer):
     parnames = None
     coords = None
     if args.scan:
-        parname = args.scan[0]
-        parrange = linspace(float(args.scan[2]),float(args.scan[3]),int(args.scan[1]))
+        val = args.scan.split()
+        parname = val[0]
+        parrange = linspace(float(val[2]),float(val[3]),int(val[1]))
         parnames = vec([parname],"string")
         coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
 
