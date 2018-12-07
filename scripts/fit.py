@@ -167,12 +167,11 @@ def buildMinimizer(args,model):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
-        
         p = model.configureParameter(poi)
-
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
+        poiset.add(p)
 
     argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
                 ROOT.RooFit.Strategy(args.defaultStrategy), 
@@ -190,10 +189,11 @@ def buildMinimizer(args,model):
     if args.findSigma:
         argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset)) 
 
+    noDelete(poiset)
     noDelete(argelems)
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
-        
+
     minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
     return minimizer
 
@@ -298,8 +298,6 @@ def fit(args,model,minimizer):
         parnames = vec(sorted(point.keys()),"string")
         coords = vec( [ vec( [ point[p] for p in parnames ] , "double") ], "vector<double>")
 
-    print(parnames,coords)
-        
     if parnames and coords and not args.dummy:
         minimizer.scan(parnames,coords)
     else:
