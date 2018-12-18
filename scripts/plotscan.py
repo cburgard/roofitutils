@@ -19,7 +19,7 @@ def writefoot(stream):
 def getvals(d,nllmin):
     xvals = sorted(d.keys())
     yvals = [ max(d[k] - nllmin,0) for k in xvals ]
-    return zip(xvals,yvals)
+    return list(zip(xvals,yvals))
         
 def findminimum(points):
     from scipy.interpolate import PchipInterpolator as interpolate
@@ -31,7 +31,7 @@ def findminimum(points):
     minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]))
     return minimum.fun
 
-def smooth(graph):
+def smoothgraph(graph):
     newgraph = []
     from math import isnan
     lastx,lasty = graph[-1]
@@ -40,10 +40,11 @@ def smooth(graph):
             newx = 0.5*(x+lastx)
             newy = 0.5*(y+lasty)
             newgraph.append((newx,newy))
-        lastx,lasty = x,y
+            lastx,lasty = x,y
+    newgraph.append(newgraph[0])
     return newgraph
 
-def findcontours(points,values):
+def findcontours(points,values,smooth):
     from numpy import array
     from math import isnan
     keys = sorted(points.keys())
@@ -83,8 +84,11 @@ def findcontours(points,values):
                 if isnan(i) or isnan(j): continue
                 realc.append((i/npoints * (max(xvals)-min(xvals)) + min(xvals),j/npoints * (max(yvals)-min(yvals)) + min(yvals)))
             if len(realc) > 0:
-                realc.append(realc[0])
-                contours.append(smooth(realc))
+                if smooth:
+                    contours.append(smoothgraph(realc))
+                else:
+                    contours.append(realc)                    
+                    
         allcontours.append(contours)
 
     # Display the image and plot all contours found
@@ -121,12 +125,17 @@ def findcrossings(points,nllval):
     from scipy.optimize import ridder as solve
     up = nan
     down = nan
-    if   interp(xl ) > nllval:      down = solve(lambda x : interp(x) - nllval,xl ,x0)
-    elif interp(xll) > nllval:      down = solve(lambda x : interp(x) - nllval,xll,x0)
-    if   interp(xr ) > nllval:      up   = solve(lambda x : interp(x) - nllval,x0,xr )
-    elif interp(xrr) > nllval:      up   = solve(lambda x : interp(x) - nllval,x0,xrr)
-    r = (x0,x0-down,up-x0)
-    return r
+    try:
+        if   interp(xl ) > nllval:      down = solve(lambda x : interp(x) - nllval,xl ,x0)
+        elif interp(xll) > nllval:      down = solve(lambda x : interp(x) - nllval,xll,x0)
+        if   interp(xr ) > nllval:      up   = solve(lambda x : interp(x) - nllval,x0,xr )
+        elif interp(xrr) > nllval:      up   = solve(lambda x : interp(x) - nllval,x0,xrr)
+        r = (x0,x0-down,up-x0)
+        return r
+    except ValueError as err:
+        print("unable to determine crossings")
+        return (x0,nan,nan)
+        
 
 def collectresults(scans,results,files,label):
     import re
@@ -188,7 +197,8 @@ def writeATLAS(label,outfile):
 def writescans1d(atlas,par,allscans,outfilename,ymax=None):
     with open(outfilename,"w") as outfile:
         writehead(outfile)
-        domain = "domain={0:f}:{1:f}".format(min([ v[0] for scan in allscans.values() for v in scan.keys() ]),max([ v[0] for scan in allscans.values() for v in scan.keys() ]))
+        allvals = [ v[0] for curves in allscans.values() for scan in curves.values() for v in scan.keys()]
+        domain = "domain={0:f}:{1:f}".format(min(allvals),max(allvals))
         outfile.write("\\begin{tikzpicture}\n")
         if atlas: writeATLAS(atlas,outfile)
         outfile.write("\\begin{axis}[\n")
@@ -199,8 +209,10 @@ def writescans1d(atlas,par,allscans,outfilename,ymax=None):
         outfile.write("    legend pos=north east,legend style={draw=none},\n")
         outfile.write("    xlabel=${0:s}$, ylabel=$\\Delta \\log L$\n".format(par))
         outfile.write("]\n")
-        for pnamelist,scan in allscans.items():
-            writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,ymax)
+        for pnamelist,curve in allscans.items():
+            for options,scan in curve.items():
+                print("writing scan for "+pnamelist[0])
+                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,ymax)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
@@ -223,14 +235,18 @@ def writescans2d(args,scans2d):
         if args.atlas:
             outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
         outfile.write("]\n")
-        outfile.write("\\begin{axis}[clip=false,\n")
+        outfile.write("\\begin{axis}[clip=false,minor tick num=4,\n")
         if args.atlas:
             outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")            
             outfile.write("xticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
             outfile.write("yticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
         if len(args.labels) == 2:
-            outfile.write("    xlabel="+args.labels[0]+",\n")
-            outfile.write("    ylabel="+args.labels[1]+",\n")
+            if args.flipAxes:
+                outfile.write("    ylabel="+args.labels[0]+",\n")
+                outfile.write("    xlabel="+args.labels[1]+",\n")
+            else:
+                outfile.write("    xlabel="+args.labels[0]+",\n")
+                outfile.write("    ylabel="+args.labels[1]+",\n")
         outfile.write("]\n")
         if args.atlas: writeATLAS(args.atlas,outfile)
     	# 1 sigma (=68.26895% CL):  2.296
@@ -238,15 +254,21 @@ def writescans2d(args,scans2d):
         contours = {0.5*2.296:"solid",0.5*6.180:"dashed"}
         for pnamelist,scan in scans2d.items():
             for dset,points in scan.items():
-                writescan2d(points,outfile,contours,parsedict(dset))
+                writescan2d(args,points,outfile,contours,parsedict(dset))
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)    
         
-def writescan2d(allpoints,outfile,contourdefs,style):
+def writescan2d(args,allpoints,outfile,contourdefs,style):
     thresholds = sorted(contourdefs.keys())
-    contours,minimum = findcontours(allpoints,thresholds)
-    outfile.write("\\draw (axis cs:{:f},{:f}) node[cross,".format(minimum[0],minimum[1])+",color="+style.get("color","black")+"] {};\n")
+    contours,minimum = findcontours(allpoints,thresholds,args.smooth)
+    outfile.write("\\draw (axis cs:")
+    if args.flipAxes:
+        outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))
+    else:
+        outfile.write("{:f},{:f}".format(minimum[0],minimum[1]))
+    outfile.write(") node[cross,color="+style.get("color","black")+"] {};\n")
+    
     first = True
     for v,conts in zip(thresholds,contours):
         icont = 0
@@ -256,7 +278,10 @@ def writescan2d(allpoints,outfile,contourdefs,style):
             if not first: outfile.write(",forget plot")
             outfile.write("] coordinates {\n")
             for x,y in c:
-                outfile.write("    ({:f},{:f})\n".format(x,y))
+                if args.flipAxes:
+                    outfile.write("    ({:f},{:f})\n".format(y,x))                    
+                else:
+                    outfile.write("    ({:f},{:f})\n".format(x,y))
             outfile.write("} ;\n")
             if first and "title" in style.keys():
                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
@@ -264,10 +289,11 @@ def writescan2d(allpoints,outfile,contourdefs,style):
             icont = icont+1
 
 def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
-    outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
     othermin = min(allpoints.values())
     nllmin = findminimum(allpoints)
     points =  getvals(allpoints,nllmin)
+    
+    outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
     outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
@@ -297,6 +323,8 @@ if __name__ == '__main__':
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
     parser.add_argument("--output",type=str,help="output file name",default="scan.tex",required=True)
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
+    parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False)
+    parser.add_argument("--smooth",action="store_true",default=False)
     args = parser.parse_args()
 
     scans = {}
@@ -317,7 +345,7 @@ if __name__ == '__main__':
 
     with open(args.output,"w") as outfile:
         if len(scans1d) > 0:
-            writescans1d(args.atlas,args.label[0],scans1d,args.output,args.ymax)
+            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
         if len(scans2d) > 0:
             writescans2d(args,scans2d)
 
