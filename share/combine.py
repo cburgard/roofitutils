@@ -3,10 +3,18 @@ import sys
 import itertools
 import re
 
-import ConfigParser
+def loadRooFitUtils():
+    # retrieve the root core dir environment variable
+    from ROOT import gSystem
+    if gSystem.Load("libRooFitUtils"):
+        raise ImportError("unable to load standalone libRooFitUtils.so!")
 
 def loadMeasurements(combined,filename):
-  config = ConfigParser.ConfigParser()
+  try:
+    from ConfigParser import ConfigParser
+  except:
+    from configparser import ConfigParser    
+  config = ConfigParser()
   config.read(filename)
   for section in config.sections():
     if config.has_option(section,"Include"):
@@ -16,7 +24,7 @@ def loadMeasurements(combined,filename):
   measurements = []
   for section in config.sections():
     print("adding "+section)
-    measurement = ROOT.Measurement (section)
+    measurement = ROOT.RooFitUtils.Measurement (section)
     measurement.SetBinnedLikelihood(config.getboolean(section,"BinnedLikelihood"))
     measurement.SetSnapshotName(config.get(section,"SnapshotName"))
     measurement.SetFileName(config.get(section,"FileName"))
@@ -47,11 +55,11 @@ def loadCorrelations(correlation,schemes):
 
 def main(args):
   # Create a new combined measurement
-  combined = ROOT.CombinedMeasurement("combined_master")
+  combined = ROOT.RooFitUtils.CombinedMeasurement("combined_master")
   
   measurements = loadMeasurements(combined,args.config)
   
-  correlation = ROOT.CorrelationScheme("CorrelationScheme")
+  correlation = ROOT.RooFitUtils.CorrelationScheme("CorrelationScheme")
   correlation.SetParametersOfInterest("mu")
   corrmap = loadCorrelations(correlation,args.correlations)
   # Run the combination. First all measurements are regularised, i.e. the
@@ -66,7 +74,7 @@ def main(args):
   
   # Generate Asimov data (NP measured in unconditional fit, generated for mu = 1)
   if args.asimov:
-      combined.MakeAsimovData(ROOT.kTRUE, ROOT.CombinedMeasurement.ucmles, ROOT.CombinedMeasurement.nominal)
+      combined.MakeAsimovData(ROOT.kTRUE, ROOT.RooFitUtils.CombinedMeasurement.ucmles, ROOT.RooFitUtils.CombinedMeasurement.nominal)
   
   combined.writeToFile(args.output)
   
@@ -109,7 +117,7 @@ with the 'guessCorrelations.py' script.""")
   try:
     import ROOT
     ROOT.PyConfig.IgnoreCommandLineOptions = True
-    ROOT.gROOT.ProcessLine(".x $ROOTCOREDIR/scripts/load_packages.C")
+    loadRooFitUtils()
   except:
     print ("Could not load library. Make sure that it was compiled correctly.")
 
