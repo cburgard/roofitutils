@@ -352,6 +352,11 @@ def makepoint(coord):
 	if len(k) == 1: return ",".join(k[0]+"="+str(v))
 	if len(k) == 2: return ",".join([k[0]+"="+str(v[0]),k[1]+"="+str(v[1])])
 
+def clearfile(filename):
+    import os
+    if os.path.exists(filename):
+        os.remove(filename)
+
 def createScanJobs(args,arglist):
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit"])
     import sys
@@ -360,20 +365,25 @@ def createScanJobs(args,arglist):
     idx = 0
     import os
     outpath,outfile = os.path.split(args.writeSubmit)
+    pointspath = outpath+"/coords_0.txt"
     mkdir(outpath)
+    clearfile(args.writeSubmit)
+    clearfile(pointspath)
+ 
     idx = 0
     ipoints = 0
-    pointspath =outpath+"/coords_0.txt"
     for coord in coords:
         ipoints = ipoints + 1
         if  ipoints % 40 == 0:  
 	    pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
+	    clearfile(pointspath)
             with open(args.writeSubmit,"a") as jobs:
-	        options["--points"]=pointspath
+	        options[" --no-findSigma --points"]=pointspath
                 if args.outFileName:
                     options["--output"]=args.outFileName+".part"+str(idx)
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-                jobs.write(name+" "+cmd+"\n")
+		if not os.path.exists(args.outFileName+".part"+str(idx)):
+                    jobs.write(name+" "+cmd+"\n")
 	    idx = idx + 1
         with open(pointspath,"a") as coordlist:
           point = makepoint(coord)
@@ -463,4 +473,3 @@ if __name__ == "__main__":
         print("  ExtendedModel model")
         print("  ExtendedMinimizer minimizer")
         print("call 'fit(args,model,minimizer)' to run!")
-
