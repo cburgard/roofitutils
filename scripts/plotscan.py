@@ -6,7 +6,7 @@ from RooFitUtils.io import collectresults
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot a likelihood scan")
-    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('label','file.txt'),help="text files with the input information")
+    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with the input information",required=True)
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=["\\mu"])
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])

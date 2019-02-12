@@ -1,6 +1,10 @@
 #!/bin/evn python
 
+inf = float("inf")
+nan = float("nan")
+
 def findcontours(points,values,smooth):
+    """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
     keys = sorted(points.keys())
@@ -63,6 +67,7 @@ def findcontours(points,values,smooth):
     return allcontours,minimum
     
 def findcrossings(points,nllval):
+    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value"""
     from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
     yvals = [ y for x,y in points ]
@@ -94,6 +99,7 @@ def findcrossings(points,nllval):
 
 
 def findminimum(points):
+    """find the interpolated minimum of a 1d graph"""
     from scipy.interpolate import PchipInterpolator as interpolate
     from scipy.optimize import minimize
     from numpy import array
@@ -104,6 +110,7 @@ def findminimum(points):
     return minimum.fun
 
 def smoothgraph(graph):
+    """smooth a graph by taking the center of each edge and constructing a new graph from those"""
     newgraph = []
     from math import isnan
     lastx,lasty = graph[-1]

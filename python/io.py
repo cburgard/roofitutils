@@ -1,12 +1,9 @@
 #!/bin/evn python
 
 import os
-inf = float("inf")
-nan = float("nan")
-from math import isnan
-
 
 def collectresults(scans,results,files,label):
+    """collect a set of results files and return the contents as a dictionary"""
     import re
     parpat = re.compile("([a-zA-Z0-9_.]+)[ ]*=[ ]*([0-9.naife-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife-]+)[ ]*")
     nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife-]+)")
@@ -62,12 +59,14 @@ def collectresults(scans,results,files,label):
 
 
 def getvals(d,nllmin):
+    """transform the values of a curvey by sorting them in x and subtracting a fixed value in y"""
     xvals = sorted(d.keys())
     yvals = [ max(d[k] - nllmin,0) for k in xvals ]
     return list(zip(xvals,yvals))
         
 
 def parsedict(s):
+    """parse a string of the format "a=b,c=d" into a dictionary"""
     d = {}
     for kv in s.split(","):
         k,v = kv.split("=")
