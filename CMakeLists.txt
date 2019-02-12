@@ -65,6 +65,9 @@ file(WRITE ${SETUP} "#!/bin/bash\n")
 file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
 
 if(${AnalysisBase_FOUND})
+  
+  atlas_platform_id( BINARY_TAG )
+
   # this section reflects the standard ASG way of configuring CMake
   # it is executed when compiling within an ASG environment
   find_package( GTest )
@@ -79,8 +82,10 @@ if(${AnalysisBase_FOUND})
     PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES}
     )
 
-  set(BINARY_TAG ${ATLAS_PLATFORM})
+  find_package(PythonInterp REQUIRED)
+  atlas_install_python_modules( python/* )
 
+  file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/python:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
   file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
   file(APPEND ${SETUP} "export DYLD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
   file(APPEND ${SETUP} "export ROOT_INCLUDE_PATH=\${ROOT_INCLUDE_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/include\n")
@@ -101,6 +106,14 @@ ELSE()
   # link everything together at the end
   target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
 
+  file(GLOB pyfiles "python/*")
+  foreach(pyfile ${pyfiles})
+    execute_process(
+      COMMAND ln -sf ${pyfile} ${CMAKE_CURRENT_BINARY_DIR}
+      )
+  endforeach()
+
+  file(APPEND ${CAFSETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_CURRENT_SOURCE_DIR}/scripts\n")
   
