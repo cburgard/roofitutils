@@ -42,9 +42,10 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     """write a single 1d scan to a pgfplots tex file"""
     from math import isnan
     from RooFitUtils.interpolate import findminimum
+    from RooFitUtils.util import graphoffset
     othermin = min(allpoints.values())
     nllmin = findminimum(allpoints)
-    points =  getvals(allpoints,nllmin)
+    points =  graphoffset(allpoints,nllmin)
     
     outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
@@ -69,7 +70,7 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
 
 def writescans2d(args,scans2d):
     """write a bunch of 2d scans to a pgfplots tex file"""
-    from RooFitUtils.io import parsedict
+    from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:    
         writehead(outfile)
         if args.atlas:

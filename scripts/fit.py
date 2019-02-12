@@ -2,102 +2,11 @@
 
 import sys
 
-_noDelete = []
-def noDelete(something):
-    _noDelete.append(something)
-
-try:
-    isinstance("", basestring)
-    def isstr(s):
-        return isinstance(s, basestring)
-except NameError:
-    def isstr(s):
-        return isinstance(s, str)
-
-def concat(pieces,delim=" "):
-    """concatenate a list of strings to a single string"""
-    if isstr(pieces):
-        return pieces
-    else:
-        return delim.join(pieces)
-
-def shellexec(command,inputs=[],verbose=False,allowErrors=True):
-    """execute a command by invoking it in a shell"""
-    if verbose:
-        print(concat(command))
-        for inputline in inputs:
-            if len(inputline) > 0: print("> "+concat(inputline))
-            pass
-        pass
-    command = concat(command).split()
-    stdinlines = [ concat(pieces) for pieces in inputs if len(pieces) > 0]
-    s = concat(stdinlines,"\n")
-
-    from subprocess import Popen, PIPE
-    p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    b = s.encode('ascii')
-    stdout_data, stderr_data = p.communicate(input=b)
-    if len(stderr_data) > 0:
-        if allowErrors and verbose:
-            QFramework.ERROR("Error from binary '"+concat(command)+"': "+concat(stderr_data))
-        if not allowErrors:
-            QFramework.BREAK("Error from binary '"+concat(command)+"': "+concat(stderr_data))
-    return stdout_data
-
-def mkdir(path):
-    """call 'mkdir -p' on the given path"""
-    shellexec(["mkdir","-p",path])
-
-def mod(a,b):
-    return a%b
-
-def linspace(vmin,vmax,npoints):
-    step = (vmax - vmin)/(npoints)
-    vals = [ float(vmin + i*step) for i in range(0,npoints+1) ]
-    return vals
-
-def loadRooFitUtils():
-    # retrieve the root core dir environment variable
-    from ROOT import gSystem
-    if gSystem.Load("libRooFitUtils"):
-        raise ImportError("unable to load standalone libRooFitUtils.so!")
-
-def printtime(seconds):
-    s = "{0:.3f}s".format(mod(seconds,60))
-    if seconds < 60:
-        return s
-    m = "{0:d}m".format(int(mod(seconds/60,60)))
-    if seconds < 3600:
-        return m+" "+s
-    h = "{0:d}h".format(int(seconds/3600))
-    return h+" "+m+":"+s
-
-def makelist(coll):
-    itr = coll.createIterator()
-    var = itr.Next()
-    retval = []
-    while var :
-        retval.append(var)
-        var = itr.Next()
-    return retval
-
-def union(listoflists):
-    s = set()
-    for l in listoflists:
-        s.update(l)
-    return list(s)
-
-def vec(l,t):
-    import ROOT
-    v = ROOT.vector(t)()
-    for e in l:
-        v.push_back(e)
-    return v
-
 def setup(args):
     # general setup and loading of modules
     import ROOT
 
+    from RooFitUtils.util import loadRooFitUtils
     # load libraries
     loadRooFitUtils()
     
@@ -189,8 +98,9 @@ def buildMinimizer(args,model):
     if args.findSigma:
         argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset)) 
 
-    noDelete(poiset)
-    noDelete(argelems)
+    from RooFitUtils.util import nodel
+    nodel(poiset)
+    nodel(argelems)
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
 
@@ -198,43 +108,10 @@ def buildMinimizer(args,model):
     return minimizer
 
 
-def generateCoordsDict(scan):
-    val = scan.split()
-    nvar = int((len(val)))
-    parname = [ val[i] for i in range(0,nvar,4) ]
-    parrange = [ linspace(float(val[i+2]),float(val[i+3]),int(val[i+1])) for i in range(0,nvar,4) ]
-    if nvar == 4 :return [ {parname[0]:val} for val in parrange ]
-    if nvar == 8 :return [ {",".join(parname):(x1,x2)} for x1 in parrange[0] for x2 in parrange[1] ]
-
-def parsePoint(line):
-    return { n.strip():float(v) for (n,v) in [x.split("=") for x in line.split(",") ]}
-
-def writeResult(out,result):
-    if result.min.nll:
-        out.write("Minimization: minNll = ")
-        out.write(str(result.min.nll))
-        out.write("\n")
-        for p in result.parameters:
-            out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
-    if result.fit and args.hesse:
-        matrix = result.fit.correlationHist()
-        out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
-        for i in range (0,matrix.GetXaxis().GetNbins()):
-            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
-        out.write("\n")
-        for i in range (0,matrix.GetNbinsX()):
-            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
-            for j in range(0,matrix.GetNbinsY()):
-                out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
-            out.write("\n")                   
-    for scan in result.scans:
-        out.write((" ".join(scan.parNames)) + " nll status\n")
-        for i in range(0,len(scan.nllValues)):
-            out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
-
-
 def fit(args,model,minimizer):
     from time import time
+    from RooFitUtils.util import parsePoint,timestamp,linspace,vec,mkdir
+    from RooFitUtils.io import writeResult
     import ROOT
 
     # Collect POIs
@@ -255,7 +132,7 @@ def fit(args,model,minimizer):
             minimizer.minimize()
         
         end = time()
-        print("Fitting time: " + printtime(end-start))
+        print("Fitting time: " + timestamp(end-start))
         minNll = minimizer.GetMinNll()
         print("NLL after minimisation: "+str(minNll))
 
@@ -312,7 +189,7 @@ def fit(args,model,minimizer):
             outpath,outfile  = os.path.split(args.outFileName)
             mkdir(outpath)
             with open(args.outFileName,'w') as out:
-                writeResult(out,result)
+                writeResult(out,result,args.hesse)
             print("wrote output to "+args.outFileName)
         else:
             print("no output requested")
@@ -323,41 +200,8 @@ def fit(args,model,minimizer):
         ws = model.GetWorkspace()        
         ws.writeToFile(args.outWsName)
 
-def reconstructCall(args,arglist,blacklist):
-    options = {}
-    from argparse import _StoreTrueAction,_StoreFalseAction,_StoreAction
-    for arg in args.__dict__:
-        actions = []
-        for action in arglist:
-            if arg in blacklist: continue
-            if arg == action.dest:
-                argval = args.__dict__[arg]
-                argopt = action.option_strings[0]
-                if argval == True and isinstance(action,_StoreTrueAction):
-                    options[argopt]=None
-                if argval == False and isinstance(action,_StoreFalseAction):
-                    options[argopt]=None
-                if isinstance(action,_StoreAction) and not argval == action.default:
-                    options[argopt]=argval
-    return options
-
-def stringify(s):
-    if s == None: return ""
-    if isinstance(s,list): return " ".join(['"'+v+'"' for v in s])
-    return str(s)
-
-def makepoint(coord):
-    for k,v in coord.items():
-	k = k.split(",")
-	if len(k) == 1: return ",".join(k[0]+"="+str(v))
-	if len(k) == 2: return ",".join([k[0]+"="+str(v[0]),k[1]+"="+str(v[1])])
-
-def clearfile(filename):
-    import os
-    if os.path.exists(filename):
-        os.remove(filename)
-
 def createScanJobs(args,arglist):
+    from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit"])
     import sys
     name = sys.argv[0]
@@ -367,6 +211,7 @@ def createScanJobs(args,arglist):
     outpath,outfile = os.path.split(args.writeSubmit)
     pointspath = outpath+"/coords_0.txt"
     mkdir(outpath)
+    from RooFitUtils.util import clearfile
     clearfile(args.writeSubmit)
     clearfile(pointspath)
  

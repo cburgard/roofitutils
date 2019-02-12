@@ -2,6 +2,29 @@
 
 import os
 
+def writeResult(out,result,writehesse):
+    if result.min.nll:
+        out.write("Minimization: minNll = ")
+        out.write(str(result.min.nll))
+        out.write("\n")
+        for p in result.parameters:
+            out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
+    if result.fit and writehesse:
+        matrix = result.fit.correlationHist()
+        out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
+        for i in range (0,matrix.GetXaxis().GetNbins()):
+            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+        out.write("\n")
+        for i in range (0,matrix.GetNbinsX()):
+            out.write(matrix.GetYaxis().GetBinLabel(i+1)+" ")
+            for j in range(0,matrix.GetNbinsY()):
+                out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
+            out.write("\n")                   
+    for scan in result.scans:
+        out.write((" ".join(scan.parNames)) + " nll status\n")
+        for i in range(0,len(scan.nllValues)):
+            out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
+
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re
@@ -56,19 +79,3 @@ def collectresults(scans,results,files,label):
                 for p in scans.keys():
                     if p in results.keys():
                         scans[p][label][results[p][label][0]]=minnll;
-
-
-def getvals(d,nllmin):
-    """transform the values of a curvey by sorting them in x and subtracting a fixed value in y"""
-    xvals = sorted(d.keys())
-    yvals = [ max(d[k] - nllmin,0) for k in xvals ]
-    return list(zip(xvals,yvals))
-        
-
-def parsedict(s):
-    """parse a string of the format "a=b,c=d" into a dictionary"""
-    d = {}
-    for kv in s.split(","):
-        k,v = kv.split("=")
-        d[k] = v
-    return d
