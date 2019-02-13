@@ -200,9 +200,10 @@ def fit(args,model,minimizer):
         ws = model.GetWorkspace()        
         ws.writeToFile(args.outWsName)
 
-def createScanJobs(args,arglist):
+
+def createScanJobs(args,arglist,pointsPerJob):
     from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir
-    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit"])
+    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","refineScan"])
     import sys
     name = sys.argv[0]
     coords = generateCoordsDict(args.scan)
@@ -219,7 +220,7 @@ def createScanJobs(args,arglist):
     ipoints = 0
     for coord in coords:
         ipoints = ipoints + 1
-        if  ipoints % 40 == 0:  
+        if  ipoints % pointsPerJob == 0:  
 	    pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
 	    clearfile(pointspath)
             with open(args.writeSubmit,"a") as jobs:
@@ -244,7 +245,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
     arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt"))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
-    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar="\"POI_A N_A min_A max_A POI_B N_B min_B max_B\"", default=None))
+    arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar=("POI","N","min","max"), default=None,nargs=4,action="append"))
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
@@ -294,7 +295,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.writeSubmit and args.scan:
-        createScanJobs(args,arglist)
+        createScanJobs(args,arglist,40)
         exit(0)
 
     from sys import flags
