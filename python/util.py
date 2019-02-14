@@ -109,12 +109,12 @@ def graphoffset(d,nllmin):
     return list(zip(xvals,yvals))
         
 
-def parsedict(s):
+def parsedict(s,cast=str):
     """parse a string of the format "a=b,c=d" into a dictionary"""
     d = {}
     for kv in s.split(","):
         k,v = kv.split("=")
-        d[k] = v
+        d[k] = cast(v)
     return d
 
 def product(pools):
@@ -159,6 +159,138 @@ def reconstructCall(args,arglist,blacklist):
                 if isinstance(action,_StoreAction) and not argval == action.default:
                     options[argopt]=argval
     return options
+
+def lineSegmentLengths(points):
+    segments = []
+    from math import sqrt
+    lastpoint = None
+    for point in points:
+        if not lastpoint:
+            lastpoint = point
+            continue
+        else:
+            l = length(subtract(point,lastpoint))
+            segments.append(l)
+            lastpoint = point
+    return segments
+
+def weighted_choice(weights):
+    if len(weights) == 0:
+        raise RuntimeError("unable to choose from empty list")        
+    import random            
+    totals = []
+    running_total = 0
+
+    for w in weights:
+        running_total += w
+        totals.append(running_total)
+
+    rnd = random.random() * running_total
+    for i, total in enumerate(totals):
+        if rnd < total:
+            return i
+    raise RuntimeError("unable to choose with value "+str(rnd))
+
+def interpolate(a,b,x):
+    """interpolate between to vectors with a given interpolation in the range 0-1"""
+    return add(scale(a,1-x),scale(b,x))
+
+def length(a):
+    """return the length of a vector"""
+    from math import sqrt
+    return sqrt(norm(a))
+
+def norm(a):
+    """return the norm of a vector"""
+    return sum([ x*x for x in a ])
+
+def subtract(a,b):
+    """return the difference between to vectors"""
+    return [ b[i] - a[i] for i in range(0,len(a)) ]
+
+def add(a,b):
+    """return the sum of two vectors"""
+    return [ b[i] + a[i] for i in range(0,len(a)) ]
+
+def normalized(a):
+    """return a normalized copy of a vector"""
+    return scale(a,1./length(a))
+
+def scale(a,x):
+    """scale a vector by a number"""
+    return [ e*x for e in a ]
+
+def equal(a,b):
+    """test if two vectors are equal"""
+    for i in range(0,len(a)):
+        if a[i] != b[i]: return False
+    return True
+
+def orthogonal(a):
+    """return a vector orthogonal to the one given"""
+    from math import atan,sin,cos,pi
+    angle = atan(a[1],a[0])
+    # by deliberately swapping sin and cos, we introduce a shift by 90 deg.
+    return [ sin(angle),cos(angle) ]
+
+def distributePointsAroundLine(dimlabels,coords,contour,npoints):
+    """distribute points randomly around a line"""
+    # closed contours have the first and the last point equal
+    closed = equal(contour[0],contour[-1])
+    lengths = lineSegmentLengths(contour)
+    distpar = 0.01*sum(lengths)
+    for p in range(0,npoints):
+        # pick a segment randomly by length
+        segment = weighted_choice(lengths)
+        # for the vector calculations, we need the vectors of the previous and next segment
+        # for closed-contours, this is almost trivial, except for the cases handled in the following if-then-else
+        # for non-closed contours, we simply construct an orthogonal vector later on (and mark the segments as 'None' here)
+        start = segment
+        end   = segment+1
+        if segment == 0:
+            # we picked the first segment
+            # if this is a closed contour, we use -2 instead of -1 in order to avoid a length of 0
+            if closed: before = -2
+            else:      before = None
+        else:
+            before = start-1
+        if segment == len(lengths)-1:
+            # we picked the last segment
+            # if this is a closed contour, we use 1 instead of 0 in order to avoid a length of 0
+            if closed:  after = 1
+            else:       after = None
+        else:
+            after = end+1
+        # randomly select the position along the segment
+        import random
+        pos = random.uniform(0, 1)
+        linepoint = interpolate(contour[start],contour[end],pos)
+        # calculate the trapezoid vectors at the beginning and end of the segment
+        # by adding the vectors of the previous and current (current and next) segments, we get the "direction" in which the corner is pointing
+        # by interpolating between the directions before and after the current segment, we cover the full area around the segment and don't skip-over/double count areas with edges
+        if before != None:
+            prev_segment_forward = normalized(subtract(contour[before],contour[start]))
+            this_segment_reverse = normalized(subtract(contour[end],contour[start]))
+            prevector   = normalized(add(prev_segment_forward,this_segment_reverse))
+        else:
+            prevector = normalized(orthogonal(subtract(contour[end],contour[start])))
+        if after != None:
+            next_segment_reverse = normalized(subtract(contour[after],contour[end]))
+            this_segment_forward = normalized(subtract(contour[start],contour[end]))               
+            postvector  = normalized(add(this_segment_forward,next_segment_reverse))
+        else:
+            postvector = normalized(orthogonal(subtract(contour[end],contour[start])))            
+        # calculate the shift by interpolating between the pre- and post-vector and scaling it randomly
+        shift = scale(normalized(interpolate(prevector,postvector,pos)),distpar*random.gauss(0,1))
+        # put everything together
+        coord = add(linepoint,shift)
+        coords.append( {dimlabels[i]:coord[i] for i in range(0,len(dimlabels)) } )
+
+def distributePointsAroundPoint(dimlabels,coords,minimum,npoints,distpar):
+    import numpy as np
+    xy = np.random.multivariate_normal(minimum, distpar * np.identity(len(dimlabels)), npoints)
+    for j in range(0,npoints):
+        coords.append({dimlabels[i]:xy[j][i] for i in range(0,len(dimlabels))})
 
 def stringify(s):
     if s == None: return ""

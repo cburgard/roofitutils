@@ -22,14 +22,18 @@ def findcontours(points,values,smooth):
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
 
     nllmin = inf
+    minimum = (nan,nan)
+    for i in range(0,npoints):
+        if zvals[i] < nllmin:
+            nllmin = zvals[i]
+            minimum = (xvals[i],yvals[i])
+
     for i in range(0,npoints):
         for j in range(0,npoints):
             zval = grid_z[i][j]
             if zval < nllmin:
                 nllmin = zval
-                xval = grid_x[i][j]
-                yval = grid_y[i][j]
-    minimum = (xval,yval)
+                minimum = (grid_x[i][j],grid_y[i][j])
                 
     from skimage import measure
     allcontours = []

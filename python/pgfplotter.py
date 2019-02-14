@@ -68,7 +68,7 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     outfile.write("\\addlegendentry{{${:s} = {:.3f}^{{+{:.3f}}}_{{{:.3f}}}$}}".format(parlabel,cv1,up1,down1))
     print("{:s} = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(parname,cv1,up1,down1,up2,down2))
 
-def writescans2d(args,scans2d):
+def writescans2d(args,scans2d,extrapoints):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:    
@@ -101,10 +101,27 @@ def writescans2d(args,scans2d):
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
                 writescan2d(args,points,outfile,contours,parsedict(drawopts))
+        for drawopts,points in extrapoints.items():
+            writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)    
-        
+
+def writepoints2d(args,points,outfile,style):
+    outfile.write("\\addplot[mark=x,mark options={scale=.5},only marks,draw="+style.get("color","black")+"] coordinates {\n")
+    i = 0
+    red = int(style.get("reduce",0))
+    from random import randint    
+    for point in points:
+        i = i + 1
+        if red > 0 and randint(0, red) != 0: continue
+        keys = sorted(point.keys())
+        if args.flipAxes:
+            outfile.write("    ({:f},{:f})\n".format(point[keys[1]],point[keys[0]]))
+        else:
+            outfile.write("    ({:f},{:f})\n".format(point[keys[0]],point[keys[1]]))            
+    outfile.write("};\n")
+                          
 def writescan2d(args,allpoints,outfile,contourdefs,style):
     """write a single 2d scan to a pgfplots tex file"""
     from RooFitUtils.interpolate import findcontours

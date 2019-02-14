@@ -25,6 +25,24 @@ def writeResult(out,result,writehesse):
         for i in range(0,len(scan.nllValues)):
             out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
 
+def collectpoints(points,files,label):
+    import glob
+    filenames = []
+    for expression in files:
+        filenames.extend(glob.glob(expression))
+    if len(filenames) == 0:
+        print("no points found in "+expression)
+        exit(0)
+    from RooFitUtils.util import parsedict
+    allpoints = []    
+    for filename in filenames:
+        if os.path.isfile(filename):
+            with open(filename,'r') as infile:
+                for line in infile:
+                    point = parsedict(line,float)
+                    allpoints.append(point)
+    points[label] = allpoints
+                    
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re
@@ -67,7 +85,7 @@ def collectresults(scans,results,files,label):
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
                             scans[key][label][pvals] = nllval
-                    except:
+                    except KeyError:
                         if nllmatch:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value")
                         elif match:

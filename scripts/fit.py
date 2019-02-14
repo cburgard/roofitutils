@@ -203,10 +203,42 @@ def fit(args,model,minimizer):
 
 def createScanJobs(args,arglist,pointsPerJob):
     from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir
+    from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","refineScan"])
     import sys
     name = sys.argv[0]
-    coords = generateCoordsDict(args.scan)
+    if args.refineScan:
+        from RooFitUtils.io import collectresults
+        prescans = {}
+        preresults = {}
+        collectresults(prescans,preresults,args.refineScan,"dummy")
+        from RooFitUtils.interpolate import findcontours
+        coords = []
+        for parnamelist,scan in prescans.items():
+            for labels,points in scan.items():
+                # for now, use as many points for the new scan as for the old one
+                npoints = len(points)
+                if len(parnamelist) == 2:
+                    # 1 sigma (=68.26895% CL):  2.296
+    	            # 2 sigma (=95.44997% CL):  6.180
+                    thresholds = [0.5*2.296,0.5*6.180]
+                    contours,minimum = findcontours(points,thresholds,False)
+                    # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
+                    nEach = int(0.9 * npoints / len(contours))
+                    for contour in contours:
+                        for graph in contour:
+                            distributePointsAroundLine(parnamelist,coords,graph,nEach)
+                    # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
+                    distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
+                else:
+                    cv1,down1,up1 = findcrossings(points,0.5)
+                    distributePointsAroundPoint(parnamelist,coords,down1,npoints/4,0.1)
+                    distributePointsAroundPoint(parnamelist,coords,up1,npoints/4,0.1)                                        
+                    cv2,down2,up2 = findcrossings(points,2)
+                    distributePointsAroundPoint(parnamelist,coords,down2,npoints/4,0.1)
+                    distributePointsAroundPoint(parnamelist,coords,up2,npoints/4,0.1)                                                            
+    elif args.scan:
+        coords = generateCoordsDict(args.scan)
     idx = 0
     import os
     outpath,outfile = os.path.split(args.writeSubmit)
@@ -228,7 +260,7 @@ def createScanJobs(args,arglist,pointsPerJob):
                 if args.outFileName:
                     options["--output"]=args.outFileName+".part"+str(idx)
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-		if not os.path.exists(args.outFileName+".part"+str(idx)):
+                if args.outFileName and not os.path.exists(args.outFileName+".part"+str(idx)):
                     jobs.write(name+" "+cmd+"\n")
 	    idx = idx + 1
         with open(pointspath,"a") as coordlist:
@@ -243,9 +275,10 @@ if __name__ == "__main__":
     parser = ArgumentParser("run a fit")
     arglist = []
     arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
-    arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt"))
+    arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
     arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar=("POI","N","min","max"), default=None,nargs=4,action="append"))
+    arglist.append(parser.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))    
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
@@ -294,7 +327,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.writeSubmit and args.scan:
+    if args.writeSubmit and (args.scan or args.refineScan):
         createScanJobs(args,arglist,40)
         exit(0)
 
