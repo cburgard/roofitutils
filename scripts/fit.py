@@ -111,6 +111,7 @@ def buildMinimizer(args,model):
 def fit(args,model,minimizer):
     from time import time
     from RooFitUtils.util import parsePoint,timestamp,linspace,vec,mkdir
+    from RooFitUtils.util import generateCoordsDict
     from RooFitUtils.io import writeResult
     import ROOT
 
@@ -159,11 +160,9 @@ def fit(args,model,minimizer):
     parnames = None
     coords = None
     if args.scan:
-        val = args.scan.split()
-        parname = val[0]
-        parrange = linspace(float(val[2]),float(val[3]),int(val[1]))
-        parnames = vec([parname],"string")
-        coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
+        coordsdict = generateCoordsDict(args.scan)
+        parnames = vec(sorted(coordsdict[0].keys()),"string")
+        coords = vec([ vec([d[k] for k in parnames],"double") for d in coordsdict],"vector<double>")
 
     if args.points != None:
         with open(args.points) as infile:
