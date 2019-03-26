@@ -1,6 +1,7 @@
 #!/bin/env python 
 
 import sys
+from RooFitUtils.util import makelist
 
 def setup(args):
     # general setup and loading of modules
@@ -185,7 +186,7 @@ def fit(args,model,minimizer):
     if result:
         if args.outFileName:
             import os
-            outpath,outfile  = os.path.split(args.outFileName)
+            outpath,outfile = os.path.split(args.outFileName)
             mkdir(outpath)
             with open(args.outFileName,'w') as out:
                 writeResult(out,result,args.hesse)
@@ -219,7 +220,7 @@ def createScanJobs(args,arglist,pointsPerJob):
                 npoints = len(points)
                 if len(parnamelist) == 2:
                     # 1 sigma (=68.26895% CL):  2.296
-    	            # 2 sigma (=95.44997% CL):  6.180
+                    # 2 sigma (=95.44997% CL):  6.180
                     thresholds = [0.5*2.296,0.5*6.180]
                     contours,minimum = findcontours(points,thresholds,False)
                     # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
@@ -252,16 +253,16 @@ def createScanJobs(args,arglist,pointsPerJob):
     for coord in coords:
         ipoints = ipoints + 1
         if  ipoints % pointsPerJob == 0:  
-	    pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
-	    clearfile(pointspath)
+            pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
+            clearfile(pointspath)
             with open(args.writeSubmit,"a") as jobs:
-	        options[" --no-findSigma --points"]=pointspath
+                options[" --no-findSigma --points"]=pointspath
                 if args.outFileName:
                     options["--output"]=args.outFileName+".part"+str(idx)
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
                 if args.outFileName and not os.path.exists(args.outFileName+".part"+str(idx)):
                     jobs.write(name+" "+cmd+"\n")
-	    idx = idx + 1
+            idx = idx + 1
         with open(pointspath,"a") as coordlist:
           point = makepoint(coord)
           coordlist.write(point+"\n")
@@ -298,7 +299,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--minimizerType" , type=str,     dest="minimizerType"              , help="Minimizer type.", default="Minuit2" ))
     arglist.append(parser.add_argument( "--minimizerAlgo" , type=str,     dest="minimizerAlgo"              , help="Minimizer algorithm.", default="Migrad" ))
     arglist.append(parser.add_argument( "--hesse"         , action='store_true',    dest="hesse"       , help="enable HESSE", default=False ))
-    arglist.append(parser.add_argument( "--no-hesse"      , action='store_false',   dest="hesse"	     , help="disable HESSE", default=False ))
+    arglist.append(parser.add_argument( "--no-hesse"      , action='store_false',   dest="hesse"         , help="disable HESSE", default=False ))
     arglist.append(parser.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=0 ))
     arglist.append(parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
     arglist.append(parser.add_argument( "--numThreads"    , type=int,     dest="numThreads"                 , help="Number of CPU Threads.", default=3 ))

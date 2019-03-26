@@ -107,13 +107,16 @@ ELSE()
   target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
 
   file(GLOB pyfiles "python/*")
+  execute_process(
+    COMMAND mkdir RooFitUtils
+    )  
   foreach(pyfile ${pyfiles})
     execute_process(
-      COMMAND ln -sf ${pyfile} ${CMAKE_CURRENT_BINARY_DIR}
+      COMMAND ln -sf ${pyfile} ${CMAKE_CURRENT_BINARY_DIR}/RooFitUtils
       )
   endforeach()
 
-  file(APPEND ${CAFSETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
+  file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_CURRENT_SOURCE_DIR}/scripts\n")
   
