@@ -39,7 +39,7 @@ IF(${AnalysisBase_FOUND})
 ENDIF()
 
 include_directories ("${PROJECT_SOURCE_DIR}")
-find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats )
+find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats Minuit2 )
 FOREACH(incfile ${ROOT_USE_FILE})
   include(${incfile})
 ENDFOREACH()  
