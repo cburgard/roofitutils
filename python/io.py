@@ -46,7 +46,7 @@ def collectpoints(points,files,label):
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re
-    parpat = re.compile("([a-zA-Z0-9_.]+)[ ]*=[ ]*([0-9.naife-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife-]+)[ ]*")
+    parpat = re.compile("([a-zA-Z0-9_.a-]+)[ ]*=[ ]*([0-9.naife-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife-]+)[ ]*")
     nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife-]+)")
     import glob
     filenames = []
@@ -59,6 +59,7 @@ def collectresults(scans,results,files,label):
         if os.path.isfile(filename):
             with open(filename,'r') as infile:
                 lines = [ line for line in infile ]
+#		print lines
                 for lineno in range(0,len(lines)):
                     line = lines[lineno]
                     try:
@@ -84,7 +85,13 @@ def collectresults(scans,results,files,label):
                         else:
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
-                            scans[key][label][pvals] = nllval
+			    status = int(parts[-1])
+		            #if -0.001< pvals[1] < 0.001 and -0.001< pvals[0] < 0.001: 
+			    #    print str(pvals)+str(nllval)
+#			    if pvals[1] < 0.01 and pvals[0] < 0: print nllval
+#			    if pvals[1] < 0.01 and pvals[0] < 0: print status
+		            if status == 0: 
+                                scans[key][label][pvals] = nllval
                     except KeyError:
                         if nllmatch:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value")

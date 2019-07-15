@@ -48,7 +48,7 @@ def buildModel(args):
 
 def buildMinimizer(args,model):
     import ROOT
-    
+    from RooFitUtils.util import makelist
     ws = model.GetWorkspace()
     mc = model.GetModelConfig()
     allparams = ROOT.RooArgSet()
@@ -59,7 +59,7 @@ def buildMinimizer(args,model):
     ROOT.RooFitUtils.addArgSet(allparams, pois)
     ROOT.RooFitUtils.addArgSet(allparams, globs)
     obs = model.GetObservables()
-
+    print makelist(pois)
     if args.makeParameterSnapshots:
        # Save the snapshots of nominal parameters
         print("Saving nominal snapshots.")
@@ -83,11 +83,14 @@ def buildMinimizer(args,model):
         p.setConstant(False)
         poiset.add(p)
 
+    pdf = model.GetPdf()
+
     argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
                 ROOT.RooFit.Strategy(args.defaultStrategy), 
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll), 
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll),
+		ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
                 ROOT.RooFit.Constrain(nuis), 
                 ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
@@ -111,10 +114,14 @@ def buildMinimizer(args,model):
 
 def fit(args,model,minimizer):
     from time import time
-    from RooFitUtils.util import parsePoint,timestamp,linspace,vec,mkdir
+    from RooFitUtils.util import parsePoint,makelist,timestamp,linspace,vec,mkdir,union
     from RooFitUtils.util import generateCoordsDict
     from RooFitUtils.io import writeResult
     import ROOT
+    opt = ROOT.Math.MinimizerOptions.Default("Minuit2")
+    opt.SetValue("StorageLevel",0)
+    ROOT.Math.MinimizerOptions.SetDefaultExtraOptions(opt)
+
 
     # Collect POIs
     pois = model.GetParametersOfInterest()
@@ -123,7 +130,9 @@ def fit(args,model,minimizer):
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
+        print poi
         p = model.configureParameter(poi)
+        
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
@@ -155,12 +164,18 @@ def fit(args,model,minimizer):
             ws.saveSnapshot("minimumNuis", nuis)
             ws.saveSnapshot("minimumPois", pois)
             ws.saveSnapshot("minimumAll", allparams)
+
     else:
         print("no fit requested")
 
     parnames = None
     coords = None
     if args.scan:
+        val = args.scan[0]
+        parname = val[0]
+        parrange = linspace(float(val[2]),float(val[3]),int(val[1]))
+        parnames = vec([parname],"string")
+        coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
         coordsdict = generateCoordsDict(args.scan)
         parnames = vec(sorted(coordsdict[0].keys()),"string")
         coords = vec([ vec([d[k] for k in parnames],"double") for d in coordsdict],"vector<double>")
@@ -191,6 +206,22 @@ def fit(args,model,minimizer):
             with open(args.outFileName,'w') as out:
                 writeResult(out,result,args.hesse)
             print("wrote output to "+args.outFileName)
+ 	    if args.correlationMatrix:
+		from ROOT import TCanvas, TGraphErrors
+		from ROOT import gROOT
+       		fitresult = minimizer.GetFitResult()
+#	        fitresult.printArgs()
+		paramset = model.GetParameterSet()
+		obs = model.GetObservables()
+                corrmatrix = fitresult.correlationMatrix()
+		c1 = TCanvas( 'c1', 'A Simple Graph with error bars', 200, 10, 700, 500 )
+		c1.SetGrid()
+		c1.GetFrame().SetFillColor( 21 )
+		c1.GetFrame().SetBorderSize( 12 )
+		corrmatrix.Draw( 'ALP' )
+		c1.Print("output.pdf")
+		obs.Print()
+		paramset.Print()
         else:
             print("no output requested")
     else:
@@ -231,7 +262,7 @@ def createScanJobs(args,arglist,pointsPerJob):
                     # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
                     distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
                 else:
-                    cv1,down1,up1 = findcrossings(points,0.5)
+		    cv1,down1,up1 = findcrossings(points,0.5)
                     distributePointsAroundPoint(parnamelist,coords,down1,npoints/4,0.1)
                     distributePointsAroundPoint(parnamelist,coords,up1,npoints/4,0.1)                                        
                     cv2,down2,up2 = findcrossings(points,2)
@@ -324,11 +355,13 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" ))
     arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
+    arglist.append(parser.add_argument( "--correlationMatrix",  action='store_true', dest="correlationMatrix", help="option to save correlation matrix", default=False ))
+
 
     args = parser.parse_args()
 
     if args.writeSubmit and (args.scan or args.refineScan):
-        createScanJobs(args,arglist,40)
+        createScanJobs(args,arglist,2)
         exit(0)
 
     from sys import flags

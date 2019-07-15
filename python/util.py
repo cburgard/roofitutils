@@ -113,6 +113,7 @@ def parsedict(s,cast=str):
     """parse a string of the format "a=b,c=d" into a dictionary"""
     d = {}
     for kv in s.split(","):
+	print s
         k,v = kv.split("=")
         d[k] = cast(v)
     return d
@@ -214,7 +215,10 @@ def add(a,b):
 
 def normalized(a):
     """return a normalized copy of a vector"""
-    return scale(a,1./length(a))
+    if length(a) == 0: 
+      return scale(a,1.)
+    else:
+      return scale(a,1./length(a))
 
 def scale(a,x):
     """scale a vector by a number"""
@@ -228,8 +232,8 @@ def equal(a,b):
 
 def orthogonal(a):
     """return a vector orthogonal to the one given"""
-    from math import atan,sin,cos,pi
-    angle = atan(a[1],a[0])
+    from math import atan2,sin,cos,pi
+    angle = atan2(a[1],a[0])
     # by deliberately swapping sin and cos, we introduce a shift by 90 deg.
     return [ sin(angle),cos(angle) ]
 
@@ -238,7 +242,7 @@ def distributePointsAroundLine(dimlabels,coords,contour,npoints):
     # closed contours have the first and the last point equal
     closed = equal(contour[0],contour[-1])
     lengths = lineSegmentLengths(contour)
-    distpar = 0.01*sum(lengths)
+    distpar = 0.005*sum(lengths)
     for p in range(0,npoints):
         # pick a segment randomly by length
         segment = weighted_choice(lengths)
