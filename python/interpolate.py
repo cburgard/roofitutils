@@ -2,8 +2,16 @@
 
 inf = float("inf")
 nan = float("nan")
-
-def findmergecontours(points1, points2, values, smooth):
+def minfromscans(xvals,yvals,zvals):
+    minimum = (inf,inf)
+    nllmin = inf
+    for i in range(0,len(zvals)):
+      if nllmin < zvals[i]:
+         minimum = (xvals[i],yvals[i])
+         nllmin = zvals[i]
+    return minimum,nllmin
+	 
+def findmergecontours(points1,points2,values,smooth):
     """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
@@ -25,68 +33,23 @@ def findmergecontours(points1, points2, values, smooth):
     from numpy import mgrid
     grid1_x, grid1_y = mgrid[min(min(xvals1),min(xvals2)):max(max(xvals2),max(xvals1)):complex(npoints), min(min(yvals1),min(yvals2)):max(max(yvals2),max(yvals1)):complex(npoints)]
     grid2_x, grid2_y = mgrid[min(min(xvals1),min(xvals2)):max(max(xvals2),max(xvals1)):complex(npoints), min(min(yvals1),min(yvals2)):max(max(yvals2),max(yvals1)):complex(npoints)]
-#    grid1_x, grid1_y = mgrid[min(min(xvals1),min(xvals2)):max(max(xvals2),max(xvals1)):complex(npoints), 0.0:max(max(yvals2),max(yvals1)):complex(npoints)]
-#    grid2_x, grid2_y = mgrid[min(min(xvals1),min(xvals2)):max(max(xvals2),max(xvals1)):complex(npoints), 0.0:max(max(yvals2),max(yvals1)):complex(npoints)]
-
-    print min(min(xvals1),min(xvals2))
-    print max(max(xvals2),max(xvals1))
-    print min(min(yvals1),min(yvals2))
-    print max(max(yvals2),max(yvals1))
 
     grid1_z = griddata(array(keys1),array(zvals1),(grid1_x, grid1_y), method='cubic')
     grid2_z = griddata(array(keys2),array(zvals2),(grid2_x, grid2_y), method='cubic')
 
-    #find minima from the grid
-    nllmin1_grid = inf
-    minimum1_grid = (nan,nan)
-    for i in range(0,npoints):
-        for j in range(0,npoints):
-            zval = grid1_z[i][j]
-            if zval < nllmin1_grid:
-                nllmin1_grid = zval
-                minimum1_grid = (grid1_x[i][j],grid1_y[i][j])
+    minimum1,nllmin1 = minfromscans(xvals1,yvals1,zvals1) 
+    minimum2,nllmin2 = minfromscans(xvals2,yvals2,zvals2)
 
-    nllmin2_grid = inf
-    minimum2_grid = (nan,nan)
-    for i in range(0,npoints):
-        for j in range(0,npoints):
-            zval = grid2_z[i][j]
-            if zval < nllmin2_grid:
-                nllmin2_grid = zval
-                minimum2_grid = (grid2_x[i][j],grid2_y[i][j])
+    if nllmin1 < nllmin2 : nllmin, minimum = nllmin1, minimum1
+    else                 : nllmin, minimum = nllmin2, minimum2
 
 #perform the evelope on the grid
-    count = 0
     for i in range(0,npoints):
         for j in range(0,npoints):
 	    if grid1_x[i][j] == grid2_x[i][j] and grid1_y[i][j] == grid2_y[i][j]:
                  if grid2_z[i][j] != nan and grid2_z[i][j] != nan:
                     grid1_z[i][j] = min(grid2_z[i][j],grid1_z[i][j])
-#		    grid1_z[i][j] = grid2_z[i][j]
-#		    grid1_z[i][j] = grid1_z[i][j]
-		    if -0.001 < grid1_x[i][j] < 0.001 and -0.001 <  grid1_y[i][j] < 0.001:
-			print grid1_z[i][j]
-		    count = count + 1
 
-    print count
-    #find nllmin in the enveloped grid
-    minimum = (nan,nan)
-    nllmin = inf
-    for i in range(0,npoints):
-        for j in range(0,npoints):
-            zval = grid1_z[i][j]
-            if zval < nllmin:
-                nllmin = zval
-                minimum = (grid1_x[i][j],grid1_y[i][j])
-
- #   print nllmin
-#    nllmin = 11112234.9491
-#    nllmin = 11112234.9635
-#    nllmin = 11112236.5508
-
-#    nllmin = 11112236.5508
-#    nllmin = 11112234.9515
-    nllmin = 2156657.18102
     from skimage import measure
     allcontours = []
     allimgcontours = []
@@ -99,7 +62,6 @@ def findmergecontours(points1, points2, values, smooth):
             for i,j in c:
                 if isnan(i) or isnan(j): continue
                 realc.append((i/npoints * (max(max(xvals1),max(xvals2))-min(min(xvals1),min(xvals2))) + min(min(xvals1),min(xvals2)),j/npoints * (max(max(yvals1),max(yvals2))-min(min(yvals1),min(yvals2))) + min(min(yvals1),min(yvals2))))
-#                realc.append((i/npoints * (max(xvals1)-min(xvals1)) + min(xvals1),j/npoints * (max(yvals1)-min(yvals1)) + min(yvals1)))
             if len(realc) > 0:
                 if smooth:
                     contours.append(smoothgraph(realc))
@@ -107,7 +69,6 @@ def findmergecontours(points1, points2, values, smooth):
                     contours.append(realc)                    
                     
         allcontours.append(contours)
-
 
     # Display the image and plot all contours found
 #    import matplotlib.pyplot as plt
@@ -166,71 +127,9 @@ def findcontours(points,values,smooth):
     from scipy.interpolate import griddata
     from numpy import mgrid
     grid_x, grid_y = mgrid[min(xvals):max(xvals):complex(npoints), min(yvals):max(yvals):complex(npoints)]
-#    grid_x, grid_y = mgrid[-0.20:0.5:complex(npoints), 0.0:0.5:complex(npoints)]
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
 
-#    nllmin = 11112234.4895
-#    nllmin = 2156649.49679 #hww
-#    nllmin = 11112236.5508 #GenP
-#   nllmin = 11112234.9515
-#    nllmin = 2156657.16678 
-#    nllmin = 2156657.18102
-#    nllmin = 2156649.49679 #hgamgam
-#    nllmin = 2156649.49679 #htautau
-#    nllmin = 2156657.18102 #5xs
-#    nllmin = 11112234.526  #CgCy
-#    nllmin = 2156657.18102 #5xs old
-    nllmin = 2156657.16678 #5xs new 
-#    minimum = (nan,nan)
-#    for i in range(0,npoints):
-#        if zvals[i] < nllmin:
-#            nllmin = zvals[i]
-#            minimum = (xvals[i],yvals[i])
-
-    nllmin_grid = inf
-    minimum_grid = inf
-    for i in range(0,npoints):
-        for j in range(0,npoints):
-            zval = grid_z[i][j]
-            if zval < nllmin_grid:
-                nllmin_grid = zval
-                minimum_grid = (grid_x[i][j],grid_y[i][j])
-
-#    for i in range(0,npoints):
-#	for j in range(0,npoints):
-#	    grid_z[i][j] = grid_z[i][j] - nllmin_grid + nllmin
-#    x_sm = inf
-#    y_sm = inf
-#    z_sm = inf
-#    for i in range(0,npoints):
-#	for j in range(0,npoints):
-#	    if abs(grid_x[i][j]) < 1e-02 and abs(grid_y[i][j]) < 1e-02:
-#		if abs(grid_x[i][j]) < x_sm and  abs(grid_y[i][j]) < y_sm: 
-#		    x_sm = grid_x[i][j]
-#		    y_sm = grid_y[i][j]
-#		    z_sm = grid_z[i][j]
-
-#    print x_sm
-#    print y_sm
-#    print z_sm
-#    for i in range(0,npoints):
-#        for j in range(0,npoints):
-#            if grid_x[i][j] == 0.0 and grid_y[i][j] == 0.0:
-#		print "hello"
-#		print grid_z[i][j]
-
-    print nllmin
-#    print minimum 
-#    nllmin = 11112234.9491
-#    nllmin = 11112234.9635
-
-
-#    nllmin = 11112234.949976524
-#    nllmin = 11112232.932974193
-
-
-#    nllmin = 11112236.5508
-#    nllmin = 11112236.629944898
+    minimum,nllmin = minfromscan(xvals,yvals,zvals)  
     from skimage import measure
     allcontours = []
     allimgcontours = []
