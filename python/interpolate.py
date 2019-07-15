@@ -2,6 +2,42 @@
 
 inf = float("inf")
 nan = float("nan")
+
+def disp2dcontour(allimgcontours):
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    ax.imshow(grid2_z, interpolation='nearest', cmap=plt.cm.coolwarm)
+    for contours in allimgcontours:
+        for n, contour in enumerate(contours):
+            ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
+      
+    ax.axis('image')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.show() 
+
+def disp3dcontour(gridx,gridy,gridz):
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+    import numpy as np
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+   # Plot the surface.
+    surf = ax.plot_surface(gridx, gridy, gridz, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+
+   # Customize the z axis.
+    ax.set_zlim(11112230, 11112245)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    surf.set_clim(11112230,11112245)
+   # Add a color bar which maps values to colors.
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    plt.show()
+
 def minfromscans(xvals,yvals,zvals):
     minimum = (inf,inf)
     nllmin = inf
@@ -71,44 +107,7 @@ def findmergecontours(points1,points2,values,smooth):
         allcontours.append(contours)
 
     # Display the image and plot all contours found
-#    import matplotlib.pyplot as plt
-#    fig, ax = plt.subplots()
-#    ax.imshow(grid2_z, interpolation='nearest', cmap=plt.cm.coolwarm)
-#    ax.set_zlim(11112230, 11112245)
-#    for contours in allimgcontours:
-#        for n, contour in enumerate(contours):
-#            ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
-       
-#    ax.axis('image')
-#    ax.set_xticks([])
-#    ax.set_yticks#([])
-#    plt.show() 
-
-#    from mpl_toolkits.mplot3d import Axes3D
-#    import matplotlib.pyplot as plt
-#    from matplotlib import cm
-#    from matplotlib.ticker import LinearLocator, FormatStrFormatter
-#    import numpy as np
-
-#    fig = plt.figure()
-#    ax = fig.gca(projection='3d')
-
-    # Plot the surface.
-#    surf = ax.plot_surface(grid1_x, grid1_y, grid1_z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-#    surf1 = ax.plot_surface(grid2_x, grid2_y, grid2_z, cmap=cm.Spectral, linewidth=0, antialiased=False)
-
-
-    # Customize the z axis.
-#    ax.set_zlim(11112230, 11112245)
-#    ax.zaxis.set_major_locator(LinearLocator(10))
-#    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-#    surf1.set_clim(11112230,11112245)
-#  
-#    surf.set_clim(11112230,11112245)
-# Add a color bar which maps values to colors.
-#    fig.colorbar(surf, shrink=0.5, aspect=5)
-#    plt.show()
-
+#    disp2dcontour(allimgcontours)
 
     return allcontours,minimum
  
@@ -151,17 +150,7 @@ def findcontours(points,values,smooth):
         allcontours.append(contours)
 
     # Display the image and plot all contours found
-#    import matplotlib.pyplot as plt
-#    fig, ax = plt.subplots()
-#    ax.imshow(grid_z, interpolation='nearest', cmap=plt.cm.gray)
-#    for contours in allimgcontours:
-#        for n, contour in enumerate(contours):
-#            ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
-       
-#    ax.axis('image')
-#    ax.set_xticks([])
-#    ax.set_yticks([])
-#    plt.show() 
+#    disp2dcontour(allimgcontours)
 
     return allcontours,minimum
     
