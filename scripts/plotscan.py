@@ -29,7 +29,6 @@ if __name__ == '__main__':
         label = inset[0]
         files = inset[1:]
         collectresults(scans,results,files,label)
-#	print scans
 
     if args.mergeinput != None:
         for inset in args.mergeinput:
@@ -38,7 +37,6 @@ if __name__ == '__main__':
             collectresults(scans_merge,results_merge,files_merge,label_merge)
 	    mergeinp = "merging"
 	    print mergeinp + "\n\n\n"
-	#    print scans_merge
 	
     points = {}
     for inset in args.points:
@@ -51,13 +49,13 @@ if __name__ == '__main__':
     
     pois = [tuple(p.split(",")) for p in args.poi]
 
-#    scans1d       = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
+    scans1d       = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
     scans2d 	  = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
     scans2d_merge = {k: v for k, v in scans_merge.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
 
     with open(args.output,"w") as outfile:
-#        if len(scans1d) > 0:
-#            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
+        if len(scans1d) > 0:
+            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
         if len(scans2d) > 0:
             writescans2d(args,scans2d,points)
         if len(scans2d_merge) > 0 and mergeinp != "" :
