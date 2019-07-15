@@ -163,7 +163,7 @@ def findcontours(points,values,smooth):
 #    ax.set_yticks([])
 #    plt.show() 
 
-    return allcontours,minimum_grid
+    return allcontours,minimum
     
 def findcrossings(points,nllval):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value"""
@@ -205,7 +205,7 @@ def findminimum(points):
     xvals = sorted(points.keys())
     yvals = [ points[x] for x in xvals ]
     interp = interpolate(xvals, yvals, extrapolate=True)
-    minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]))
+    minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]), bounds=[[min(xvals),max(xvals)]])
     return minimum.fun
 
 def smoothgraph(graph):
