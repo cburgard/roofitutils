@@ -16,6 +16,8 @@ if __name__ == '__main__':
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
     parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False)
     parser.add_argument("--smooth",action="store_true",default=False)
+    parser.add_argument("--npoints",type=int,default=100)
+
     args = parser.parse_args()
 
     scans = {}
@@ -55,8 +57,8 @@ if __name__ == '__main__':
 
     with open(args.output,"w") as outfile:
         if len(scans1d) > 0:
-            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
+            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax,args.npoints)
         if len(scans2d) > 0:
-            writescans2d(args,scans2d,points)
+            writescans2d(args,scans2d,points,args.npoints)
         if len(scans2d_merge) > 0 and mergeinp != "" :
-	    writemergescans2d(args,scans2d,scans2d_merge,points)
+	    writemergescans2d(args,scans2d,scans2d_merge,points,args.npoints)

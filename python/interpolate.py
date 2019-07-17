@@ -47,7 +47,7 @@ def minfromscans(xvals,yvals,zvals):
          nllmin = zvals[i]
     return minimum,nllmin
 	 
-def findmergecontours(points1,points2,values,smooth):
+def findmergecontours(points1,points2,values,smooth,npoints):
     """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
@@ -62,8 +62,6 @@ def findmergecontours(points1,points2,values,smooth):
     xvals2 = [ p[0] for p in keys2 ]
     yvals2 = [ p[1] for p in keys2 ]
     zvals2 = [ points2[p] for p in keys2 ]
-
-    npoints = 50
 
     from scipy.interpolate import griddata
     from numpy import mgrid
@@ -112,23 +110,23 @@ def findmergecontours(points1,points2,values,smooth):
     return allcontours,minimum
  
 
-def findcontours(points,values,smooth):
+def findcontours(points,values,smooth,npoints):
     """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
     keys = sorted(points.keys())
-
+    print npoints
     xvals = [ p[0] for p in keys ]
     yvals = [ p[1] for p in keys ]
     zvals = [ points[p] for p in keys ]
     xyvals = [ [p[0],p[1]] for p in keys ]
-    npoints = 50
     from scipy.interpolate import griddata
     from numpy import mgrid
     grid_x, grid_y = mgrid[min(xvals):max(xvals):complex(npoints), min(yvals):max(yvals):complex(npoints)]
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)  
+    print minimum, nllmin
     from skimage import measure
     allcontours = []
     allimgcontours = []
