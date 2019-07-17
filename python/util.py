@@ -113,7 +113,7 @@ def parsedict(s,cast=str):
     """parse a string of the format "a=b,c=d" into a dictionary"""
     d = {}
     for kv in s.split(","):
-	print s
+    print s
         k,v = kv.split("=")
         d[k] = cast(v)
     return d

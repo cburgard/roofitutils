@@ -26,15 +26,15 @@ def disp3dcontour(gridx,gridy,gridz):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-   # Plot the surface.
+    # Plot the surface.
     surf = ax.plot_surface(gridx, gridy, gridz, cmap=cm.coolwarm, linewidth=0, antialiased=False)
 
-   # Customize the z axis.
+    # Customize the z axis.
     ax.set_zlim(11112230, 11112245)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     surf.set_clim(11112230,11112245)
-   # Add a color bar which maps values to colors.
+    # Add a color bar which maps values to colors.
     fig.colorbar(surf, shrink=0.5, aspect=5)
     plt.show()
 
@@ -46,7 +46,7 @@ def minfromscans(xvals,yvals,zvals):
          minimum = (xvals[i],yvals[i])
          nllmin = zvals[i]
     return minimum,nllmin
-	 
+
 def findmergecontours(points1,points2,values,smooth):
     """find the contours in a 2d graph"""
     from numpy import array
@@ -82,7 +82,7 @@ def findmergecontours(points1,points2,values,smooth):
 #perform the evelope on the grid
     for i in range(0,npoints):
         for j in range(0,npoints):
-	    if grid1_x[i][j] == grid2_x[i][j] and grid1_y[i][j] == grid2_y[i][j]:
+            if grid1_x[i][j] == grid2_x[i][j] and grid1_y[i][j] == grid2_y[i][j]:
                  if grid2_z[i][j] != nan and grid2_z[i][j] != nan:
                     grid1_z[i][j] = min(grid2_z[i][j],grid1_z[i][j])
 
@@ -110,7 +110,15 @@ def findmergecontours(points1,points2,values,smooth):
 #    disp2dcontour(allimgcontours)
 
     return allcontours,minimum
- 
+
+def griddata_gp(xyvals,zvals,(xgrid,ygrid), options):
+    from sklearn.gaussian_process import GaussianProcess
+
+    gp = GaussianProcess(theta0=0.1, thetaL=.001, thetaU=1., nugget=0.01)
+    gp.fit(X=np.column_stack([rr[vals],cc[vals]]), y=M[vals])
+    rr_cc_as_cols = np.column_stack([rr.flatten(), cc.flatten()])
+    interpolated = gp.predict(rr_cc_as_cols).reshape(M.shape)
+
 
 def findcontours(points,values,smooth):
     """find the contours in a 2d graph"""

@@ -35,9 +35,7 @@ if __name__ == '__main__':
             label_merge = inset[0]
             files_merge = inset[1:]
             collectresults(scans_merge,results_merge,files_merge,label_merge)
-	    mergeinp = "merging"
-	    print mergeinp + "\n\n\n"
-	
+    
     points = {}
     for inset in args.points:
         label = inset[0]
@@ -50,7 +48,7 @@ if __name__ == '__main__':
     pois = [tuple(p.split(",")) for p in args.poi]
 
     scans1d       = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
-    scans2d 	  = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
+    scans2d       = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
     scans2d_merge = {k: v for k, v in scans_merge.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
 
     with open(args.output,"w") as outfile:
@@ -59,4 +57,4 @@ if __name__ == '__main__':
         if len(scans2d) > 0:
             writescans2d(args,scans2d,points)
         if len(scans2d_merge) > 0 and mergeinp != "" :
-	    writemergescans2d(args,scans2d,scans2d_merge,points)
+            writemergescans2d(args,scans2d,scans2d_merge,points)

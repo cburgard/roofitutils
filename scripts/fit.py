@@ -90,7 +90,7 @@ def buildMinimizer(args,model):
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll),
-		ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
+        ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
                 ROOT.RooFit.Constrain(nuis), 
                 ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
@@ -206,22 +206,22 @@ def fit(args,model,minimizer):
             with open(args.outFileName,'w') as out:
                 writeResult(out,result,args.hesse)
             print("wrote output to "+args.outFileName)
- 	    if args.correlationMatrix:
-		from ROOT import TCanvas, TGraphErrors
-		from ROOT import gROOT
-       		fitresult = minimizer.GetFitResult()
-#	        fitresult.printArgs()
-		paramset = model.GetParameterSet()
-		obs = model.GetObservables()
+         if args.correlationMatrix:
+        from ROOT import TCanvas, TGraphErrors
+        from ROOT import gROOT
+               fitresult = minimizer.GetFitResult()
+#            fitresult.printArgs()
+        paramset = model.GetParameterSet()
+        obs = model.GetObservables()
                 corrmatrix = fitresult.correlationMatrix()
-		c1 = TCanvas( 'c1', 'A Simple Graph with error bars', 200, 10, 700, 500 )
-		c1.SetGrid()
-		c1.GetFrame().SetFillColor( 21 )
-		c1.GetFrame().SetBorderSize( 12 )
-		corrmatrix.Draw( 'ALP' )
-		c1.Print("output.pdf")
-		obs.Print()
-		paramset.Print()
+        c1 = TCanvas( 'c1', 'A Simple Graph with error bars', 200, 10, 700, 500 )
+        c1.SetGrid()
+        c1.GetFrame().SetFillColor( 21 )
+        c1.GetFrame().SetBorderSize( 12 )
+        corrmatrix.Draw( 'ALP' )
+        c1.Print("output.pdf")
+        obs.Print()
+        paramset.Print()
         else:
             print("no output requested")
     else:
@@ -262,7 +262,7 @@ def createScanJobs(args,arglist,pointsPerJob):
                     # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
                     distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
                 else:
-		    cv1,down1,up1 = findcrossings(points,0.5)
+            cv1,down1,up1 = findcrossings(points,0.5)
                     distributePointsAroundPoint(parnamelist,coords,down1,npoints/4,0.1)
                     distributePointsAroundPoint(parnamelist,coords,up1,npoints/4,0.1)                                        
                     cv2,down2,up2 = findcrossings(points,2)

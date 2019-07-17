@@ -59,7 +59,7 @@ def collectresults(scans,results,files,label):
         if os.path.isfile(filename):
             with open(filename,'r') as infile:
                 lines = [ line for line in infile ]
-#		print lines
+#        print lines
                 for lineno in range(0,len(lines)):
                     line = lines[lineno]
                     try:
@@ -85,12 +85,12 @@ def collectresults(scans,results,files,label):
                         else:
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
-			    status = int(parts[-1])
-		            #if -0.001< pvals[1] < 0.001 and -0.001< pvals[0] < 0.001: 
-			    #    print str(pvals)+str(nllval)
-#			    if pvals[1] < 0.01 and pvals[0] < 0: print nllval
-#			    if pvals[1] < 0.01 and pvals[0] < 0: print status
-		            if status == 0: 
+                status = int(parts[-1])
+                    #if -0.001< pvals[1] < 0.001 and -0.001< pvals[0] < 0.001: 
+                #    print str(pvals)+str(nllval)
+#                if pvals[1] < 0.01 and pvals[0] < 0: print nllval
+#                if pvals[1] < 0.01 and pvals[0] < 0: print status
+                    if status == 0: 
                                 scans[key][label][pvals] = nllval
                     except KeyError:
                         if nllmatch:

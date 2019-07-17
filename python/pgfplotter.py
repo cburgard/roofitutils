@@ -26,13 +26,12 @@ def writeATLAS(label,outfile):
 def writepois(atlas,par,allscans,outfilename,ymax=None):
    """write a pois/NP ranking styled plot to a pgfplots tex file"""
    with open(outfilename,"w") as outfile:
-	writehead(outfile)
-        allvals = [v[0] for pois in allscans.values() for v in pois.values()]
-	print allvals
+       writehead(outfile)
+       allvals = [v[0] for pois in allscans.values() for v in pois.values()]
 
 def writecorrelations(stream,allcorrs):
-	for x in range(0,len(allcorrs)):
-	    stream.write(allcorrs[x]+"\n")
+    for x in range(0,len(allcorrs)):
+        stream.write(allcorrs[x]+"\n")
 
 def concat(strlist):
     string = ""
@@ -44,11 +43,10 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     """write a correlation matrix to a pgfplots tex file"""
     paraxisy = parslist
     paraxisx = parslist[::-1]
-    print parslist
     with open(outfilename,"w") as outfile:
-	writehead(outfile)
+        writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
-	outfile.write("\\begin{axis}[\n")
+        outfile.write("\\begin{axis}[\n")
         outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
         outfile.write("    clip = false,\n")
         outfile.write("    colorbar,\n")
@@ -67,20 +65,20 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("    point meta max=+1,\n")
         outfile.write("    grid=both,\n")
         outfile.write("    major grid style={draw=none},\n")
-	outfile.write("    minor tick num=1,\n")
+        outfile.write("    minor tick num=1,\n")
         outfile.write("    symbolic x coords={"+ concat(paraxisx) + "},\n")
         outfile.write("    symbolic y coords={"+ concat(paraxisy) + "},\n")
-	outfile.write("    axis on top,")
-        outfile.write("	   x tick label style={rotate=90},\n")
+        outfile.write("    axis on top,")
+        outfile.write("       x tick label style={rotate=90},\n")
         outfile.write("    tick style={draw=none}\n ]\n")
-	outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(parslist))+"] table [meta=correlations] {\n")
-	outfile.write("x  y  correlations\n")
+        outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(parslist))+"] table [meta=correlations] {\n")
+        outfile.write("x  y  correlations\n")
         writecorrelations(outfile,allcorrs) 
-	outfile.write("};\n")
-	outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
-	outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
+        outfile.write("};\n")
+        outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
+        outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
         outfile.write("\\end{axis}\n")
-	outfile.write("\\end{tikzpicture}\n")
+        outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
 
 def writescans1d(atlas,par,allscans,outfilename,ymax=None):
@@ -111,46 +109,45 @@ def writepois(atlas,allpois,outfilename,ymax=None):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texprep
     with open(outfilename,"w") as outfile:
-	writehead(outfile)
+        writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
-	outfile.write("\\begin{axis}[\n")
-	outfile.write("    width = 0.8\\textwidth,\n")
-	outfile.write("    height = 1\\textwidth, \n")
-	outfile.write("    xlabel = Best fit value \n")
+        outfile.write("\\begin{axis}[\n")
+        outfile.write("    width = 0.8\\textwidth,\n")
+        outfile.write("    height = 1\\textwidth, \n")
+        outfile.write("    xlabel = Best fit value \n")
         outfile.write("    clip = false,\n")
         outfile.write("    ymin=-1,\n")
         outfile.write("    ymax= "+str(4.75 + len(allpois)*1.25)+ ",\n")     
         outfile.write("    xmin= -1.75,\n")
         outfile.write("    xmax=  2,\n")
-	outfile.write("    minor tick num=4,\n")
-	outfile.write("    ytick style={draw=none},\n")
+        outfile.write("    minor tick num=4,\n")
+        outfile.write("    ytick style={draw=none},\n")
         outfile.write("    yticklabels=\empty\n")
-	outfile.write("]")
-	outfile.write("\\addplot+ [color=black, sharp plot,only marks,error bars/.cd,x dir=both, x explicit]\n coordinates{\n")
-	count = 0
-	for x in allpois:
-	   outfile.write("("+str(allpois[x][0])+","+ str(0.25+1.25*count)+") += ("+str(allpois[x][1]) +",0) -= ("+str(allpois[x][2])+",0) \n")
-	   count = count + 1
-	outfile.write("};\n")
-	count = 0
-	for x in allpois:
-	   outfile.write("\\node at ( axis cs:-1.75,"+ str(1.00+1.25*count)+") [anchor = north west]{"+texprep(x)+"};\n")
-	   count = count + 1
-	outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
-	outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
+        outfile.write("]")
+        outfile.write("\\addplot+ [color=black, sharp plot,only marks,error bars/.cd,x dir=both, x explicit]\n coordinates{\n")
+        count = 0
+        for x in allpois:
+            outfile.write("("+str(allpois[x][0])+","+ str(0.25+1.25*count)+") += ("+str(allpois[x][1]) +",0) -= ("+str(allpois[x][2])+",0) \n")
+            count = count + 1
+        outfile.write("};\n")
+        count = 0
+        for x in allpois:
+            outfile.write("\\node at ( axis cs:-1.75,"+ str(1.00+1.25*count)+") [anchor = north west]{"+texprep(x)+"};\n")
+            count = count + 1
+        outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
+        outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
         outfile.write("\\end{axis}\n")
-	outfile.write("\\end{tikzpicture}\n")
+        outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
 
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     """write a correlation matrix to a pgfplots tex file"""
     paraxisy = parslist
     paraxisx = parslist[::-1]
-    print parslist
     with open(outfilename,"w") as outfile:
-	writehead(outfile)
+        writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
-	outfile.write("\\begin{axis}[\n")
+        outfile.write("\\begin{axis}[\n")
         outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
         outfile.write("    clip = false,\n")
         outfile.write("    colorbar,\n")
@@ -169,20 +166,20 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("    point meta max=+1,\n")
         outfile.write("    grid=both,\n")
         outfile.write("    major grid style={draw=none},\n")
-	outfile.write("    minor tick num=1,\n")
+        outfile.write("    minor tick num=1,\n")
         outfile.write("    symbolic x coords={"+ concat(paraxisx) + "},\n")
         outfile.write("    symbolic y coords={"+ concat(paraxisy) + "},\n")
-	outfile.write("    axis on top,")
-        outfile.write("	   x tick label style={rotate=90},\n")
+        outfile.write("    axis on top,")
+        outfile.write("       x tick label style={rotate=90},\n")
         outfile.write("    tick style={draw=none}\n ]\n")
-	outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(parslist))+"] table [meta=correlations] {\n")
-	outfile.write("x  y  correlations\n")
+        outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(parslist))+"] table [meta=correlations] {\n")
+        outfile.write("x  y  correlations\n")
         writecorrelations(outfile,allcorrs) 
-	outfile.write("};\n")
-	outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
-	outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
+        outfile.write("};\n")
+        outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
+        outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
         outfile.write("\\end{axis}\n")
-	outfile.write("\\end{tikzpicture}\n")
+        outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
 
 def writescans1d(atlas,par,allscans,outfilename,ymax=None):
@@ -266,10 +263,10 @@ def writescans2d(args,scans2d,extrapoints):
                 outfile.write("    ylabel="+args.labels[1]+",\n")
         outfile.write("]\n")
         if args.atlas: writeATLAS(args.atlas,outfile)
-    	# 1 sigma (=68.26895% CL):  2.296
-    	# 2 sigma (=95.44997% CL):  6.180
-	# 95% CL		 :  2.28
-        # 68% CL 		 :  5.99
+        # 1 sigma (=68.26895% CL):  2.296
+        # 2 sigma (=95.44997% CL):  6.180
+    # 95% CL         :  2.28
+        # 68% CL          :  5.99
 #        contours = {0.5*2.296:"solid",0.5*6.180:"dashed"}
         contours = {0.5*2.28:"solid",0.5*5.99:"dashed"}
         for pnamelist,scan in scans2d.items():
