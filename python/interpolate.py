@@ -42,7 +42,7 @@ def minfromscans(xvals,yvals,zvals):
     minimum = (inf,inf)
     nllmin = inf
     for i in range(0,len(zvals)):
-      if nllmin < zvals[i]:
+      if nllmin > zvals[i]:
          minimum = (xvals[i],yvals[i])
          nllmin = zvals[i]
     return minimum,nllmin
@@ -128,7 +128,7 @@ def findcontours(points,values,smooth):
     grid_x, grid_y = mgrid[min(xvals):max(xvals):complex(npoints), min(yvals):max(yvals):complex(npoints)]
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
 
-    minimum,nllmin = minfromscan(xvals,yvals,zvals)  
+    minimum,nllmin = minfromscans(xvals,yvals,zvals)  
     from skimage import measure
     allcontours = []
     allimgcontours = []
