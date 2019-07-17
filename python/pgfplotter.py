@@ -236,7 +236,7 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     outfile.write("\\addlegendentry{{${:s} = {:.3f}^{{+{:.3f}}}_{{{:.3f}}}$}}".format(parlabel,cv1,up1,down1))
     print("{:s} = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(parname,cv1,up1,down1,up2,down2))
 
-def writescans2d(args,scans2d,extrapoints):
+def writescans2d(args,scans2d,extrapoints,npoints):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:    
@@ -268,15 +268,60 @@ def writescans2d(args,scans2d,extrapoints):
     # 95% CL         :  2.28
         # 68% CL          :  5.99
 #        contours = {0.5*2.296:"solid",0.5*6.180:"dashed"}
+#        contours = {0.5*2.28:"solid"}
         contours = {0.5*2.28:"solid",0.5*5.99:"dashed"}
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
-                writescan2d(args,points,outfile,contours,parsedict(drawopts))
+                writescan2d(args,points,outfile,contours,parsedict(drawopts),npoints)
         for drawopts,points in extrapoints.items():
             writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)    
+
+def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints):
+    """write a bunch of 2d scans to a pgfplots tex file"""
+    from RooFitUtils.util import parsedict
+    with open(args.output,"w") as outfile:
+        writehead(outfile)
+        if args.atlas:
+            outfile.write("\\renewcommand\\sfdefault{phv}\n")
+            outfile.write("\\renewcommand\\rmdefault{phv}\n")
+            outfile.write("\\renewcommand\\ttdefault{pcr}\n")
+        outfile.write("\\begin{tikzpicture}[\n")
+        if args.atlas:
+            outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
+        outfile.write("]\n")
+        outfile.write("\\begin{axis}[clip=false,minor tick num=4,\n")
+        if args.atlas:
+            outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")
+            outfile.write("xticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
+            outfile.write("yticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
+        if len(args.labels) == 2:
+            if args.flipAxes:
+                outfile.write("    ylabel="+args.labels[0]+",\n")
+                outfile.write("    xlabel="+args.labels[1]+",\n")
+            else:
+                outfile.write("    xlabel="+args.labels[0]+",\n")
+                outfile.write("    ylabel="+args.labels[1]+",\n")
+        outfile.write("]\n")
+        if args.atlas: writeATLAS(args.atlas,outfile)
+        # 1 sigma (=68.26895% CL):  2.296
+        # 2 sigma (=95.44997% CL):  6.180
+        # 3 sigma (=99.73002% CL):  11.829
+#        contours = {0.5*2.28:"solid"}
+        contours = {0.5*2.28:"solid",0.5*5.99:"dashed"}
+        for pnamelist,scan in scans2d.items():
+            for drawopts,points in scan.items():
+                for pnamelist_merge,scan_merge in scans2d_merge.items():
+                    for drawopts,points_merge in scan_merge.items():
+                         writemergescan2d(args,points,points_merge,outfile,contours,parsedict(drawopts))
+        for drawopts,points in extrapoints.items():
+            writepoints2d(args,points,outfile,parsedict(drawopts))
+        outfile.write("\\end{axis}\n")
+        outfile.write("\\end{tikzpicture}\n")
+        writefoot(outfile)
+
 
 def writepoints2d(args,points,outfile,style):
     outfile.write("\\addplot[mark=x,mark options={scale=.5},only marks,draw="+style.get("color","black")+"] coordinates {\n")
@@ -293,11 +338,11 @@ def writepoints2d(args,points,outfile,style):
             outfile.write("    ({:f},{:f})\n".format(point[keys[0]],point[keys[1]]))            
     outfile.write("};\n")
                           
-def writescan2d(args,allpoints,outfile,contourdefs,style):
+def writescan2d(args,allpoints,outfile,contourdefs,style,npoints):
     """write a single 2d scan to a pgfplots tex file"""
     from RooFitUtils.interpolate import findcontours
     thresholds = sorted(contourdefs.keys())
-    contours,minimum = findcontours(allpoints,thresholds,args.smooth)
+    contours,minimum = findcontours(allpoints,thresholds,args.smooth,npoints)
     outfile.write("\\draw (axis cs:")
     if args.flipAxes:
         outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))
@@ -323,4 +368,34 @@ def writescan2d(args,allpoints,outfile,contourdefs,style):
                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
             first=False
             icont = icont+1
+
+def writemergescan2d(args,allpoints1,allpoints2,outfile,contourdefs,style):
+     """merge two 2d scan to obtain the minimum envelope and write to pgfplots tex file"""
+     from RooFitUtils.interpolate import findmergecontours
+     thresholds = sorted(contourdefs.keys())
+     contours,minimum = findmergecontours(allpoints1,allpoints2,thresholds,args.smooth,npoints)
+     outfile.write("\\draw (axis cs:")
+     if args.flipAxes:
+         outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))
+     else:
+         outfile.write("{:f},{:f}".format(minimum[0],minimum[1]))
+     outfile.write(") node[cross,color="+style.get("color","black")+"] {};\n")
+ 
+     first = True
+     for v,conts in zip(thresholds,contours):
+         icont = 0
+         for c in conts:
+             outfile.write("% contour {:d} of {:f}\n".format(icont,v))
+             outfile.write("\\addplot[color="+style.get("color","black")+","+contourdefs[v]+",mark=none,smooth")
+             if not first: outfile.write(",forget plot")
+             outfile.write("] coordinates {\n")
+             for x,y in c:
+                 if args.flipAxes:
+                     outfile.write("    ({:f},{:f})\n".format(y,x))
+                 else:
+                     outfile.write("    ({:f},{:f})\n".format(x,y))
+             outfile.write("} ;\n")
+             if first and "title" in style.keys():
+                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
+             first=False
 

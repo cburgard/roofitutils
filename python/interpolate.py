@@ -3,10 +3,10 @@
 inf = float("inf")
 nan = float("nan")
 
-def disp2dcontour(allimgcontours):
+def disp2dcontour(grid_z,allimgcontours):
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
-    ax.imshow(grid2_z, interpolation='nearest', cmap=plt.cm.coolwarm)
+    ax.imshow(grid_z, interpolation='nearest', cmap=plt.cm.coolwarm)
     for contours in allimgcontours:
         for n, contour in enumerate(contours):
             ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
@@ -47,7 +47,8 @@ def minfromscans(xvals,yvals,zvals):
          nllmin = zvals[i]
     return minimum,nllmin
 
-def findmergecontours(points1,points2,values,smooth):
+
+def findmergecontours(points1,points2,values,smooth,npoints):
     """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
@@ -58,12 +59,9 @@ def findmergecontours(points1,points2,values,smooth):
     yvals1 = [ p[1] for p in keys1 ]
     zvals1 = [ points1[p] for p in keys1 ]
 
-
     xvals2 = [ p[0] for p in keys2 ]
     yvals2 = [ p[1] for p in keys2 ]
     zvals2 = [ points2[p] for p in keys2 ]
-
-    npoints = 50
 
     from scipy.interpolate import griddata
     from numpy import mgrid
@@ -111,30 +109,30 @@ def findmergecontours(points1,points2,values,smooth):
 
     return allcontours,minimum
 
-def griddata_gp(xyvals,zvals,(xgrid,ygrid), options):
-    from sklearn.gaussian_process import GaussianProcess
+def griddata_gp(xyvals,zvals,grids, options={}):
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    gp = GaussianProcessRegressor()
+    gp.fit(X=xyvals, y=zvals)
+    from numpy import column_stack
+    grid = column_stack([g.flatten() for g in grids])
+    interp = gp.predict(grid)
+    return [ [ interp[i+len(grids[0])*j] for i in range(0,len(grids[0])) ] for j in range(0,len(grids[1])) ]
 
-    gp = GaussianProcess(theta0=0.1, thetaL=.001, thetaU=1., nugget=0.01)
-    gp.fit(X=np.column_stack([rr[vals],cc[vals]]), y=M[vals])
-    rr_cc_as_cols = np.column_stack([rr.flatten(), cc.flatten()])
-    interpolated = gp.predict(rr_cc_as_cols).reshape(M.shape)
 
-
-def findcontours(points,values,smooth):
+def findcontours(points,values,smooth,npoints):
     """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
     keys = sorted(points.keys())
-
     xvals = [ p[0] for p in keys ]
     yvals = [ p[1] for p in keys ]
     zvals = [ points[p] for p in keys ]
     xyvals = [ [p[0],p[1]] for p in keys ]
-    npoints = 50
     from scipy.interpolate import griddata
     from numpy import mgrid
     grid_x, grid_y = mgrid[min(xvals):max(xvals):complex(npoints), min(yvals):max(yvals):complex(npoints)]
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
+#    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)  
     from skimage import measure
@@ -158,7 +156,7 @@ def findcontours(points,values,smooth):
         allcontours.append(contours)
 
     # Display the image and plot all contours found
-#    disp2dcontour(allimgcontours)
+#    disp2dcontour(grid_z,allimgcontours)
 
     return allcontours,minimum
     
