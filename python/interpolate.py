@@ -118,6 +118,59 @@ def griddata_gp(xyvals,zvals,grids, options={}):
     interp = gp.predict(grid)
     return [ [ interp[i+len(grids[0])*j] for i in range(0,len(grids[0])) ] for j in range(0,len(grids[1])) ]
 
+def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
+    import sys
+    sys.argv = []
+    import ROOT
+    from array import array
+    ROOT.gROOT.SetBatch(True)
+    th2 = ROOT.TH2F("hist","hist",npoints,min(xvals),max(xvals),npoints,min(yvals),max(yvals))
+    th2.SetDirectory(0)
+
+    for i in range(0,npoints):
+        for j in range(0,npoints):
+            th2.SetBinContent(i+1,j+1,grid_z[i][j])
+            
+    c = ROOT.TCanvas("c","c",400,400)
+    c.cd()
+    th2.SetContour(len(thresholds),array("d",thresholds))
+    th2.Draw("CONTLIST")
+    c.Update()
+
+    root_contours = ROOT.gROOT.GetListOfSpecials().FindObject("contours")
+    allcontours = []
+    for ic in range(0,root_contours.GetEntries()):
+        graphlist = root_contours.At(ic)
+        contours = []
+        for ig in range(0,graphlist.GetEntries()):
+            g = graphlist.At(ig)
+            contour = []
+            for i in range(g.GetN()):
+                contour.append([g.GetX()[i],g.GetY()[i]])
+            contours.append(contour)
+        allcontours.append(contours)
+    return allcontours
+            
+    
+def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
+    from math import isnan    
+    from skimage import measure
+    allcontours = []
+    for v in thresholds:
+        imgcontours = measure.find_contours(grid_z, v)
+        contours = []
+        for c in imgcontours:
+            realc = []
+            for i,j in c:
+                if isnan(i) or isnan(j): continue
+                realc.append((i/npoints * (max(xvals)-min(xvals)) + min(xvals),j/npoints * (max(yvals)-min(yvals)) + min(yvals)))
+                if len(realc) > 0:
+                    if smooth:
+                        contours.append(smoothgraph(realc))
+                    else:
+                        contours.append(realc)
+        allcontours.append(contours)
+    return allcontours
 
 def findcontours(points,values,smooth,npoints):
     """find the contours in a 2d graph"""
@@ -135,28 +188,7 @@ def findcontours(points,values,smooth,npoints):
 #    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)  
-    from skimage import measure
-    allcontours = []
-    allimgcontours = []
-    for v in values:
-        imgcontours = measure.find_contours(grid_z, v + nllmin)
-        allimgcontours.append(imgcontours)
-        contours = []
-        for c in imgcontours:
-            realc = []
-            for i,j in c:
-                if isnan(i) or isnan(j): continue
-                realc.append((i/npoints * (max(xvals)-min(xvals)) + min(xvals),j/npoints * (max(yvals)-min(yvals)) + min(yvals)))
-            if len(realc) > 0:
-                if smooth:
-                    contours.append(smoothgraph(realc))
-                else:
-                    contours.append(realc)                    
-                    
-        allcontours.append(contours)
-
-    # Display the image and plot all contours found
-#    disp2dcontour(grid_z,allimgcontours)
+    allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
 
     return allcontours,minimum
     
