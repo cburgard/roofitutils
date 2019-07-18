@@ -90,7 +90,7 @@ def buildMinimizer(args,model):
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll),
-        ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
+		ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
                 ROOT.RooFit.Constrain(nuis), 
                 ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
@@ -206,22 +206,22 @@ def fit(args,model,minimizer):
             with open(args.outFileName,'w') as out:
                 writeResult(out,result,args.hesse)
             print("wrote output to "+args.outFileName)
-         if args.correlationMatrix:
-        from ROOT import TCanvas, TGraphErrors
-        from ROOT import gROOT
-               fitresult = minimizer.GetFitResult()
-#            fitresult.printArgs()
-        paramset = model.GetParameterSet()
-        obs = model.GetObservables()
+ 	    if args.correlationMatrix:
+		from ROOT import TCanvas, TGraphErrors
+		from ROOT import gROOT
+       		fitresult = minimizer.GetFitResult()
+#	        fitresult.printArgs()
+		paramset = model.GetParameterSet()
+		obs = model.GetObservables()
                 corrmatrix = fitresult.correlationMatrix()
-        c1 = TCanvas( 'c1', 'A Simple Graph with error bars', 200, 10, 700, 500 )
-        c1.SetGrid()
-        c1.GetFrame().SetFillColor( 21 )
-        c1.GetFrame().SetBorderSize( 12 )
-        corrmatrix.Draw( 'ALP' )
-        c1.Print("output.pdf")
-        obs.Print()
-        paramset.Print()
+		c1 = TCanvas( 'c1', 'A Simple Graph with error bars', 200, 10, 700, 500 )
+		c1.SetGrid()
+		c1.GetFrame().SetFillColor( 21 )
+		c1.GetFrame().SetBorderSize( 12 )
+		corrmatrix.Draw( 'ALP' )
+		c1.Print("output.pdf")
+		obs.Print()
+		paramset.Print()
         else:
             print("no output requested")
     else:
@@ -248,21 +248,23 @@ def createScanJobs(args,arglist,pointsPerJob):
         for parnamelist,scan in prescans.items():
             for labels,points in scan.items():
                 # for now, use as many points for the new scan as for the old one
-                npoints = len(points)
+                npoints = 1000
                 if len(parnamelist) == 2:
                     # 1 sigma (=68.26895% CL):  2.296
                     # 2 sigma (=95.44997% CL):  6.180
-                    thresholds = [0.5*2.296,0.5*6.180]
+#                    thresholds = [0.5*2.296,0.5*6.180]
+#		    thresholds = [0.5*2.28]
+		    thresholds = [0.5*2.28,0.5*5.99]
                     contours,minimum = findcontours(points,thresholds,False)
                     # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
-                    nEach = int(0.9 * npoints / len(contours))
+                    nEach = int(1 * npoints / len(contours))
                     for contour in contours:
                         for graph in contour:
                             distributePointsAroundLine(parnamelist,coords,graph,nEach)
                     # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
-                    distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
+                    #distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
                 else:
-            cv1,down1,up1 = findcrossings(points,0.5)
+		    cv1,down1,up1 = findcrossings(points,0.5)
                     distributePointsAroundPoint(parnamelist,coords,down1,npoints/4,0.1)
                     distributePointsAroundPoint(parnamelist,coords,up1,npoints/4,0.1)                                        
                     cv2,down2,up2 = findcrossings(points,2)
@@ -355,8 +357,6 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" ))
     arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
-    arglist.append(parser.add_argument( "--correlationMatrix",  action='store_true', dest="correlationMatrix", help="option to save correlation matrix", default=False ))
-
 
     args = parser.parse_args()
 
