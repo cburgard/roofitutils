@@ -746,132 +746,133 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int ndim = ::countFloatParams(args);
     delete args;
     
-    fMinimizer->setMaxIterations(fMaxIterations);
-    fMinimizer->setPrintLevel(fPrintLevel);
-    fMinimizer->optimizeConst(fOptConst);
-    fMinimizer->setMinimizerType(fMinimizerType.c_str());
-    fMinimizer->setEvalErrorWall(fDoEEWall);
-    fMinimizer->setOffsetting(fOffset);
-    fMinimizer->setPrintEvalErrors(fNumee);
-    fMinimizer->setVerbose(fVerbose);
-    fMinimizer->setProfile(fTimer);
-    fMinimizer->setStrategy(fDefaultStrategy);
-    fMinimizer->setEps(fEps);
-    
-    //fNll->printTree(std::cout);
-    while (true) {
-      fMinimizer->setStrategy(strategy);
+	    fMinimizer->setMaxFunctionCalls(fMaxIterations);
+//	    fMinimizer->setMaxIterations(fMaxIterations);
+	    fMinimizer->setPrintLevel(fPrintLevel);
+	    fMinimizer->optimizeConst(fOptConst);
+	    fMinimizer->setMinimizerType(fMinimizerType.c_str());
+	    fMinimizer->setEvalErrorWall(fDoEEWall);
+	    fMinimizer->setOffsetting(fOffset);
+	    fMinimizer->setPrintEvalErrors(fNumee);
+	    fMinimizer->setVerbose(fVerbose);
+	    fMinimizer->setProfile(fTimer);
+	    fMinimizer->setStrategy(fDefaultStrategy);
+	    fMinimizer->setEps(fEps);
+	    
+	    //fNll->printTree(std::cout);
+	    while (true) {
+	      fMinimizer->setStrategy(strategy);
 
-      // the following line is nothing but
-      // int ndim = fMinimizer->getNPar();
-      if(ndim > 0){
-        std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-                  << "): starting minimization with strategy "
-                  << strategy << std::endl;
-        status = fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
-      } else {
-        std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-                  << "): skipping minimization, no free parameters given!" << std::endl;
-        status = 0;
-      }
+	      // the following line is nothing but
+	      // int ndim = fMinimizer->getNPar();
+	      if(ndim > 0){
+		std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+			  << "): starting minimization with strategy "
+			  << strategy << std::endl;
+		status = fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+	      } else {
+		std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+			  << "): skipping minimization, no free parameters given!" << std::endl;
+		status = 0;
+	      }
 
-      if(status == 0 || status == 1){
-        std::cout 
-          << "ExtendedMinimizer::robustMinimize(" << fName
-          << ") fit succeeded with status " << status << std::endl;
+	      if(status == 0 || status == 1){
+		std::cout 
+		  << "ExtendedMinimizer::robustMinimize(" << fName
+		  << ") fit succeeded with status " << status << std::endl;
 
-        if (fHesse) {
-          std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
-          fMinimizer->hesse();
-          std::cout<<"Done!"<<std::endl;
-        }
-      }
-      
-      const double nllval = fNll->getVal();
-      if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
-        if(strategy < 2 && retry > 0) {
-          strategy++;
-          std::cout 
-            << "ExtendedMinimizer::robustMinimize(" << fName
-            << ") fit failed with status " << status
-            << ". Retrying with strategy " << strategy << std::endl;
-          retry--;
-        } else {
-          std::cout 
-            << "ExtendedMinimizer::robustMinimize(" << fName
-            << ") fit failed with status " << status << ", giving up." << std::endl;
-          break;
-        }
-      } else {
-         break;
-      }
-    }
+		if (fHesse) {
+		  std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
+		  fMinimizer->hesse();
+		  std::cout<<"Done!"<<std::endl;
+		}
+	      }
+	      
+	      const double nllval = fNll->getVal();
+	      if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
+		if(strategy < 2 && retry > 0) {
+		  strategy++;
+		  std::cout 
+		    << "ExtendedMinimizer::robustMinimize(" << fName
+		    << ") fit failed with status " << status
+		    << ". Retrying with strategy " << strategy << std::endl;
+		  retry--;
+		} else {
+		  std::cout 
+		    << "ExtendedMinimizer::robustMinimize(" << fName
+		    << ") fit failed with status " << status << ", giving up." << std::endl;
+		  break;
+		}
+	      } else {
+		 break;
+	      }
+	    }
 
-//    if(ndim != ::countFloatParams(fMinimizer)){
-//      //      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",::countFloatParams(fMinimizer),ndim).Data());
-//    }
-    
-    Result::Minimization mini;
-    mini.status = status;
-    mini.strategy = strategy;
-    mini.ndim = ndim;
-    mini.config = fMinimizer->fitter()->Config();
+	//    if(ndim != ::countFloatParams(fMinimizer)){
+	//      //      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",::countFloatParams(fMinimizer),ndim).Data());
+	//    }
+	    
+	    Result::Minimization mini;
+	    mini.status = status;
+	    mini.strategy = strategy;
+	    mini.ndim = ndim;
+	    mini.config = fMinimizer->fitter()->Config();
 
-    if (!mini.ok()) {
-      coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                            << ") fit failed with status " << status << std::endl;
-    } else {
-      coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                            << ") fit completed with status " << status
-                            << std::endl;
-    }
+	    if (!mini.ok()) {
+	      coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+				    << ") fit failed with status " << status << std::endl;
+	    } else {
+	      coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+				    << ") fit completed with status " << status
+				    << std::endl;
+	    }
 
-    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                          << "): Evaluating Nll" << std::endl;
-    mini.nll = fNll->getVal();
-    
-    return mini;
-    
-  } catch (std::string& s){
-    throw std::runtime_error(s);
-  }
-    
-}
+	    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+				  << "): Evaluating Nll" << std::endl;
+	    mini.nll = fNll->getVal();
+	    
+	    return mini;
+	    
+	  } catch (std::string& s){
+	    throw std::runtime_error(s);
+	  }
+	    
+	}
 
-// ____________________________________________________________________________|__________
+	// ____________________________________________________________________________|__________
 
-void RooFitUtils::ExtendedMinimizer::initialize() {
-  // apply all pre-minimization settings
-  if (fCondSet) {
-    setVals(*fNll->getVariables(), fCondSet, true);
-  }
-}
+	void RooFitUtils::ExtendedMinimizer::initialize() {
+	  // apply all pre-minimization settings
+	  if (fCondSet) {
+	    setVals(*fNll->getVariables(), fCondSet, true);
+	  }
+	}
 
-// ____________________________________________________________________________|__________
+	// ____________________________________________________________________________|__________
 
-int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
-  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-  parseFitConfig(cmdList);
+	int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
+	  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
+	  parseFitConfig(cmdList);
 
-  return minimize();
-}
+	  return minimize();
+	}
 
-// ____________________________________________________________________________|__________
+	// ____________________________________________________________________________|__________
 
-int RooFitUtils::ExtendedMinimizer::minimize() {
-  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-  initialize();
+	int RooFitUtils::ExtendedMinimizer::minimize() {
+	  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
+	  initialize();
 
-  setup();
+	  setup();
 
-  this->fResult = run();
+	  this->fResult = run();
 
-  return this->fResult->min.status;
-}
+	  return this->fResult->min.status;
+	}
 
-namespace {
-  TMatrixDSym reduce(const TMatrixDSym& mat){
-    std::vector<int> keepRows;
+	namespace {
+	  TMatrixDSym reduce(const TMatrixDSym& mat){
+	    std::vector<int> keepRows;
     for(int i=0; i<mat.GetNcols(); ++i){
       if(mat(i,i) != 0) keepRows.push_back(i);
     }
