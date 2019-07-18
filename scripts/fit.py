@@ -357,6 +357,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" ))
     arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
+    arglist.append(parser.add_argument( "--correlationMatrix", action='store_true',   dest="correlationMatrix",help="option to save correlation matrix", default=False ))
 
     args = parser.parse_args()
 
