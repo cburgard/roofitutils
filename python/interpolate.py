@@ -95,7 +95,7 @@ def findmergecontours(points1,points2,values,smooth,npoints):
             realc = []
             for i,j in c:
                 if isnan(i) or isnan(j): continue
-                realc.append((i/npoints * (max(max(xvals1),max(xvals2))-min(min(xvals1),min(xvals2))) + min(min(xvals1),min(xvals2)),j/npoints * (max(max(yvals1),max(yvals2))-min(min(yvals1),min(yvals2))) + min(min(yvals1),min(yvals2))))
+                realc.append(((i+0.5)/npoints * (max(max(xvals1),max(xvals2))-min(min(xvals1),min(xvals2))) + min(min(xvals1),min(xvals2)),(j+0.5)/npoints * (max(max(yvals1),max(yvals2))-min(min(yvals1),min(yvals2))) + min(min(yvals1),min(yvals2))))
             if len(realc) > 0:
                 if smooth:
                     contours.append(smoothgraph(realc))
@@ -163,12 +163,12 @@ def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
             realc = []
             for i,j in c:
                 if isnan(i) or isnan(j): continue
-                realc.append((i/npoints * (max(xvals)-min(xvals)) + min(xvals),j/npoints * (max(yvals)-min(yvals)) + min(yvals)))
-                if len(realc) > 0:
-                    if smooth:
-                        contours.append(smoothgraph(realc))
+                realc.append(((i+0.5)/npoints * (max(xvals)-min(xvals)) + min(xvals),(j+0.5)/npoints * (max(yvals)-min(yvals)) + min(yvals)))
+            if len(realc) > 0:
+                if smooth:
+                    contours.append(smoothgraph(realc))
                     else:
-                        contours.append(realc)
+                    contours.append(realc)
         allcontours.append(contours)
     return allcontours
 
