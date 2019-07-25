@@ -1,31 +1,30 @@
 #!/bin/env python
 
-from RooFitUtils.pgfplotter import writescans1d,writescans2d
-from RooFitUtils.io import collectresults,collectpoints
+from RooFitUtils.pgfplotter import writecorrmatrix
+from RooFitUtils.io import collectcorrelationmatrix
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    parser = ArgumentParser("plot a likelihood scan")
+    parser = ArgumentParser("plot a correlation matrix")
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with the input information",required=True)
-    parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=["\\mu"])
-    parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
     parser.add_argument("--output",type=str,help="output file name",default="scan.tex",required=True)
-    parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
-    parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False)
-    parser.add_argument("--smooth",action="store_true",default=False)
+    parser.add_argument("--parFilter",type=str,help="filter for parameters in correlation matrix",default="",required=False)
     args = parser.parse_args()
 
-    scans = {}
-    results = {}
+    parnames = []
+    results  = []
     for inset in args.input:
         label = inset[0]
-        files = inset[1:]
-        collectresults(scans,results,files,label)
+        files = inset[1:][0]
+        collectcorrelationmatrix(parnames,results,files,args.parFilter,label)
 
-    print results
-    print scans
+   # print parnames
+   # print results
+
+  #  print results
+    #print scans
 #    points = {}
 #    for inset in args.points:
 #        label = inset[0]
@@ -40,7 +39,9 @@ if __name__ == '__main__':
 #    scans1d = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
 #    scans2d = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
 
-#    with open(args.output,"w") as outfile:
+    with open(args.output,"w") as outfile:
+	writecorrmatrix(args.atlas,parnames,results,args.output,ymax=None)
+
 #        if len(scans1d) > 0:
 #            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
 #        if len(scans2d) > 0:
