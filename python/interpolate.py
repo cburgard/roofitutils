@@ -167,7 +167,7 @@ def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
             if len(realc) > 0:
                 if smooth:
                     contours.append(smoothgraph(realc))
-                    else:
+                else:
                     contours.append(realc)
         allcontours.append(contours)
     return allcontours
