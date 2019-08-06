@@ -193,9 +193,9 @@ void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
     coutE(InputArguments)
         << "Something went wrong when loading the nuisance parameters"
         << std::endl;
-    throw std::runtime_error("unable to obtain list of nuisance parameters");
-  } 
-	fAllParams.add(*fNuis);
+  } else {
+    fAllParams.add(*fNuis);
+  }
 
   coutP(InputArguments) << "Loading the global observables" << std::endl;
   fGlobs = (RooArgSet *)fModelConfig->GetGlobalObservables();
@@ -203,9 +203,9 @@ void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
     coutE(InputArguments)
         << "Something went wrong when loading the global observables"
         << std::endl;
-    throw std::runtime_error("unable to obtain list of global observables");
+  } else {
+    fAllParams.add(*fGlobs);
   }
-	fAllParams.add(*fGlobs);
 
   coutP(InputArguments) << "Loading the parameters of interest" << std::endl;
   fPOIs = (RooArgSet *)fModelConfig->GetParametersOfInterest();
