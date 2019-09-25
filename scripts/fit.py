@@ -93,7 +93,7 @@ def buildMinimizer(args,model):
 		ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
                 ROOT.RooFit.Constrain(nuis), 
                 ROOT.RooFit.GlobalObservables(globs),
-                ROOT.RooFit.NumCPU(args.numCPU, args.numThreads), 
+                ROOT.RooFit.NumCPU(args.numCPU, args.mpStrategy), 
                 ROOT.RooFit.Offset(args.offsetting), 
                 ROOT.RooFit.Optimize(args.constOpt),
                 ROOT.RooFit.Precision(args.precision),
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--no-hesse"      , action='store_false',   dest="hesse"         , help="disable HESSE", default=False ))
     arglist.append(parser.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=1 ))
     arglist.append(parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
-    arglist.append(parser.add_argument( "--numThreads"    , type=int,     dest="numThreads"                 , help="Number of CPU Threads.", default=3 ))
+    arglist.append(parser.add_argument( "--mpStrategy"    , type=int,     dest="mpStrategy"                 , help="Multi-Processing strategy.", default=3 ))
     arglist.append(parser.add_argument( "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", metavar="jobs.txt" ))
     arglist.append(parser.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True ))
     arglist.append(parser.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False ))

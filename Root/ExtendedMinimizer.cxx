@@ -545,9 +545,22 @@ void RooFitUtils::ExtendedMinimizer::setup() {
             << std::endl;
       }
     }
-    
-    fNll = fPdf->createNLL(*fData, fNllCmdList);
-    double nllval = fNll->getVal();
+    double nllval = 0.;
+    try {
+      fNll = fPdf->createNLL(*fData, fNllCmdList);
+      nllval = fNll->getVal();      
+    } catch (std::exception& ex){
+      throw ex;
+    } catch (std::string& s){
+      throw std::runtime_error(s);
+    } catch (const char*& s){
+      throw std::runtime_error(s);
+    } catch (int& code){
+      throw std::runtime_error(TString::Format("encountered error code %d in RooAbsPdf::createNLL",code).Data());
+    } catch (...){
+      throw std::runtime_error("encountered unknown exception type in RooAbsPdf::createNLL");
+    }
+
     if(std::isinf(nllval)){
       throw std::runtime_error("starting value of nll is inf!");
     }
@@ -861,13 +874,13 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
 	int RooFitUtils::ExtendedMinimizer::minimize() {
 	  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-	  initialize();
-
-	  setup();
-
-	  this->fResult = run();
-
-	  return this->fResult->min.status;
+          initialize();
+          
+          setup();
+          
+          this->fResult = run();
+          
+          return this->fResult->min.status;
 	}
 
 	namespace {
