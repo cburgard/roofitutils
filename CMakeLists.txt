@@ -9,27 +9,27 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 else()
   set(HAS_PARENT 1)
 endif()
-  
+
 
 IF(${HAS_PARENT})
   message("announcing RooFitUtils")
   set(HAS_RooFitUtils 1 PARENT_SCOPE)
 ENDIF()
 
-find_package( AnalysisBase QUIET) 
+find_package( AnalysisBase QUIET)
 
 IF(${AnalysisBase_FOUND})
   # Set up the usage of CTest:
   IF(NOT ${HAS_PARENT})
-    atlas_ctest_setup() # Set up the project: 
-    atlas_project( RooFitUtils 1.0.0 
-      USE AnalysisBase ${AnalysisBase_VERSION} ) 
-    
-    # Generate an environment setup script: 
+    atlas_ctest_setup() # Set up the project:
+    atlas_project( RooFitUtils 1.0.0
+      USE AnalysisBase ${AnalysisBase_VERSION} )
+
+    # Generate an environment setup script:
     lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
-    install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh DESTINATION . ) 
-    
-    # Set up the usage of CPack: 
+    install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh DESTINATION . )
+
+    # Set up the usage of CPack:
     set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
     atlas_cpack_setup()
   ENDIF()
@@ -42,17 +42,16 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats Minuit2 )
 FOREACH(incfile ${ROOT_USE_FILE})
   include(${incfile})
-ENDFOREACH()  
+ENDFOREACH()
 
 # set some variables for easier handling
 set(RooFitUtilsLinkDef Root/LinkDef.h)
-file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} Root/[A-Z]*.cxx)
-file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} RooFitUtils/[A-Z]*.h)
-
+file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Root/[A-Za-z]*.cxx")
+file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "RooFitUtils/[A-Za-z]*.h")
 if(EXISTS ${TQPATH})
   # generate the definitions.h
   execute_process(
-    COMMAND python ${TQPATH}/share/generateLocals.py --verbose  --output ${PROJECT_SOURCE_DIR}/Root/definitions.h --set-working-directory ${PROJECT_SOURCE_DIR} --flag-header HAS_ROOLAGRANGIANMORPHING RooLagrangianMorphing.h 
+    COMMAND python ${TQPATH}/share/generateLocals.py --verbose  --output ${PROJECT_SOURCE_DIR}/Root/definitions.h --set-working-directory ${PROJECT_SOURCE_DIR} --flag-header HAS_ROOLAGRANGIANMORPHING RooLagrangianMorphing.h
     )
 else()
   execute_process(
@@ -65,7 +64,7 @@ file(WRITE ${SETUP} "#!/bin/bash\n")
 file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
 
 if(${AnalysisBase_FOUND})
-  
+
   atlas_platform_id( BINARY_TAG )
 
   # this section reflects the standard ASG way of configuring CMake
@@ -78,7 +77,7 @@ if(${AnalysisBase_FOUND})
   atlas_add_library( RooFitUtils
     ${RooFitUtilsHeaders} ${RooFitUtilsSources} ${RooFitUtilsCintDict}
     PUBLIC_HEADERS RooFitUtils
-    PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS} 
+    PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS}
     PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES}
     )
 
@@ -109,22 +108,41 @@ ELSE()
   file(GLOB pyfiles "python/*")
   execute_process(
     COMMAND mkdir RooFitUtils
-    )  
+    )
   foreach(pyfile ${pyfiles})
     execute_process(
       COMMAND ln -sf ${pyfile} ${CMAKE_CURRENT_BINARY_DIR}/RooFitUtils
       )
   endforeach()
 
+  # Add all targets to the build-tree export set
+  export(TARGETS RooFitUtils FILE "${PROJECT_BINARY_DIR}/RooFitUtilsTargets.cmake")
+
+  # Export the package for use from the build-tree
+  # (this registers the build-tree with a global CMake-registry)
+  export(PACKAGE RooFitUtils)
+
+  set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/RooFitUtils" )
+  set(CONF_LIBRARY_DIRS "${PROJECT_BINARY_DIR}")
+  set(CONF_LIBRARIES    RooFitUtils)
+  configure_file(RooFitUtilsConfig.cmake.in
+    "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake" @ONLY)
+
+  # Install the RooFitUtilsConfig.cmake and RooFitUtilsConfigVersion.cmake
+  install(FILES
+    "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RooFitUtilsConfig.cmake"
+    "${PROJECT_BINARY_DIR}/RooFitUtilsConfigVersion.cmake"
+    DESTINATION "${PROJECT_SOURCE_DIR}" COMPONENT dev)
+
   file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_CURRENT_SOURCE_DIR}/scripts\n")
-  
+
 ENDIF()
 
-# general post-compile installation of the package 
+# general post-compile installation of the package
 # required for other packages to discover this one via CMake
-install( 
+install(
   TARGETS RooFitUtils
   EXPORT RooFitUtilsConfig
   DESTINATION cmake
