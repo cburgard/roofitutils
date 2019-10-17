@@ -26,16 +26,16 @@ ClassImp(RooFitUtils::ExtendedMinimizer)
 
 
 namespace {
-  //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar. 
+  //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar.
   template <typename RooMinimizerTag>
   struct RooMinimizerHackResult {
     typedef typename RooMinimizerTag::type type;
     static type ptr;
   };
-  
+
   template <typename RooMinimizerTag>
   typename RooMinimizerHackResult<RooMinimizerTag>::type RooMinimizerHackResult<RooMinimizerTag>::ptr;
-  
+
   template<typename RooMinimizerTag, typename RooMinimizerTag::type p>
   struct RooMinimizerRob : RooMinimizerHackResult<RooMinimizerTag> {
     struct RooMinimizerFiller {
@@ -43,31 +43,31 @@ namespace {
     };
     static RooMinimizerFiller RooMinimizerfiller_obj;
   };
-  
+
   template<typename RooMinimizerTag, typename RooMinimizerTag::type p>
   typename RooMinimizerRob<RooMinimizerTag, p>::RooMinimizerFiller RooMinimizerRob<RooMinimizerTag, p>::RooMinimizerfiller_obj;
-  
+
   //now expose some members of RooMinimizer that we need to access
   struct RooMinimizergetNPar { typedef Int_t(RooMinimizer::*type)() const; };
   template class RooMinimizerRob<RooMinimizergetNPar, &RooMinimizer::getNPar>;
 
-  struct RooMinimizerfitterFcn { typedef RooMinimizerFcn*(RooMinimizer::*type)(); };
-  template class RooMinimizerRob<RooMinimizerfitterFcn, &RooMinimizer::fitterFcn>;
-  
+  // struct RooMinimizerfitterFcn { typedef RooMinimizerFcn*(RooMinimizer::*type)(); };
+  // template class RooMinimizerRob<RooMinimizerfitterFcn, &RooMinimizer::fitterFcn>;
+
 }
 
 
 namespace {
-  //somewhat complex but apparently standard conform hack to access RooFitResult::setCovQual. 
+  //somewhat complex but apparently standard conform hack to access RooFitResult::setCovQual.
   template <typename RooFitResultTag>
   struct RooFitResultHackResult {
     typedef typename RooFitResultTag::type type;
     static type ptr;
   };
-  
+
   template <typename RooFitResultTag>
   typename RooFitResultHackResult<RooFitResultTag>::type RooFitResultHackResult<RooFitResultTag>::ptr;
-  
+
   template<typename RooFitResultTag, typename RooFitResultTag::type p>
   struct RooFitResultRob : RooFitResultHackResult<RooFitResultTag> {
     struct RooFitResultFiller {
@@ -75,29 +75,36 @@ namespace {
     };
     static RooFitResultFiller RooFitResultfiller_obj;
   };
-  
+
   template<typename RooFitResultTag, typename RooFitResultTag::type p>
   typename RooFitResultRob<RooFitResultTag, p>::RooFitResultFiller RooFitResultRob<RooFitResultTag, p>::RooFitResultfiller_obj;
-  
+
   //now expose some members of RooFitResult that we need to access
   struct RooFitResultsetCovQual { typedef void(RooFitResult::*type)(Int_t); };
   template class RooFitResultRob<RooFitResultsetCovQual, &RooFitResult::setCovQual>;
 }
 
 
+namespace {
+  class RooMinimizerHack : public RooMinimizer{
+  public:
+    RooMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
+  };
 
+
+}
 
 namespace {
-  //somewhat complex but apparently standard conform hack to access RooAbsPdf::_norm. 
+  //somewhat complex but apparently standard conform hack to access RooAbsPdf::_norm.
   template <typename RooAbsPdfTag>
   struct RooAbsPdfHackResult {
     typedef typename RooAbsPdfTag::type type;
     static type ptr;
   };
-  
+
   template <typename RooAbsPdfTag>
   typename RooAbsPdfHackResult<RooAbsPdfTag>::type RooAbsPdfHackResult<RooAbsPdfTag>::ptr;
-  
+
   template<typename RooAbsPdfTag, typename RooAbsPdfTag::type p>
   struct RooAbsPdfRob : RooAbsPdfHackResult<RooAbsPdfTag> {
     struct RooAbsPdfFiller {
@@ -105,10 +112,10 @@ namespace {
     };
     static RooAbsPdfFiller RooAbsPdffiller_obj;
   };
-  
+
   template<typename RooAbsPdfTag, typename RooAbsPdfTag::type p>
   typename RooAbsPdfRob<RooAbsPdfTag, p>::RooAbsPdfFiller RooAbsPdfRob<RooAbsPdfTag, p>::RooAbsPdffiller_obj;
-  
+
   //now expose some members of RooAbsPdf that we need to access
   struct RooAbsPdf_norm { typedef RooAbsReal*(RooAbsPdf::*type); };
   template class RooAbsPdfRob<RooAbsPdf_norm, &RooAbsPdf::_norm>;
@@ -123,16 +130,17 @@ namespace {
       RooRealVar* v = dynamic_cast<RooRealVar*>(obj);
       if(!v) continue;
       if(!v->isConstant()) ++n;
-    } 
+    }
     return n;
   }
   int countFloatParams(RooMinimizer* minimizer){
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
   RooMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
-    return (minimizer->*RooMinimizerHackResult<RooMinimizerfitterFcn>::ptr)();
+    // return (minimizer->*RooMinimizerHackResult<RooMinimizerfitterFcn>::ptr)();
+    return ((::RooMinimizerHack*) minimizer)->getFitterFcn();
   }
-  
+
 }
 
 // ____________________________________________________________________________|__________
@@ -325,7 +333,7 @@ namespace {
       points.push_back(currentvals);
     }
   }
-  
+
   inline void clearContents(RooLinkedList& l, bool owned){
     // clear the contents of the list, deleting the objects if rquested
     if(owned){
@@ -339,7 +347,7 @@ namespace {
     }
     l.Clear();
   }
-  
+
   inline int addAllArgs(const RooLinkedList &orig, RooLinkedList &target, bool clone) {
     // add all arguments from the original list to the target list, making clones if requested
     int n = 0;
@@ -361,7 +369,7 @@ namespace {
     }
     return n;
   }
-  
+
   void inverseFilterCmdList(const RooLinkedList &cmdInList, RooLinkedList& filteredList, const char *cmdNameList, bool clone) {
     // add all arguments passing the filter from the original list to the target list, making clones if requested
     char buf[1024];
@@ -377,7 +385,7 @@ namespace {
       name = strtok(0, ",");
     }
   }
-  
+
   void setVals(const RooAbsCollection &vars, const RooAbsCollection *snap,
 	       bool setConstant = false) {
     if (!snap)
@@ -412,7 +420,7 @@ namespace {
 
 RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, RooFitUtils::ExtendedModel* model,
                                                   const RooLinkedList &argList)
-	: ExtendedMinimizer(minimizerName, 
+	: ExtendedMinimizer(minimizerName,
 											model->GetPdf(),
 											model->GetData(),
 											model->GetWorkspace()) {
@@ -429,7 +437,7 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
 
 RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, RooFitUtils::ExtendedModel* model)
 	: ExtendedMinimizer(minimizerName,
-											model->GetPdf(), 
+											model->GetPdf(),
 											model->GetData(),
 											model->GetWorkspace()) {
   // Constructor
@@ -449,7 +457,7 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
                                                   const RooLinkedList &argList)
     : ExtendedMinimizer(minimizerName, pdf, data, workspace) {
   // Constructor
-  
+
   parseNllConfig(argList);
   parseFitConfig(argList);
 }
@@ -535,7 +543,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
 
   if(!fNll){
     coutI(InputArguments) << "Creating new Nll" << std::endl;
-    
+
     if (fWorkspace) {
       if (RooFitUtils::RooStarMomentMorphFix) {
         int n = fixRooStarMomentMorph(fWorkspace);
@@ -548,7 +556,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     double nllval = 0.;
     try {
       fNll = fPdf->createNLL(*fData, fNllCmdList);
-      nllval = fNll->getVal();      
+      nllval = fNll->getVal();
     } catch (std::exception& ex){
       throw ex;
     } catch (std::string& s){
@@ -574,7 +582,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     delete args;
     coutI(InputArguments) << "Using existing Nll with " << ndim << " parameters" << std::endl;
   }
-  
+
   if (fWorkspace) {
     if (RooFitUtils::RooStarMomentMorphFix) {
       int n = fixRooStarMomentMorph(fWorkspace);
@@ -596,7 +604,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     }
     fMinimizer=NULL;
   }
-  
+
   //    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
   //    fWorkspace->Print();
   //    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
@@ -754,11 +762,11 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int strategy = fDefaultStrategy;
     int retry = fRetry;
     int status = -1;
-    
+
     RooArgSet* args = fNll->getVariables();
     int ndim = ::countFloatParams(args);
     delete args;
-    
+
 	    fMinimizer->setMaxFunctionCalls(fMaxIterations);
 //	    fMinimizer->setMaxIterations(fMaxIterations);
 	    fMinimizer->setPrintLevel(fPrintLevel);
@@ -771,7 +779,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 	    fMinimizer->setProfile(fTimer);
 	    fMinimizer->setStrategy(fDefaultStrategy);
 	    fMinimizer->setEps(fEps);
-	    
+
 	    //fNll->printTree(std::cout);
 	    while (true) {
 	      fMinimizer->setStrategy(strategy);
@@ -790,7 +798,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 	      }
 
 	      if(status == 0 || status == 1){
-		std::cout 
+		std::cout
 		  << "ExtendedMinimizer::robustMinimize(" << fName
 		  << ") fit succeeded with status " << status << std::endl;
 
@@ -800,18 +808,18 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 		  std::cout<<"Done!"<<std::endl;
 		}
 	      }
-	      
+
 	      const double nllval = fNll->getVal();
 	      if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
 		if(strategy < 2 && retry > 0) {
 		  strategy++;
-		  std::cout 
+		  std::cout
 		    << "ExtendedMinimizer::robustMinimize(" << fName
 		    << ") fit failed with status " << status
 		    << ". Retrying with strategy " << strategy << std::endl;
 		  retry--;
 		} else {
-		  std::cout 
+		  std::cout
 		    << "ExtendedMinimizer::robustMinimize(" << fName
 		    << ") fit failed with status " << status << ", giving up." << std::endl;
 		  break;
@@ -824,7 +832,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 	//    if(ndim != ::countFloatParams(fMinimizer)){
 	//      //      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",::countFloatParams(fMinimizer),ndim).Data());
 	//    }
-	    
+
 	    Result::Minimization mini;
 	    mini.status = status;
 	    mini.strategy = strategy;
@@ -843,13 +851,13 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 	    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
 				  << "): Evaluating Nll" << std::endl;
 	    mini.nll = fNll->getVal();
-	    
+
 	    return mini;
-	    
+
 	  } catch (std::string& s){
 	    throw std::runtime_error(s);
 	  }
-	    
+
 	}
 
 	// ____________________________________________________________________________|__________
@@ -875,11 +883,11 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 	int RooFitUtils::ExtendedMinimizer::minimize() {
 	  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
           initialize();
-          
+
           setup();
-          
+
           this->fResult = run();
-          
+
           return this->fResult->min.status;
 	}
 
@@ -893,7 +901,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     for(size_t i=0; i<keepRows.size(); ++i){
       for(size_t j=0; j<keepRows.size(); ++j){
         reduced(i,j) = mat(keepRows[i],keepRows[j]);
-      }    
+      }
     }
     return reduced;
   }
@@ -916,7 +924,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   r->min = robustMinimize();
 
   RooFitResult* myresult = fMinimizer->save("tmp","tmp");
-  
+
   if(r->min.ndim > 0 && r->min.ndim != myresult->floatParsFinal().getSize()){
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
@@ -938,11 +946,11 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
               << "): attempting to invert covariance matrix... "
               << std::endl;
     TMatrixDSym origG(::reduce(myresult->covarianceMatrix()));
-    
+
     if(origG.GetNcols() != r->min.ndim){
       throw std::runtime_error("inconsistency detected: correlation matrix size inconsistent with float parameters!");
     }
-    
+
     TMatrixDSym G = origG.Invert(&determ);
     if (determ == 0 || std::isnan(determ)) {
       //coutE(ObjectHandling)
@@ -972,14 +980,14 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     }
   }
 
-  
+
   if (fScan) {
     coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
                           << "): Running Scan" << std::endl;
     findSigma(r, *fScanSet);
   }
 
-  
+
   RooArgSet *vars = fNll->getVariables();
   for (RooLinkedListIter it = vars->iterator();
        RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
@@ -989,7 +997,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
       r->parameters.push_back(poi);
     }
   }
-  
+
   if (fCondSet) {
     coutP(ObjectHandling) << "Editing conditional set" << std::endl;
     RooArgSet *attachedSet = fNll->getVariables();
@@ -1021,8 +1029,8 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
 			delete fMinimizer;
     fMinimizer = NULL;
   }
-  
- 
+
+
   return r;
 }
 
