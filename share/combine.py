@@ -26,7 +26,8 @@ def loadMeasurements(combined,filename):
     print("adding "+section)
     measurement = ROOT.RooFitUtils.Measurement (section)
     measurement.SetBinnedLikelihood(config.getboolean(section,"BinnedLikelihood"))
-    measurement.SetSnapshotName(config.get(section,"SnapshotName"))
+    if config.get(section,"SnapshotName"):
+        measurement.SetSnapshotName(config.get(section,"SnapshotName"))
     measurement.SetFileName(config.get(section,"FileName"))
     measurement.SetWorkspaceName(config.get(section,"WorkspaceName"))
     measurement.SetModelConfigName(config.get(section,"ModelConfigName"))
@@ -103,7 +104,7 @@ Each channel corresponds to a block like this:
   DataName: datasName                 # e.g. 'combData' or 'AsimovSB'""")
   parser.add_argument("-o", "--output", default="combWS.root", help="Desired path to the output file")
   parser.add_argument("-a", "--asimov", help="Flag to generate Asimov data for the combined model",action="store_true")
-  parser.add_argument("-c", "--correlations", nargs="+",default=["correlations.txt"],
+  parser.add_argument("-c", "--correlations", nargs="+",default=[],
                       help="""Config file(s) with correlation definitions. This file contains lines like
   meas1::muGGF>>mu
   meas1::muVBF>>mu

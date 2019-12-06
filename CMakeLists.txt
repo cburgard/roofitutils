@@ -59,7 +59,7 @@ else()
     )
 endif()
 
-set(SETUP setup.sh)
+set(SETUP ${CMAKE_CURRENT_BINARY_DIR}/setup.sh)
 file(WRITE ${SETUP} "#!/bin/bash\n")
 file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
 
