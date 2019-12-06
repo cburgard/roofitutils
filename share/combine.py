@@ -61,7 +61,7 @@ def main(args):
   measurements = loadMeasurements(combined,args.config)
   
   correlation = ROOT.RooFitUtils.CorrelationScheme("CorrelationScheme")
-  correlation.SetParametersOfInterest("mu")
+  correlation.SetParametersOfInterest(",".join(args.poi))
   corrmap = loadCorrelations(correlation,args.correlations)
   # Run the combination. First all measurements are regularised, i.e. the
   # structure of the PDF will be unified, parameters and constraint terms renamed
@@ -77,7 +77,14 @@ def main(args):
   if args.asimov:
       combined.MakeAsimovData(ROOT.kTRUE, ROOT.RooFitUtils.CombinedMeasurement.ucmles, ROOT.RooFitUtils.CombinedMeasurement.nominal)
   
-  combined.writeToFile(args.output)
+  workspace = combined.GetWorkspace()
+  import re
+  for p in workspace.allVars():
+      for constpar in args.const:
+          if re.match(constpar,p.GetName()):
+              p.setConstant(True)
+      
+  workspace.writeToFile(args.output)
   
   # Print useful information like the correlation scheme, re-namings, etc.
   combined.Print()
@@ -106,12 +113,15 @@ Each channel corresponds to a block like this:
   parser.add_argument("-a", "--asimov", help="Flag to generate Asimov data for the combined model",action="store_true")
   parser.add_argument("-c", "--correlations", nargs="+",default=[],
                       help="""Config file(s) with correlation definitions. This file contains lines like
+
   meas1::muGGF>>mu
   meas1::muVBF>>mu
   meas2::mu>>mu
 to correlate e.g. the parameters 'muGGF' and 'muVBF' from the measurement 'meas1'
 and the parameter 'mu' from the measurement 'meas2'. These files can be auto-generated 
 with the 'guessCorrelations.py' script.""")
+  parser.add_argument("--const", default=[], nargs="+", help="Parameters to set constant")
+  parser.add_argument("--poi", default=[], nargs="+", help="Parameters of Interest in the new workspace")
 
   args = parser.parse_args()
 
