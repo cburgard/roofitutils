@@ -59,7 +59,7 @@ else()
     )
 endif()
 
-set(SETUP setup.sh)
+set(SETUP ${CMAKE_CURRENT_BINARY_DIR}/setup.sh)
 file(WRITE ${SETUP} "#!/bin/bash\n")
 file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
 
@@ -107,7 +107,7 @@ ELSE()
 
   file(GLOB pyfiles "python/*")
   execute_process(
-    COMMAND mkdir RooFitUtils
+    COMMAND mkdir ${CMAKE_CURRENT_BINARY_DIR}/RooFitUtils
     )
   foreach(pyfile ${pyfiles})
     execute_process(
