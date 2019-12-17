@@ -3,6 +3,12 @@ import sys
 import itertools
 import re
 
+def iteritems(d):
+    try:
+        return d.iteritems()
+    except AttributeError:
+        return d.items()
+
 def loadRooFitUtils():
     # retrieve the root core dir environment variable
     from ROOT import gSystem
@@ -48,7 +54,7 @@ def loadCorrelations(correlation,schemes):
           corrmap[target] += sources
         else:
           corrmap[target] = sources
-  for target,sources in corrmap.iteritems():
+  for target,sources in iteritems(corrmap):
     source = ",".join(sources)
     print("renaming '{0:s}' to '{1:s}'".format(source,target))
   return corrmap
@@ -66,7 +72,7 @@ def main(args):
   # structure of the PDF will be unified, parameters and constraint terms renamed
   # according to a common convention, etc. Then a new simultaneous PDF and
   # dataset is build.
-  for target,source in corrmap.iteritems():
+  for target,source in iteritems(corrmap):
     correlation.CorrelateParameter(",".join(source),target)
   combined.SetCorrelationScheme(correlation)
   combined.CollectMeasurements()
