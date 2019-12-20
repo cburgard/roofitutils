@@ -260,7 +260,6 @@ void RooFitUtils::RenamingMap::AddAttributes(
            !foundConstraint) {
       if (nextConstraint->dependsOn(*nextNuisanceParameter)) {
         foundConstraint = kTRUE;
-
         // find name of constraint
         tmpConstraintName = nextConstraint->GetName();
         TString thisConstraintType = nextConstraint->ClassName();
@@ -419,7 +418,12 @@ void RooFitUtils::RenamingMap::AddAttributes(
       if (thisNewConstraintType == "Gaussian" ||
           (thisNewConstraintType == "automatic" &&
            tmpConstraintType == "Gaussian")) {
-        tmpNewObservableRange = "[0.0,-5.0,5.0]";
+        //  tmpNewObservableRange = "[0.0,-5.0,5.0]";
+        tmpNewObservableRange =
+            tmpObservableRange; // Potentially problematic in case the parameter
+                                // is appearing in multiple measurements, but
+                                // with different values. In that case need to
+                                // write the value down explicitly        
       } else if (thisNewConstraintType == "Poisson" ||
                  (thisNewConstraintType == "automatic" &&
                   tmpConstraintType == "Poisson")) {
@@ -432,7 +436,12 @@ void RooFitUtils::RenamingMap::AddAttributes(
       } else if (thisNewConstraintType == "Lognormal" ||
                  (thisNewConstraintType == "automatic" &&
                   tmpConstraintType == "Lognormal")) {
-        tmpNewObservableRange = "[1.0,0.0,10.0]";
+        // tmpNewObservableRange = "[1.0,0.0,10.0]";
+        tmpNewObservableRange =
+            tmpObservableRange; // Potentially problematic in case the parameter
+                                // is appearing in multiple measurements, but
+                                // with different values. In that case need to
+                                // write the value down explicitly        
       } else if (thisNewConstraintType == "unconstrained" ||
                  (thisNewConstraintType == "automatic" &&
                   tmpConstraintType == "unconstrained")) {
@@ -479,7 +488,13 @@ void RooFitUtils::RenamingMap::AddAttributes(
       if (thisNewConstraintType == "Gaussian" ||
           (thisNewConstraintType == "automatic" &&
            tmpConstraintType == "Gaussian")) {
-        tmpNewGlobalObservableRange = "[0.0]";
+        // tmpNewGlobalObservableRange = "[0.0]";
+        tmpNewGlobalObservableRange =
+            tmpGlobalObservableRange; // Potentially problematic in case the
+                                      // parameter is appearing in multiple
+                                      // measurements, but with different
+                                      // values. In that case need to write the
+                                      // value down explicitly
       } else if (thisNewConstraintType == "Poisson" ||
                  (thisNewConstraintType == "automatic" &&
                   tmpConstraintType == "Poisson")) {
@@ -493,7 +508,13 @@ void RooFitUtils::RenamingMap::AddAttributes(
       } else if (thisNewConstraintType == "Lognormal" ||
                  (thisNewConstraintType == "automatic" &&
                   tmpConstraintType == "Lognormal")) {
-        tmpNewGlobalObservableRange = "[1.0]";
+        // tmpNewGlobalObservableRange = "[1.0]";
+        tmpNewGlobalObservableRange =
+            tmpGlobalObservableRange; // Potentially problematic in case the
+                                      // parameter is appearing in multiple
+                                      // measurements, but with different
+                                      // values. In that case need to write the
+                                      // value down explicitly        
       }
       if (thisNewConstraintType != "unconstrained" &&
           (thisNewConstraintType == "automatic" &&
