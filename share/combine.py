@@ -67,6 +67,7 @@ def main(args):
   measurements = loadMeasurements(combined,args.config)
   
   correlation = ROOT.RooFitUtils.CorrelationScheme("CorrelationScheme")
+  if args.autocorr: correlation.SetAutoCorrelation(True)
   correlation.SetParametersOfInterest(",".join(args.poi))
   corrmap = loadCorrelations(correlation,args.correlations)
   # Run the combination. First all measurements are regularised, i.e. the
@@ -117,6 +118,7 @@ Each channel corresponds to a block like this:
   DataName: datasName                 # e.g. 'combData' or 'AsimovSB'""")
   parser.add_argument("-o", "--output", default="combWS.root", help="Desired path to the output file")
   parser.add_argument("-a", "--asimov", help="Flag to generate Asimov data for the combined model",action="store_true")
+  parser.add_argument("--autocorr", help="Flag to use autocorrelation", default=False, action="store_true")  
   parser.add_argument("-c", "--correlations", nargs="+",default=[],
                       help="""Config file(s) with correlation definitions. This file contains lines like
 
