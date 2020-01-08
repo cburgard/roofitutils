@@ -113,7 +113,11 @@ def parsedict(s,cast=str):
     """parse a string of the format "a=b,c=d" into a dictionary"""
     d = {}
     for kv in s.split(","):
-        k,v = kv.split("=")
+        try:
+            k,v = kv.split("=")
+        except ValueError:
+            print("unable to parse key-value-pair '"+kv+"', need syntax 'key=value'")
+            exit(0)
         d[k] = cast(v)
     return d
 
@@ -305,6 +309,6 @@ def makepoint(coord):
 
 def clearfile(filename):
     import os
-    if os.path.exists(filename):
+    if os.path.isfile(filename):
         os.remove(filename)
 

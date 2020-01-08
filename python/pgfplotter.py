@@ -104,6 +104,7 @@ def writescans1d(atlas,par,allscans,outfilename,ymax=None):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
+        print("wrote "+outfilename)
 
 def writepois(atlas,allpois,outfilename,ymax=None):
     """write a POI plot to a pgfplots tex file"""
@@ -139,6 +140,7 @@ def writepois(atlas,allpois,outfilename,ymax=None):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
+        print("wrote "+outfilename)
 
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     """write a correlation matrix to a pgfplots tex file"""
@@ -181,6 +183,7 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
+        print("wrote "+outfilename)
 
 def writescans1d(atlas,par,allscans,outfilename,ymax=None):
     """write a bunch of 1d scans to a pgfplots tex file"""
@@ -205,6 +208,7 @@ def writescans1d(atlas,par,allscans,outfilename,ymax=None):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
+        print("wrote "+outfilename)
 
 def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     """write a single 1d scan to a pgfplots tex file"""
@@ -278,6 +282,7 @@ def writescans2d(args,scans2d,extrapoints,npoints):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)    
+        print("wrote "+args.output)
 
 def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints):
     """write a bunch of 2d scans to a pgfplots tex file"""
@@ -321,6 +326,7 @@ def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
+        print("wrote "+args.output)
 
 
 def writepoints2d(args,points,outfile,style):
@@ -337,12 +343,13 @@ def writepoints2d(args,points,outfile,style):
         else:
             outfile.write("    ({:f},{:f})\n".format(point[keys[0]],point[keys[1]]))            
     outfile.write("};\n")
+
                           
 def writescan2d(args,allpoints,outfile,contourdefs,style,npoints):
     """write a single 2d scan to a pgfplots tex file"""
     from RooFitUtils.interpolate import findcontours
     thresholds = sorted(contourdefs.keys())
-    contours,minimum = findcontours(allpoints,thresholds,args.smooth,npoints)
+    contours,minimum = findcontours(allpoints,thresholds,args.smooth,npoints,args.contourAlg)
     outfile.write("\\draw (axis cs:")
     if args.flipAxes:
         outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))

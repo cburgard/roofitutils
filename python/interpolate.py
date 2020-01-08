@@ -172,7 +172,7 @@ def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
         allcontours.append(contours)
     return allcontours
 
-def findcontours(points,values,smooth,npoints):
+def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
     """find the contours in a 2d graph"""
     from numpy import array
     from math import isnan
@@ -188,7 +188,12 @@ def findcontours(points,values,smooth,npoints):
 #    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)  
-    allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+    if algorithm == "ROOT":
+        allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+    elif algorithm == "skimage":
+        allcontours = find_contours_skimage(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+    else:
+        print("unknown contour finding algorithm '"+algorithm+"'")
 
     return allcontours,minimum
     

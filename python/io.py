@@ -43,7 +43,7 @@ def collectpoints(points,files,label):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        print("no points found in "+expression)
+        print("no points found in "+",".join(files))
         exit(0)
     from RooFitUtils.util import parsedict
     allpoints = []    
@@ -107,7 +107,7 @@ def collectresults(scans,results,files,label):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        print("no results found in "+expression)
+        print("no points found in "+",".join(files))
         exit(0)
     for filename in filenames:
         if os.path.isfile(filename):

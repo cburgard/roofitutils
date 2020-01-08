@@ -231,9 +231,10 @@ def fit(args,model,minimizer):
 
 
 def createScanJobs(args,arglist,pointsPerJob):
+    from os.path import join as pjoin
     from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir
     from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
-    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","refineScan"])
+    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","refineScan","refineScanThresholds"])
     import sys
     name = sys.argv[0]
     if args.refineScan:
@@ -252,7 +253,10 @@ def createScanJobs(args,arglist,pointsPerJob):
                     # 2 sigma (=95.44997% CL):  6.180
 #                    thresholds = [0.5*2.296,0.5*6.180]
 #                    thresholds = [0.5*2.28]
-                    thresholds = [0.5*2.28,0.5*5.99]
+                    if args.refineScanThresholds:
+                        thresholds = args.refineScanThresholds
+                    else:
+                        thresholds = [0.5*2.28,0.5*5.99]
                     contours,minimum = findcontours(points,thresholds,False)
                     # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
                     nEach = int(1 * npoints / len(contours))
@@ -262,41 +266,47 @@ def createScanJobs(args,arglist,pointsPerJob):
                     # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
                     #distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
                 else:
-                    cv1,down1,up1 = findcrossings(points,0.5)
-                    distributePointsAroundPoint(parnamelist,coords,down1,npoints/4,0.1)
-                    distributePointsAroundPoint(parnamelist,coords,up1,npoints/4,0.1)                                        
-                    cv2,down2,up2 = findcrossings(points,2)
-                    distributePointsAroundPoint(parnamelist,coords,down2,npoints/4,0.1)
-                    distributePointsAroundPoint(parnamelist,coords,up2,npoints/4,0.1)                                                            
+                    if args.refineScanThresholds:
+                        thresholds = args.refineScanThresholds
+                    else:
+                        thresholds = [0.5,2]
+                    for t in thresholds:
+                        cv,down,up = findcrossings(points,t)
+                        distributePointsAroundPoint(parnamelist,coords,down,npoints/4,0.1)
+                        distributePointsAroundPoint(parnamelist,coords,up,npoints/4,0.1)                                        
     elif args.scan:
         coords = generateCoordsDict(args.scan)
     idx = 0
     import os
-    outpath,outfile = os.path.split(args.writeSubmit)
-    pointspath = outpath+"/coords_0.txt"
+    outpath = args.writeSubmit
     mkdir(outpath)
+    outfile = "jobs.txt"
+
+    pointspath = pjoin(outpath,"coords_0.txt")
     from RooFitUtils.util import clearfile
-    clearfile(args.writeSubmit)
+    clearfile(pjoin(outpath,outfile))
     clearfile(pointspath)
  
     idx = 0
     ipoints = 0
-    for coord in coords:
-        ipoints = ipoints + 1
-        if  ipoints % pointsPerJob == 0:  
-            pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
-            clearfile(pointspath)
-            with open(args.writeSubmit,"a") as jobs:
+    if not args.outFileName:
+        print("output file name mandatory for use of batch scanning!")
+        exit(0)
+    with open(pjoin(outpath,outfile),"w") as jobs:
+        for coord in coords:
+            ipoints = ipoints + 1
+            if  ipoints % pointsPerJob == 0:  
+                pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
+                clearfile(pointspath)
                 options[" --no-findSigma --points"]=pointspath
-                if args.outFileName:
-                    options["--output"]=args.outFileName+".part"+str(idx)
+                options["--output"]=args.outFileName+".part"+str(idx)
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-                if args.outFileName and not os.path.exists(args.outFileName+".part"+str(idx)):
+                if not os.path.exists(args.outFileName+".part"+str(idx)):
                     jobs.write(name+" "+cmd+"\n")
             idx = idx + 1
-        with open(pointspath,"a") as coordlist:
-          point = makepoint(coord)
-          coordlist.write(point+"\n")
+            with open(pointspath,"a") as coordlist:
+                point = makepoint(coord)
+                coordlist.write(point+"\n")
    
     print("wrote "+args.writeSubmit)
 
@@ -310,6 +320,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
     arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar=("POI","N","min","max"), default=None,nargs=4,action="append"))
     arglist.append(parser.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))    
+    arglist.append(parser.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))    
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
