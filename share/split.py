@@ -9,6 +9,10 @@ def main(args):
     pdf.SetName(pdfname+"_old")
     
     oldpoi = ws.var(args.old)
+    if not oldpoi:
+        print("unable to find parameter '"+args.old+"', parmeters are:")
+        ws.allVars().Print("v")
+        exit(0)
     splits = {}
     for k in args.splits:
         elems = k.split(":")
@@ -53,7 +57,7 @@ def main(args):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser("NIKHEF Statistics Suite workspace combination script",formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser("split a parameter into several independent ones based on region and/or sample",formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("input", help="Input workspace to be used")
     parser.add_argument("--output", default="workspace-output.root", help="Output workspace")
     parser.add_argument("--name", default="combined", help="Workspace name")
