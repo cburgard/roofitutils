@@ -230,11 +230,11 @@ def fit(args,model,minimizer):
         ws.writeToFile(args.outWsName)
 
 
-def createScanJobs(args,arglist,pointsPerJob):
+def createScanJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir
     from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
-    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","refineScan","refineScanThresholds"])
+    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
     import sys
     name = sys.argv[0]
     if args.refineScan:
@@ -288,14 +288,12 @@ def createScanJobs(args,arglist,pointsPerJob):
     clearfile(pointspath)
  
     idx = 0
-    ipoints = 0
     if not args.outFileName:
         print("output file name mandatory for use of batch scanning!")
         exit(0)
     with open(pjoin(outpath,outfile),"w") as jobs:
         for coord in coords:
-            ipoints = ipoints + 1
-            if  ipoints % pointsPerJob == 0:  
+            if  idx % args.writeSubmitPoints == 0:  
                 pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
                 clearfile(pointspath)
                 options[" --no-findSigma --points"]=pointspath
@@ -346,6 +344,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
     arglist.append(parser.add_argument( "--mpStrategy"    , type=int,     dest="mpStrategy"                 , help="Multi-Processing strategy.", default=3 ))
     arglist.append(parser.add_argument( "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", metavar="jobs.txt" ))
+    arglist.append(parser.add_argument( "--jobSize"   , type=int,     dest="writeSubmitPoints"                , help="How many points to use per job when writing out jobs for scans.", metavar="N", default=2))
     arglist.append(parser.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True ))
     arglist.append(parser.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False ))
     arglist.append(parser.add_argument( "--starfix"       , action='store_true',    dest="fixCache"                   , help="Fix StarMomentMorph cache.", default=True ))
@@ -371,7 +370,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.writeSubmit and (args.scan or args.refineScan):
-        createScanJobs(args,arglist,2)
+        createScanJobs(args,arglist)
         exit(0)
 
     from sys import flags

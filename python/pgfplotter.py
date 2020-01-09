@@ -215,7 +215,6 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
     from RooFitUtils.util import graphoffset
-    othermin = min(allpoints.values())
     nllmin = findminimum(allpoints)
     points =  graphoffset(allpoints,nllmin)
     
@@ -226,19 +225,30 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
     outfile.write("\\addplot[red] {0.5};\n")
+    
+    xmin,ymax = points[0]
+    xmax = xmin
+    for x,y in points:
+        xmin = min(x,xmin)
+        xmax = max(x,xmax)
+        ymax = max(y,ymax)
 
-    cv1,down1,up1 = findcrossings(points,0.5)
-    if not isnan(down1):
-        outfile.write("\\draw[green] (axis cs:"+str(cv1-down1)+",0) -- (axis cs:"+str(cv1-down1)+",0.5);\n")
-    if not isnan(up1):
-        outfile.write("\\draw[green] (axis cs:"+str(cv1+up1)+",0) -- (axis cs:"+str(cv1+up1)+",0.5);\n")
-    cv2,down2,up2 = findcrossings(points,2)
-    if not isnan(down2):
-        outfile.write("\\draw[blue] (axis cs:"+str(cv2-down2)+",0) -- (axis cs:"+str(cv2-down2)+",2.);\n")
-    if not isnan(up2):
-        outfile.write("\\draw[blue] (axis cs:"+str(cv2+up2)+",0) -- (axis cs:"+str(cv2+up2)+",2.);\n")
-    outfile.write("\\addlegendentry{{${:s} = {:.3f}^{{+{:.3f}}}_{{{:.3f}}}$}}".format(parlabel,cv1,up1,down1))
-    print("{:s} = {:f}, 1sigma = +{:f} -{:f}, 2sigma = +{:f} -{:f}".format(parname,cv1,up1,down1,up2,down2))
+    thresholds = [0.5,2,4.5,8,12.5]
+    labels = ["1s","2s","3s","4s","5s"]
+    colors = ["blue","green","yellow","orange","red"]
+
+    for i in range(0,len(thresholds)):
+        if thresholds[i] < ymax:
+            cv,down,up = findcrossings(points,thresholds[i])
+            if cv-down > xmin and not isnan(down):
+                outfile.write("\\draw["+colors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(thresholds[i])+");\n")
+            if cv+up < xmax and not isnan(up):
+                outfile.write("\\draw["+colors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(thresholds[i])+");\n")
+            if i == 0:
+                s = "{:s} = {:f}".format(parname,cv)
+                outfile.write("\\addlegendentry{{${:s} = {:.3f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
+            s = s + ", {:s} = +{:f} -{:f}".format(labels[i],abs(up),abs(down))
+    print(s)
 
 def writescans2d(args,scans2d,extrapoints,npoints):
     """write a bunch of 2d scans to a pgfplots tex file"""
@@ -260,11 +270,11 @@ def writescans2d(args,scans2d,extrapoints,npoints):
             outfile.write("yticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
         if len(args.labels) == 2:
             if args.flipAxes:
-                outfile.write("    ylabel="+args.labels[0]+",\n")
-                outfile.write("    xlabel="+args.labels[1]+",\n")
+                outfile.write("    ylabel=$"+args.labels[0]+"$,\n")
+                outfile.write("    xlabel=$"+args.labels[1]+"$,\n")
             else:
-                outfile.write("    xlabel="+args.labels[0]+",\n")
-                outfile.write("    ylabel="+args.labels[1]+",\n")
+                outfile.write("    xlabel=$"+args.labels[0]+"$,\n")
+                outfile.write("    ylabel=$"+args.labels[1]+"$,\n")
         outfile.write("]\n")
         if args.atlas: writeATLAS(args.atlas,outfile)
         # 1 sigma (=68.26895% CL):  2.296

@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False,help="flip X and Y axes")
     parser.add_argument("--smooth",action="store_true",default=False,help="apply smoothing")
     parser.add_argument("--contour-algorithm",choices=['ROOT', 'skimage'],default="ROOT",dest="contourAlg",help="contour finding algorithm to be used")
-    parser.add_argument("--npoints",type=int,default=100)
+    parser.add_argument("--npoints",type=int,default=100,help="granularity of the interpolation grid")
 
     args = parser.parse_args()
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     with open(args.output,"w") as outfile:
         if len(scans1d) > 0:
-            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax,args.npoints)
+            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
         elif len(scans2d) > 0:
             writescans2d(args,scans2d,points,args.npoints)
         elif len(scans2d_merge) > 0 and mergeinp != "" :
