@@ -2,6 +2,13 @@
 
 from RooFitUtils.pgfplotter import writescans1d,writemergescans2d,writescans2d
 from RooFitUtils.io import collectresults,collectpoints
+from RooFitUtils.util import getPercent
+
+def getPercentages(args,ndim):
+    if args.show_percent == True or (args.show_percent == None and ndim == 2 and not args.show_sigma):
+        return [0.01 * p for p in args.percent_levels ]
+    elif args.show_sigma == True or (args.show_sigma == None and ndim == 1):
+        return [getPercent(n) for n in args.sigma_levels]
 
 def parseInput(inset):
     label = inset[0]
@@ -26,6 +33,12 @@ if __name__ == '__main__':
     parser.add_argument("--smooth",action="store_true",default=False,help="apply smoothing")
     parser.add_argument("--contour-algorithm",choices=['ROOT', 'skimage'],default="ROOT",dest="contourAlg",help="contour finding algorithm to be used")
     parser.add_argument("--npoints",type=int,default=100,help="granularity of the interpolation grid")
+    parser.add_argument("--sigma-levels",type=int,nargs="+",default=[1,2,3,4,5])
+    parser.add_argument("--percent-levels",type=int,nargs="+",default=[68,95])
+    parser.add_argument( "--show-sigma", action='store_true', dest="show_sigma", help="Show sigma levels.", default=None)
+    parser.add_argument( "--no-show-sigma", action='store_false', dest="show_sigma", help="Do not show sigma levels.")
+    parser.add_argument( "--show-percent", action='store_true', dest="show_percent", help="Show percent levels.", default=None)
+    parser.add_argument( "--no-show-percent", action='store_false', dest="show_percent", help="Do not show percent levels.")
 
     args = parser.parse_args()
 
@@ -61,11 +74,11 @@ if __name__ == '__main__':
 
     with open(args.output,"w") as outfile:
         if len(scans1d) > 0:
-            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
+            writescans1d(args.atlas,args.labels[0],scans1d,args.output,getPercentages(args,1),args.ymax)
         elif len(scans2d) > 0:
-            writescans2d(args,scans2d,points,args.npoints)
+            writescans2d(args,scans2d,points,args.npoints,getPercentages(args,2))
         elif len(scans2d_merge) > 0 and mergeinp != "" :
-            writemergescans2d(args,scans2d,scans2d_merge,points,args.npoints)
+            writemergescans2d(args,scans2d,scans2d_merge,points,args.npoints,getPercentages(args,2))
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")

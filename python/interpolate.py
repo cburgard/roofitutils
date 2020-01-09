@@ -120,6 +120,7 @@ def griddata_gp(xyvals,zvals,grids, options={}):
 
 def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
     import sys
+    from math import isnan
     sys.argv = []
     import ROOT
     from array import array
@@ -146,9 +147,14 @@ def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
             g = graphlist.At(ig)
             contour = []
             for i in range(g.GetN()):
-                contour.append([g.GetX()[i],g.GetY()[i]])
-            contours.append(contour)
-        allcontours.append(contours)
+                x = g.GetX()[i]
+                y = g.GetY()[i]
+                if not isnan(x) and not isnan(y):
+                    contour.append([x,y])
+            if len(contour) > 0:
+                contours.append(contour)
+        if len(contours) > 0:
+            allcontours.append(contours)
     return allcontours
             
     

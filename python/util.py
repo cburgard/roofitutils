@@ -312,3 +312,10 @@ def clearfile(filename):
     if os.path.isfile(filename):
         os.remove(filename)
 
+def getThreshold(pcent,ndim):
+    from scipy.stats import chi2
+    return chi2.ppf(pcent,ndim)
+    
+def getPercent(nsigma):
+    from scipy.stats import norm
+    return 1 - (1-norm.cdf(nsigma))*2

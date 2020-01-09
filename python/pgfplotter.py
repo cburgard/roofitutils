@@ -1,5 +1,9 @@
 #!/bin/evn python
 
+from RooFitUtils.util import getThreshold
+thresholdColors = ["blue","green","yellow","orange","red"]
+thresholdStyles = ["solid","dashed","loosely dashed","dotted","loosely dotted"]
+
 def writehead(stream):
     stream.write("\\documentclass{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
@@ -185,7 +189,7 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writescans1d(atlas,par,allscans,outfilename,ymax=None):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds,ymax=None):
     """write a bunch of 1d scans to a pgfplots tex file"""
     with open(outfilename,"w") as outfile:
         writehead(outfile)
@@ -204,13 +208,13 @@ def writescans1d(atlas,par,allscans,outfilename,ymax=None):
         for pnamelist,curve in allscans.items():
             for options,scan in curve.items():
                 print("writing scan for "+pnamelist[0])
-                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,ymax)
+                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,percent_thresholds,ymax)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
+def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,ymax=None):
     """write a single 1d scan to a pgfplots tex file"""
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
@@ -233,24 +237,21 @@ def writescan1d(parname,parlabel,allpoints,outfile,ymax=None):
         xmax = max(x,xmax)
         ymax = max(y,ymax)
 
-    thresholds = [0.5,2,4.5,8,12.5]
-    labels = ["1s","2s","3s","4s","5s"]
-    colors = ["blue","green","yellow","orange","red"]
-
-    for i in range(0,len(thresholds)):
-        if thresholds[i] < ymax:
-            cv,down,up = findcrossings(points,thresholds[i])
+    for i in range(0,len(percent_thresholds)):
+        t = 0.5*getThreshold(percent_thresholds[i],1)
+        if t < ymax:
+            cv,down,up = findcrossings(points,t)
             if cv-down > xmin and not isnan(down):
-                outfile.write("\\draw["+colors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(thresholds[i])+");\n")
+                outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(t)+");\n")
             if cv+up < xmax and not isnan(up):
-                outfile.write("\\draw["+colors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(thresholds[i])+");\n")
+                outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
             if i == 0:
                 s = "{:s} = {:f}".format(parname,cv)
-                outfile.write("\\addlegendentry{{${:s} = {:.3f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
-            s = s + ", {:s} = +{:f} -{:f}".format(labels[i],abs(up),abs(down))
+                outfile.write("\\addlegendentry{{${:s} = {:.1f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
+            s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
     print(s)
 
-def writescans2d(args,scans2d,extrapoints,npoints):
+def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:    
@@ -277,16 +278,10 @@ def writescans2d(args,scans2d,extrapoints,npoints):
                 outfile.write("    ylabel=$"+args.labels[1]+"$,\n")
         outfile.write("]\n")
         if args.atlas: writeATLAS(args.atlas,outfile)
-        # 1 sigma (=68.26895% CL):  2.296
-        # 2 sigma (=95.44997% CL):  6.180
-    # 95% CL         :  2.28
-        # 68% CL          :  5.99
-#        contours = {0.5*2.296:"solid",0.5*6.180:"dashed"}
-#        contours = {0.5*2.28:"solid"}
-        contours = {0.5*2.28:"solid",0.5*5.99:"dashed"}
+
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
-                writescan2d(args,points,outfile,contours,parsedict(drawopts),npoints)
+                writescan2d(args,points,outfile,percent_thresholds,parsedict(drawopts),npoints)
         for drawopts,points in extrapoints.items():
             writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")
@@ -294,7 +289,7 @@ def writescans2d(args,scans2d,extrapoints,npoints):
         writefoot(outfile)    
         print("wrote "+args.output)
 
-def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints):
+def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thresholds):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:
@@ -321,16 +316,12 @@ def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints):
                 outfile.write("    ylabel="+args.labels[1]+",\n")
         outfile.write("]\n")
         if args.atlas: writeATLAS(args.atlas,outfile)
-        # 1 sigma (=68.26895% CL):  2.296
-        # 2 sigma (=95.44997% CL):  6.180
-        # 3 sigma (=99.73002% CL):  11.829
-#        contours = {0.5*2.28:"solid"}
-        contours = {0.5*2.28:"solid",0.5*5.99:"dashed"}
+
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
                 for pnamelist_merge,scan_merge in scans2d_merge.items():
                     for drawopts,points_merge in scan_merge.items():
-                         writemergescan2d(args,points,points_merge,outfile,contours,parsedict(drawopts))
+                         writemergescan2d(args,points,points_merge,outfile,percent_thresholds,parsedict(drawopts))
         for drawopts,points in extrapoints.items():
             writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")
@@ -355,10 +346,10 @@ def writepoints2d(args,points,outfile,style):
     outfile.write("};\n")
 
                           
-def writescan2d(args,allpoints,outfile,contourdefs,style,npoints):
+def writescan2d(args,allpoints,outfile,percent_thresholds,style,npoints):
     """write a single 2d scan to a pgfplots tex file"""
     from RooFitUtils.interpolate import findcontours
-    thresholds = sorted(contourdefs.keys())
+    thresholds = [ getThreshold(p,2) for p in percent_thresholds ]
     contours,minimum = findcontours(allpoints,thresholds,args.smooth,npoints,args.contourAlg)
     outfile.write("\\draw (axis cs:")
     if args.flipAxes:
@@ -368,11 +359,12 @@ def writescan2d(args,allpoints,outfile,contourdefs,style,npoints):
     outfile.write(") node[cross,color="+style.get("color","black")+"] {};\n")
     
     first = True
+    i = 0
     for v,conts in zip(thresholds,contours):
         icont = 0
         for c in conts:
             outfile.write("% contour {:d} of {:f}\n".format(icont,v))
-            outfile.write("\\addplot[color="+style.get("color","black")+","+contourdefs[v]+",mark=none,smooth")
+            outfile.write("\\addplot[color="+style.get("color","black")+","+thresholdStyles[i]+",mark=none,smooth")
             if not first: outfile.write(",forget plot")
             outfile.write("] coordinates {\n")
             for x,y in c:
@@ -385,11 +377,12 @@ def writescan2d(args,allpoints,outfile,contourdefs,style,npoints):
                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
             first=False
             icont = icont+1
+        i = i+1
 
-def writemergescan2d(args,allpoints1,allpoints2,outfile,contourdefs,style):
+def writemergescan2d(args,allpoints1,allpoints2,outfile,percent_thresholds,style):
      """merge two 2d scan to obtain the minimum envelope and write to pgfplots tex file"""
      from RooFitUtils.interpolate import findmergecontours
-     thresholds = sorted(contourdefs.keys())
+     thresholds = [ getThreshold(p,2) for p in percent_thresholds ]
      contours,minimum = findmergecontours(allpoints1,allpoints2,thresholds,args.smooth,npoints)
      outfile.write("\\draw (axis cs:")
      if args.flipAxes:
