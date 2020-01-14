@@ -53,7 +53,9 @@ def main(args):
     else:
         print("all occurences were replaced!")        
     
-    ws.writeToFile(args.output)
+    import RooFitUtils
+    newws = ROOT.RooFitUtils.makeCleanWorkspace(ws,"combined")
+    newws.writeToFile(args.output)
 
 if __name__ == "__main__":
     import argparse

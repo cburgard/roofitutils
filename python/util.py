@@ -63,8 +63,7 @@ def loadRooFitUtils():
     """load the RooFitUtils shared library"""
     # retrieve the root core dir environment variable
     from ROOT import gSystem
-    if gSystem.Load("libRooFitUtils"):
-        raise ImportError("unable to load standalone libRooFitUtils.so!")
+    gSystem.Load("libRooFitUtils")
 
 def timestamp(seconds):
     """get the current timestamp"""
@@ -319,3 +318,17 @@ def getThreshold(pcent,ndim):
 def getPercent(nsigma):
     from scipy.stats import norm
     return 1 - (1-norm.cdf(nsigma))*2
+
+def createAsimov(ws,mc,asmName):
+    import ROOT
+    allParams = ROOT.RooArgSet()
+    allParams.add(mc.GetGlobalObservables())
+    allParams.add(mc.GetObservables())
+    allParams.add(mc.GetNuisanceParameters())
+    allParams.add(mc.GetParametersOfInterest())
+    globs = mc.GetGlobalObservables().snapshot()
+    asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mc,allParams,globs)
+    asimovData.SetName(asmName)
+    getattr(ws,"import")(asimovData)
+
+

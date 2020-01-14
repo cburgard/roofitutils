@@ -42,6 +42,7 @@
 
 #pragma link C++ function editws ;
 #pragma link C++ function RooFitUtils::fixRooStarMomentMorph ;
+#pragma link C++ function RooFitUtils::makeCleanWorkspace ;
 
 #endif
 #endif
