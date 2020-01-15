@@ -180,7 +180,8 @@ void RooFitUtils::Measurement::initialise() {
       }
     }
     delete pdfItr;
-    //FIXME: handle if no RooSimultaneous is found...
+    // handle if no RooSimultaneous is found...
+    //TODO: this may not be the cleanest way to deal with the situation, if someone has a better way, please improve!
     if (!thisSim) { //we still don't have a RooSimultaneous, so let's create a minimal one
       RooCategory* channelCat = (RooCategory*) fWorkSpace->factory(TString::Format("channelCat[%s]",fPdf->GetName()).Data());
       std::map< std::string, RooAbsPdf *> pdfMap { std::make_pair(fPdf->GetName(), fPdf) };
@@ -207,13 +208,13 @@ void RooFitUtils::Measurement::initialise() {
   
   RooCategory *cat = (RooCategory *)&thisSim->indexCat();
   dataList = fData->split(*cat, true);
-  //FIXME: fData may be from a non-simPdf but a plain ProdPdf -> emulate creation of the list
+  // fData may be from a non-simPdf but a plain ProdPdf -> emulate creation of the list
   if (!dataList) {
     dataList = new TList();
-    fData->SetName(fPdf->GetName()); //hack(?)
+    fData->SetName(fPdf->GetName()); //hack(?) -> needed as the (sub)Pdf is later retrieved from the simPdf using the name of the (sub)dataSet
     dataList->Add(fData);
   }
-  std::cout<<"datalist is "<<dataList<<std::endl;
+
   fObservables = (RooArgSet *)fModelConfig->GetObservables();
   fGlobalObservables = (RooArgSet *)fModelConfig->GetGlobalObservables();
   fNuisanceParameters = (RooArgSet *)fModelConfig->GetNuisanceParameters();
@@ -341,9 +342,7 @@ void RooFitUtils::Measurement::CollectChannels() {
     }
 
     // Get the pdf
-    std::cout<<"trying to get Pdf "<<label.c_str()<<std::endl;
     RooAbsPdf *thisPdf = (RooAbsPdf *)thisSim->getPdf(label.c_str());
-    std::cout<<" ptr: "<<thisPdf<<std::endl;
     // Attach all (necessary) constraints to the current channel to make it
     // stand-alone
     RooArgSet thistmpNuisanceParameters;
