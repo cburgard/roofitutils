@@ -16,7 +16,6 @@ def writehead(stream):
     stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
     stream.write("\\catcode`_=\\active\n")
     stream.write("\\newcommand_[1]{\\ensuremath{\\sb{\\scriptscriptstyle #1}}}\n")
-
     stream.write("\\begin{document}\n")
     stream.write("\\definecolor{myyellow}{rgb}{0.96,0.742,0.29}\n")
     stream.write("\\definecolor{myblue}{rgb}{0.1,0.32,0.738}\n")
@@ -84,31 +83,6 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
-
-def writescans1d(atlas,par,allscans,outfilename,ymax=None):
-    """write a bunch of 1d scans to a pgfplots tex file"""
-    with open(outfilename,"w") as outfile:
-        writehead(outfile)
-        allvals = [ v[0] for curves in allscans.values() for scan in curves.values() for v in scan.keys()]
-        domain = "domain={0:f}:{1:f}".format(min(allvals),max(allvals))
-        outfile.write("\\begin{tikzpicture}\n")
-        if atlas: writeATLAS(atlas,outfile)
-        outfile.write("\\begin{axis}[\n")
-        outfile.write("    ymin=0,\n")
-        if ymax:
-            outfile.write("    ymax="+str(ymax)+",\n")
-        outfile.write("    "+domain+",\n")
-        outfile.write("    legend pos=north east,legend style={draw=none},\n")
-        outfile.write("    xlabel=${0:s}$, ylabel=$\\Delta \\log L$\n".format(par))
-        outfile.write("]\n")
-        for pnamelist,curve in allscans.items():
-            for options,scan in curve.items():
-                print("writing scan for "+pnamelist[0])
-                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,ymax)
-        outfile.write("\\end{axis}\n")
-        outfile.write("\\end{tikzpicture}\n")
-        writefoot(outfile)
-        print("wrote "+outfilename)
 
 def writepois(atlas,allpois,outfilename,ymax=None):
     """write a POI plot to a pgfplots tex file"""
@@ -189,7 +163,7 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writescans1d(atlas,par,allscans,outfilename,percent_thresholds,ymax=None):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None):
     """write a bunch of 1d scans to a pgfplots tex file"""
     with open(outfilename,"w") as outfile:
         writehead(outfile)
@@ -203,53 +177,59 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds,ymax=None):
             outfile.write("    ymax="+str(ymax)+",\n")
         outfile.write("    "+domain+",\n")
         outfile.write("    legend pos=north east,legend style={draw=none},\n")
-        outfile.write("    xlabel=${0:s}$, ylabel=$\\Delta \\log L$\n".format(par))
+        outfile.write("    xlabel=${0:s}$, ylabel=$-2\\ \\ln \\Lambda$,\n".format(par))
+        outfile.write("    every axis x label/.style={at={(axis description cs:1.0,-0.1)},anchor=north east},\n")
+	outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
+        outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))
         outfile.write("]\n")
         for pnamelist,curve in allscans.items():
             for options,scan in curve.items():
                 print("writing scan for "+pnamelist[0])
-                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,percent_thresholds,ymax)
+                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,percent_thresholds,drawpoints,ymax)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,ymax=None):
-    """write a single 1d scan to a pgfplots tex file"""
+def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,drawpoints=False,ymax=None):
+    """write a single 1d sncan to a pgfplots tex file"""
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
-    from RooFitUtils.util import graphoffset
+    from RooFitUtils.util import graphrescale
+    """obtaining the - 2 log Lambda(x), where Lambda = LL(x)/LL(x0)  """
     nllmin = findminimum(allpoints)
-    points =  graphoffset(allpoints,nllmin)
-    
-    outfile.write("\\addplot[color=black,mark=none,smooth] coordinates {\n")
+    points = graphrescale(allpoints,nllmin,2)
+    outfile.write("\\addplot[color=black,very thick,mark=none,smooth] coordinates {\n")
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
-    outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
-    for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
-    outfile.write("};\n")
-    outfile.write("\\addplot[red] {0.5};\n")
-    
-    xmin,ymax = points[0]
-    xmax = xmin
-    for x,y in points:
-        xmin = min(x,xmin)
-        xmax = max(x,xmax)
-        ymax = max(y,ymax)
+    if drawpoints:
+      outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
+      for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
+      outfile.write("};\n")
+    outfile.write("\\addplot[gray,densly dashed,thick] {1};\n")
+    outfile.write("\\addplot[gray,densly dashed,thick] {4};\n") 
 
-    for i in range(0,len(percent_thresholds)):
-        t = 0.5*getThreshold(percent_thresholds[i],1)
-        if t < ymax:
-            cv,down,up = findcrossings(points,t)
-            if cv-down > xmin and not isnan(down):
-                outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(t)+");\n")
-            if cv+up < xmax and not isnan(up):
-                outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
-            if i == 0:
-                s = "{:s} = {:f}".format(parname,cv)
-                outfile.write("\\addlegendentry{{${:s} = {:.1f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
-            s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
-    print(s)
+    if percent_thresholds:
+        xmin,ymax = points[0]
+    	xmax = xmin
+        for x,y in points:
+	    xmin = min(x,xmin)
+   	    xmax = max(x,xmax)
+       	    ymax = max(y,ymax)
+
+        for i in range(0,len(percent_thresholds)):
+  	    t = 1*getThreshold(percent_thresholds[i],1)
+	    if t < ymax:
+	        cv,down,up = findcrossings(points,t)
+	        if cv-down > xmin and not isnan(down):
+		    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(t)+");\n")
+	        if cv+up < xmax and not isnan(up):
+		    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
+	        if i == 0:
+	  	    s = "{:s} = {:f}".format(parname,cv)
+		    outfile.write("\\addlegendentry{{${:s} = {:.1f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
+	        s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
+        print(s)
 
 def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
     """write a bunch of 2d scans to a pgfplots tex file"""

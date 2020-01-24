@@ -101,10 +101,10 @@ def vec(l,t):
         v.push_back(e)
     return v
 
-def graphoffset(d,nllmin):
+def graphrescale(d,nllmin,scale=2):
     """transform the values of a curve by sorting them in x and subtracting a fixed value in y"""
     xvals = sorted(d.keys())
-    yvals = [ max(d[k] - nllmin,0) for k in xvals ]
+    yvals = [ max(d[k] - nllmin,0)*scale for k in xvals ]
     return list(zip(xvals,yvals))
         
 
