@@ -10,7 +10,7 @@ def texprep(string):
     if mwilcoeff:
         x = string.replace("c","$c_{") + "}$"
         if "box" in x: x = x.replace("box","\\Box")
-    else : x = string.replace("_","\_")
+    else : x = string
     return x
 
 def writeResult(out,result,writehesse):
@@ -85,7 +85,7 @@ def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
                            redpars = reduceparams(allpars,parfilter) 
                            parnames.append(redpars)
                          else:
-                           parnames.append(texprep(parline))
+			   for x in allpars: parnames.append(texprep(x))
                          pattern = ""
                          for x in range(0, ncorr): 
                            pattern += "([-]*\d+.\d+)[ ]"
@@ -96,7 +96,8 @@ def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
                                par1 = (rowmatch.group(1),rowmatch.group(2))
                                if (len(parfilter) != 0 and par1[0].startswith(parfilter) and par1[1].startswith(parfilter)) or len(parfilter) == 0:
                                   results.append( texprep((par1[0])) +" "+ texprep((par1[1]))+" "+rowmatch.group(3))
-           
+    parnames = (parnames[0])
+    
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re
@@ -107,6 +108,7 @@ def collectresults(scans,results,files,label):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
+        print filenames
         print("no points found in "+",".join(files))
         exit(0)
     for filename in filenames:
@@ -138,6 +140,7 @@ def collectresults(scans,results,files,label):
                         else:
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
+			    print pvals, nllval
                             scans[key][label][pvals] = nllval
                     except KeyError:
                         if nllmatch:

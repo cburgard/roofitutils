@@ -14,8 +14,8 @@ def writehead(stream):
     stream.write("\\usepackage{amsmath,latexsym}\n")
     stream.write("\\usetikzlibrary{shapes.misc}\n")
     stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
-    stream.write("\\catcode`_=\\active\n")
-    stream.write("\\newcommand_[1]{\\ensuremath{\\sb{\\scriptscriptstyle #1}}}\n")
+#    stream.write("\\catcode`_=\\active\n")
+#    stream.write("\\newcommand_[1]{\\ensuremath{\\sb{\\scriptscriptstyle #1}}}\n")
     stream.write("\\begin{document}\n")
     stream.write("\\definecolor{myyellow}{rgb}{0.96,0.742,0.29}\n")
     stream.write("\\definecolor{myblue}{rgb}{0.1,0.32,0.738}\n")
@@ -36,53 +36,17 @@ def writecorrelations(stream,allcorrs):
     for x in range(0,len(allcorrs)):
         stream.write(allcorrs[x]+"\n")
 
+def writecorrelationvalues(stream,allcorrs):
+    for x in range(0,len(allcorrs)):
+	strips = allcorrs[x].split(" ")
+	print strips
+        stream.write("\\node at (axis cs:{0!s},{1!s}) [] {{ {2:02.2f} }}; \n".format(strips[0],strips[1],float(strips[2])))
+
 def concat(strlist):
     string = ""
     for x in range(0,len(strlist)):
       string = string +","+ strlist[x]
-    return string[1:len(string)]
-
-def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
-    """write a correlation matrix to a pgfplots tex file"""
-    paraxisy = parslist
-    paraxisx = parslist[::-1]
-    with open(outfilename,"w") as outfile:
-        writehead(outfile)
-        outfile.write("\\begin{tikzpicture}\n")
-        outfile.write("\\begin{axis}[\n")
-        outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
-        outfile.write("    clip = false,\n")
-        outfile.write("    colorbar,\n")
-        outfile.write("    colormap name={bluewhiteyellow},\n")
-        outfile.write("    x=1em,\n")
-        outfile.write("    y=1em,\n")
-        outfile.write("    xtick=data,\n")
-        outfile.write("    ytick=data,\n")
-        outfile.write("    ymin="+ paraxisy[0] + ",\n")
-        outfile.write("    ymax="+ paraxisy[len(parslist)-1] +",\n")     
-        outfile.write("    xmin="+ paraxisx[0] +",\n")
-        outfile.write("    xmax="+ paraxisx[len(parslist)-1] +",\n")
-        outfile.write("    enlarge x limits={abs=0.5em},\n")
-        outfile.write("    enlarge y limits={abs=0.5em},\n")
-        outfile.write("    point meta min=-1,\n")
-        outfile.write("    point meta max=+1,\n")
-        outfile.write("    grid=both,\n")
-        outfile.write("    major grid style={draw=none},\n")
-        outfile.write("    minor tick num=1,\n")
-        outfile.write("    symbolic x coords={"+ concat(paraxisx) + "},\n")
-        outfile.write("    symbolic y coords={"+ concat(paraxisy) + "},\n")
-        outfile.write("    axis on top,")
-        outfile.write("       x tick label style={rotate=90},\n")
-        outfile.write("    tick style={draw=none}\n ]\n")
-        outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(parslist))+"] table [meta=correlations] {\n")
-        outfile.write("x  y  correlations\n")
-        writecorrelations(outfile,allcorrs) 
-        outfile.write("};\n")
-        outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
-        outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
-        outfile.write("\\end{axis}\n")
-        outfile.write("\\end{tikzpicture}\n")
-        writefoot(outfile)
+    return string[1:len(string)] # remove comma which is the first character
 
 def writepois(atlas,allpois,outfilename,ymax=None):
     """write a POI plot to a pgfplots tex file"""
@@ -120,10 +84,18 @@ def writepois(atlas,allpois,outfilename,ymax=None):
         writefoot(outfile)
         print("wrote "+outfilename)
 
+def makelabels(listofstrings):
+    x = [ i.replace("_","\_") for i in listofstrings]
+    return x
+   
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     """write a correlation matrix to a pgfplots tex file"""
-    paraxisy = parslist
-    paraxisx = parslist[::-1]
+    ycoords = parslist
+    xcoords = parslist[::-1]
+    print xcoords
+    xlabels = [ i.replace("_","\_") for i in xcoords ]
+    ylabels = [ i.replace("_","\_") for i in ycoords ]
+    print xlabels
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
@@ -132,23 +104,25 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("    clip = false,\n")
         outfile.write("    colorbar,\n")
         outfile.write("    colormap name={bluewhiteyellow},\n")
-        outfile.write("    x=1em,\n")
-        outfile.write("    y=1em,\n")
+        outfile.write("    x=3em,\n")
+        outfile.write("    y=3em,\n")
         outfile.write("    xtick=data,\n")
         outfile.write("    ytick=data,\n")
-        outfile.write("    ymin="+ paraxisy[0] + ",\n")
-        outfile.write("    ymax="+ paraxisy[len(parslist)-1] +",\n")     
-        outfile.write("    xmin="+ paraxisx[0] +",\n")
-        outfile.write("    xmax="+ paraxisx[len(parslist)-1] +",\n")
-        outfile.write("    enlarge x limits={abs=0.5em},\n")
-        outfile.write("    enlarge y limits={abs=0.5em},\n")
+        outfile.write("    ymin="+ ycoords[0] + ",\n")
+        outfile.write("    ymax="+ ycoords[len(parslist)-1] +",\n")     
+        outfile.write("    xmin="+ xcoords[0] +",\n")
+        outfile.write("    xmax="+ xcoords[len(parslist)-1] +",\n")
+        outfile.write("    enlarge x limits={abs=1.5em},\n")
+        outfile.write("    enlarge y limits={abs=1.5em},\n")
         outfile.write("    point meta min=-1,\n")
         outfile.write("    point meta max=+1,\n")
         outfile.write("    grid=both,\n")
         outfile.write("    major grid style={draw=none},\n")
         outfile.write("    minor tick num=1,\n")
-        outfile.write("    symbolic x coords={"+ concat(paraxisx) + "},\n")
-        outfile.write("    symbolic y coords={"+ concat(paraxisy) + "},\n")
+        outfile.write("    symbolic x coords={"+ concat(xcoords) + "},\n")
+        outfile.write("    symbolic y coords={"+ concat(ycoords) + "},\n")
+        outfile.write("    xticklabels={"+ concat(ylabels) + "},\n") # no typo
+        outfile.write("    yticklabels={"+ concat(xlabels) + "},\n") # no typo
         outfile.write("    axis on top,")
         outfile.write("       x tick label style={rotate=90},\n")
         outfile.write("    tick style={draw=none}\n ]\n")
@@ -156,8 +130,9 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("x  y  correlations\n")
         writecorrelations(outfile,allcorrs) 
         outfile.write("};\n")
-        outfile.write("\\node (atlas) [above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
-        outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
+	writecorrelationvalues(outfile,allcorrs)
+        outfile.write("\\node (atlas) [scale=2,above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
+        outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {Internal};\n")
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
@@ -206,8 +181,8 @@ def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,drawpoints
       outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
       for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
       outfile.write("};\n")
-    outfile.write("\\addplot[gray,densly dashed,thick] {1};\n")
-    outfile.write("\\addplot[gray,densly dashed,thick] {4};\n") 
+    outfile.write("\\addplot[gray,densely dashed,thick] {1};\n")
+    outfile.write("\\addplot[gray,densely dashed,thick] {4};\n") 
 
     if percent_thresholds:
         xmin,ymax = points[0]
@@ -229,7 +204,7 @@ def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,drawpoints
 	  	    s = "{:s} = {:f}".format(parname,cv)
 		    outfile.write("\\addlegendentry{{${:s} = {:.1f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
 	        s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
-        print(s)
+       # print(s)
 
 def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
     """write a bunch of 2d scans to a pgfplots tex file"""
