@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument("--smooth",action="store_true",default=False,help="apply smoothing")
     parser.add_argument("--contour-algorithm",choices=['ROOT', 'skimage'],default="ROOT",dest="contourAlg",help="contour finding algorithm to be used")
     parser.add_argument("--npoints",type=int,default=100,help="granularity of the interpolation grid")
-    parser.add_argument("--sigma-levels",type=int,nargs="+",default=[1,2,3,4,5])
+    parser.add_argument("--sigma-levels",type=int,nargs="+",default=[1,2])
     parser.add_argument("--percent-levels",type=int,nargs="+",default=[68,95])
     parser.add_argument( "--show-sigma", action='store_true', dest="show_sigma", help="Show sigma levels.", default=None)
     parser.add_argument( "--no-show-sigma", action='store_false', dest="show_sigma", help="Do not show sigma levels.")
