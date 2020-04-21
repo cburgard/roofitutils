@@ -130,9 +130,15 @@ ELSE()
 
   # Install the RooFitUtilsConfig.cmake and RooFitUtilsConfigVersion.cmake
   install(FILES
-    "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RooFitUtilsConfig.cmake"
-    "${PROJECT_BINARY_DIR}/RooFitUtilsConfigVersion.cmake"
-    DESTINATION "${PROJECT_SOURCE_DIR}" COMPONENT dev)
+    "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake"
+    DESTINATION "${PROJECT_SOURCE_DIR}" COMPONENT dev
+  )
+
+  install(FILES
+    "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake"
+    DESTINATION cmake
+  )
+
 
   file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
   file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
@@ -145,5 +151,5 @@ ENDIF()
 install(
   TARGETS RooFitUtils
   EXPORT RooFitUtilsConfig
-  DESTINATION cmake
+  DESTINATION lib
   )
