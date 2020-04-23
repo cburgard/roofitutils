@@ -1,4 +1,4 @@
-#!/bin/env python 
+#!/bin/env python
 
 import sys
 from RooFitUtils.util import makelist
@@ -10,7 +10,7 @@ def setup(args):
     from RooFitUtils.util import loadRooFitUtils
     # load libraries
     loadRooFitUtils()
-    
+
     # setup verbosity
     ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
     if args.loglevel == "DEBUG":
@@ -35,7 +35,7 @@ def buildModel(args):
     model = ROOT.RooFitUtils.ExtendedModel("model", args.inFileName, args.wsName,
                                            args.modelConfigName, args.dataName, args.snapshot,
                                            args.binnedLikelihood, "pdf_")
-    
+
     if args.fixAllNP:          model.fixNuisanceParameters()
 #   if args.breakdownErrors:   model.breakdownErrors()
     if args.setInitialError:   model.setInitialErrors()
@@ -43,7 +43,7 @@ def buildModel(args):
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.profile))
-    
+
     return model
 
 def buildMinimizer(args,model):
@@ -84,22 +84,22 @@ def buildMinimizer(args,model):
 
     pdf = model.GetPdf()
 
-    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo), 
-                ROOT.RooFit.Strategy(args.defaultStrategy), 
-                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps), 
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer), 
+    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo),
+                ROOT.RooFit.Strategy(args.defaultStrategy),
+                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps),
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll),
                 ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
-                ROOT.RooFit.Constrain(nuis), 
+                ROOT.RooFit.Constrain(nuis),
                 ROOT.RooFit.GlobalObservables(globs),
-                ROOT.RooFit.NumCPU(args.numCPU, args.mpStrategy), 
-                ROOT.RooFit.Offset(args.offsetting), 
+                ROOT.RooFit.NumCPU(args.numCPU, args.mpStrategy),
+                ROOT.RooFit.Offset(args.offsetting),
                 ROOT.RooFit.Optimize(args.constOpt),
                 ROOT.RooFit.Precision(args.precision),
                 ROOT.RooFit.Hesse(args.hesse),
                 ROOT.RooFit.Save()]
     if args.findSigma:
-        argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset)) 
+        argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset))
 
     from RooFitUtils.util import nodel
     nodel(poiset)
@@ -130,7 +130,7 @@ def fit(args,model,minimizer):
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
         p = model.configureParameter(poi)
-        
+
         if not p:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
@@ -139,7 +139,7 @@ def fit(args,model,minimizer):
         start = time()
         if not args.dummy:
             minimizer.minimize()
-        
+
         end = time()
         print("Fitting time: " + timestamp(end-start))
         minNll = minimizer.GetMinNll()
@@ -226,7 +226,7 @@ def fit(args,model,minimizer):
         print("received invalid result")
 
     if args.outWsName:
-        ws = model.GetWorkspace()        
+        ws = model.GetWorkspace()
         ws.writeToFile(args.outWsName)
 
 
@@ -273,7 +273,7 @@ def createScanJobs(args,arglist):
                     for t in thresholds:
                         cv,down,up = findcrossings(points,t)
                         distributePointsAroundPoint(parnamelist,coords,down,npoints/4,0.1)
-                        distributePointsAroundPoint(parnamelist,coords,up,npoints/4,0.1)                                        
+                        distributePointsAroundPoint(parnamelist,coords,up,npoints/4,0.1)
     elif args.scan:
         coords = generateCoordsDict(args.scan)
     idx = 0
@@ -286,14 +286,14 @@ def createScanJobs(args,arglist):
     from RooFitUtils.util import clearfile
     clearfile(pjoin(outpath,outfile))
     clearfile(pointspath)
- 
+
     idx = 0
     if not args.outFileName:
         print("output file name mandatory for use of batch scanning!")
         exit(0)
     with open(pjoin(outpath,outfile),"w") as jobs:
         for coord in coords:
-            if  idx % args.writeSubmitPoints == 0:  
+            if  idx % args.writeSubmitPoints == 0:
                 pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
                 clearfile(pointspath)
                 options[" --no-findSigma --points"]=pointspath
@@ -305,7 +305,7 @@ def createScanJobs(args,arglist):
             with open(pointspath,"a") as coordlist:
                 point = makepoint(coord)
                 coordlist.write(point+"\n")
-   
+
     print("wrote "+args.writeSubmit)
 
 
@@ -317,8 +317,8 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
     arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar=("POI","N","min","max"), default=None,nargs=4,action="append"))
-    arglist.append(parser.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))    
-    arglist.append(parser.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))    
+    arglist.append(parser.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))
+    arglist.append(parser.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(parser.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(parser.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
@@ -382,12 +382,12 @@ if __name__ == "__main__":
     setup(args)
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
- 
+
     if not flags.interactive:
         fit(args,model,minimizer)
 
         if args.logsave:
-            sys.stdout = sys.__stdout__ 
+            sys.stdout = sys.__stdout__
             log_file.close()
     else:
         print("prepared fit:")

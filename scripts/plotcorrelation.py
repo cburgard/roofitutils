@@ -20,27 +20,27 @@ if __name__ == '__main__':
         files = inset[1:][0]
         collectcorrelationmatrix(parnames,results,files,args.parFilter,label)
 
-   # print parnames
-   # print results
+   # print(parnames)
+   # print(results)
 
-  #  print results
-    #print scans
+  #  print(results)
+    #print(scans)
 #    points = {}
 #    for inset in args.points:
 #        label = inset[0]
 #        files = inset[1:]
 #        collectpoints(points,files,label)
-        
+
 #    if len(scans) == 0 and len(results) == 0:
 #        print("no files found matching")
-    
+
 #    pois = [tuple(p.split(",")) for p in args.poi]
 
 #    scans1d = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
 #    scans2d = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
 
     with open(args.output,"w") as outfile:
-	writecorrmatrix(args.atlas,parnames,results,args.output,ymax=None)
+    writecorrmatrix(args.atlas,parnames,results,args.output,ymax=None)
 
 #        if len(scans1d) > 0:
 #            writescans1d(args.atlas,args.labels[0],scans1d,args.output,args.ymax)
