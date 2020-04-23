@@ -10,11 +10,11 @@ def disp2dcontour(grid_z,allimgcontours):
     for contours in allimgcontours:
         for n, contour in enumerate(contours):
             ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
-      
+
     ax.axis('image')
     ax.set_xticks([])
     ax.set_yticks([])
-    plt.show() 
+    plt.show()
 
 def disp3dcontour(gridx,gridy,gridz):
     from mpl_toolkits.mplot3d import Axes3D
@@ -42,9 +42,9 @@ def minfromscans(xvals,yvals,zvals):
     minimum = (inf,inf)
     nllmin = inf
     for i in range(0,len(zvals)):
-      if nllmin > zvals[i]:
-         minimum = (xvals[i],yvals[i])
-         nllmin = zvals[i]
+        if nllmin > zvals[i]:
+            minimum = (xvals[i],yvals[i])
+            nllmin = zvals[i]
     return minimum,nllmin
 
 
@@ -71,7 +71,7 @@ def findmergecontours(points1,points2,values,smooth,npoints):
     grid1_z = griddata(array(keys1),array(zvals1),(grid1_x, grid1_y), method='cubic')
     grid2_z = griddata(array(keys2),array(zvals2),(grid2_x, grid2_y), method='cubic')
 
-    minimum1,nllmin1 = minfromscans(xvals1,yvals1,zvals1) 
+    minimum1,nllmin1 = minfromscans(xvals1,yvals1,zvals1)
     minimum2,nllmin2 = minfromscans(xvals2,yvals2,zvals2)
 
     if nllmin1 < nllmin2 : nllmin, minimum = nllmin1, minimum1
@@ -81,7 +81,7 @@ def findmergecontours(points1,points2,values,smooth,npoints):
     for i in range(0,npoints):
         for j in range(0,npoints):
             if grid1_x[i][j] == grid2_x[i][j] and grid1_y[i][j] == grid2_y[i][j]:
-                 if grid2_z[i][j] != nan and grid2_z[i][j] != nan:
+                if grid2_z[i][j] != nan and grid2_z[i][j] != nan:
                     grid1_z[i][j] = min(grid2_z[i][j],grid1_z[i][j])
 
     from skimage import measure
@@ -100,8 +100,8 @@ def findmergecontours(points1,points2,values,smooth,npoints):
                 if smooth:
                     contours.append(smoothgraph(realc))
                 else:
-                    contours.append(realc)                    
-                    
+                    contours.append(realc)
+
         allcontours.append(contours)
 
     # Display the image and plot all contours found
@@ -131,7 +131,7 @@ def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
     for i in range(0,npoints):
         for j in range(0,npoints):
             th2.SetBinContent(i+1,j+1,grid_z[i][j])
-            
+
     c = ROOT.TCanvas("c","c",400,400)
     c.cd()
     th2.SetContour(len(thresholds),array("d",thresholds))
@@ -156,10 +156,10 @@ def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
         if len(contours) > 0:
             allcontours.append(contours)
     return allcontours
-            
-    
+
+
 def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
-    from math import isnan    
+    from math import isnan
     from skimage import measure
     allcontours = []
     for v in thresholds:
@@ -193,7 +193,7 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
 #    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
 
-    minimum,nllmin = minfromscans(xvals,yvals,zvals)  
+    minimum,nllmin = minfromscans(xvals,yvals,zvals)
     if algorithm == "ROOT":
         allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
     elif algorithm == "skimage":
@@ -202,7 +202,7 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
         print("unknown contour finding algorithm '"+algorithm+"'")
 
     return allcontours,minimum
-    
+
 def findcrossings(points,nllval):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value"""
     from scipy.interpolate import PchipInterpolator as interpolate
@@ -258,5 +258,5 @@ def smoothgraph(graph):
             newgraph.append((newx,newy))
             lastx,lasty = x,y
     newgraph.append(newgraph[0])
-    return newgraph       
+    return newgraph
 

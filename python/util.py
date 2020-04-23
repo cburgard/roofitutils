@@ -106,7 +106,7 @@ def graphrescale(d,nllmin,scale=2):
     xvals = sorted(d.keys())
     yvals = [ max(d[k] - nllmin,0)*scale for k in xvals ]
     return list(zip(xvals,yvals))
-        
+
 
 def parsedict(s,cast=str):
     """parse a string of the format "a=b,c=d" into a dictionary"""
@@ -179,8 +179,8 @@ def lineSegmentLengths(points):
 
 def weighted_choice(weights):
     if len(weights) == 0:
-        raise RuntimeError("unable to choose from empty list")        
-    import random            
+        raise RuntimeError("unable to choose from empty list")
+    import random
     totals = []
     running_total = 0
 
@@ -217,10 +217,10 @@ def add(a,b):
 
 def normalized(a):
     """return a normalized copy of a vector"""
-    if length(a) == 0: 
-      return scale(a,1.)
+    if length(a) == 0:
+        return scale(a,1.)
     else:
-      return scale(a,1./length(a))
+        return scale(a,1./length(a))
 
 def scale(a,x):
     """scale a vector by a number"""
@@ -282,10 +282,10 @@ def distributePointsAroundLine(dimlabels,coords,contour,npoints):
             prevector = normalized(orthogonal(subtract(contour[end],contour[start])))
         if after != None:
             next_segment_reverse = normalized(subtract(contour[after],contour[end]))
-            this_segment_forward = normalized(subtract(contour[start],contour[end]))               
+            this_segment_forward = normalized(subtract(contour[start],contour[end]))
             postvector  = normalized(add(this_segment_forward,next_segment_reverse))
         else:
-            postvector = normalized(orthogonal(subtract(contour[end],contour[start])))            
+            postvector = normalized(orthogonal(subtract(contour[end],contour[start])))
         # calculate the shift by interpolating between the pre- and post-vector and scaling it randomly
         shift = scale(normalized(interpolate(prevector,postvector,pos)),distpar*random.gauss(0,1))
         # put everything together
@@ -314,7 +314,7 @@ def clearfile(filename):
 def getThreshold(pcent,ndim):
     from scipy.stats import chi2
     return chi2.ppf(pcent,ndim)
-    
+
 def getPercent(nsigma):
     from scipy.stats import norm
     return 1 - (1-norm.cdf(nsigma))*2

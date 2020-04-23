@@ -1,6 +1,6 @@
 try:
-  # this dummy code is neede dto make sure the library is loaded
-  import ROOT
-  ROOT.RooFitUtils.ExtendedModel
+    # this dummy code is needed to make sure the library is loaded
+    import ROOT
+    ROOT.RooFitUtils.ExtendedModel
 except:
-  pass
+    pass

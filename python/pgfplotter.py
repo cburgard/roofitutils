@@ -27,10 +27,10 @@ def writeATLAS(label,outfile):
     outfile.write("\\node at (rel axis cs:0,1) [anchor=south west,text width=3cm]{\\textbf{ATLAS} "+label+"};\n")
 
 def writepois(atlas,par,allscans,outfilename,ymax=None):
-   """write a pois/NP ranking styled plot to a pgfplots tex file"""
-   with open(outfilename,"w") as outfile:
-       writehead(outfile)
-       allvals = [v[0] for pois in allscans.values() for v in pois.values()]
+    """write a pois/NP ranking styled plot to a pgfplots tex file"""
+    with open(outfilename,"w") as outfile:
+        writehead(outfile)
+        allvals = [v[0] for pois in allscans.values() for v in pois.values()]
 
 def writecorrelations(stream,allcorrs):
     for x in range(0,len(allcorrs)):
@@ -38,14 +38,14 @@ def writecorrelations(stream,allcorrs):
 
 def writecorrelationvalues(stream,allcorrs):
     for x in range(0,len(allcorrs)):
-	strips = allcorrs[x].split(" ")
-	print strips
+        strips = allcorrs[x].split(" ")
+        print(strips)
         stream.write("\\node at (axis cs:{0!s},{1!s}) [] {{ {2:02.2f} }}; \n".format(strips[0],strips[1],float(strips[2])))
 
 def concat(strlist):
     string = ""
     for x in range(0,len(strlist)):
-      string = string +","+ strlist[x]
+        string = string +","+ strlist[x]
     return string[1:len(string)] # remove comma which is the first character
 
 def writepois(atlas,allpois,outfilename,ymax=None):
@@ -60,7 +60,7 @@ def writepois(atlas,allpois,outfilename,ymax=None):
         outfile.write("    xlabel = Best fit value \n")
         outfile.write("    clip = false,\n")
         outfile.write("    ymin=-1,\n")
-        outfile.write("    ymax= "+str(4.75 + len(allpois)*1.25)+ ",\n")     
+        outfile.write("    ymax= "+str(4.75 + len(allpois)*1.25)+ ",\n")
         outfile.write("    xmin= -1.75,\n")
         outfile.write("    xmax=  2,\n")
         outfile.write("    minor tick num=4,\n")
@@ -87,15 +87,15 @@ def writepois(atlas,allpois,outfilename,ymax=None):
 def makelabels(listofstrings):
     x = [ i.replace("_","\_") for i in listofstrings]
     return x
-   
+
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     """write a correlation matrix to a pgfplots tex file"""
     ycoords = parslist
     xcoords = parslist[::-1]
-    print xcoords
+    print(xcoords)
     xlabels = [ i.replace("_","\_") for i in xcoords ]
     ylabels = [ i.replace("_","\_") for i in ycoords ]
-    print xlabels
+    print(xlabels)
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
@@ -109,7 +109,7 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("    xtick=data,\n")
         outfile.write("    ytick=data,\n")
         outfile.write("    ymin="+ ycoords[0] + ",\n")
-        outfile.write("    ymax="+ ycoords[len(parslist)-1] +",\n")     
+        outfile.write("    ymax="+ ycoords[len(parslist)-1] +",\n")
         outfile.write("    xmin="+ xcoords[0] +",\n")
         outfile.write("    xmax="+ xcoords[len(parslist)-1] +",\n")
         outfile.write("    enlarge x limits={abs=1.5em},\n")
@@ -128,9 +128,9 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
         outfile.write("    tick style={draw=none}\n ]\n")
         outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(parslist))+"] table [meta=correlations] {\n")
         outfile.write("x  y  correlations\n")
-        writecorrelations(outfile,allcorrs) 
+        writecorrelations(outfile,allcorrs)
         outfile.write("};\n")
-	writecorrelationvalues(outfile,allcorrs)
+        writecorrelationvalues(outfile,allcorrs)
         outfile.write("\\node (atlas) [scale=2,above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
         outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {Internal};\n")
         outfile.write("\\end{axis}\n")
@@ -154,7 +154,7 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         outfile.write("    legend pos=north east,legend style={draw=none},\n")
         outfile.write("    xlabel=${0:s}$, ylabel=$-2\\ \\ln \\Lambda$,\n".format(par))
         outfile.write("    every axis x label/.style={at={(axis description cs:1.0,-0.1)},anchor=north east},\n")
-	outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
+        outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
         outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))
         outfile.write("]\n")
         for pnamelist,curve in allscans.items():
@@ -178,50 +178,50 @@ def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,drawpoints
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
     if drawpoints:
-      outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
-      for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
-      outfile.write("};\n")
+        outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
+        for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
+        outfile.write("};\n")
     outfile.write("\\addplot[gray,densely dashed,thick] {1};\n")
-    outfile.write("\\addplot[gray,densely dashed,thick] {4};\n") 
+    outfile.write("\\addplot[gray,densely dashed,thick] {4};\n")
 
     if percent_thresholds:
         xmin,ymax = points[0]
-    	xmax = xmin
+        xmax = xmin
         for x,y in points:
-	    xmin = min(x,xmin)
-   	    xmax = max(x,xmax)
-       	    ymax = max(y,ymax)
+            xmin = min(x,xmin)
+            xmax = max(x,xmax)
+            ymax = max(y,ymax)
 
         for i in range(0,len(percent_thresholds)):
-  	    t = 1*getThreshold(percent_thresholds[i],1)
-	    if t < ymax:
-	        cv,down,up = findcrossings(points,t)
-	        if cv-down > xmin and not isnan(down):
-		    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(t)+");\n")
-	        if cv+up < xmax and not isnan(up):
-		    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
-	        if i == 0:
-	  	    s = "{:s} = {:f}".format(parname,cv)
-		    outfile.write("\\addlegendentry{{${:s} = {:.1f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
-	        s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
+            t = 1*getThreshold(percent_thresholds[i],1)
+            if t < ymax:
+                cv,down,up = findcrossings(points,t)
+                if cv-down > xmin and not isnan(down):
+                    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv-down)+",0) -- (axis cs:"+str(cv-down)+","+str(t)+");\n")
+                if cv+up < xmax and not isnan(up):
+                    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
+                if i == 0:
+                    s = "{:s} = {:f}".format(parname,cv)
+                    outfile.write("\\addlegendentry{{${:s} = {:.1f}^{{+{:.3f}}}_{{-{:.3f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
+                s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
 def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
-    with open(args.output,"w") as outfile:    
+    with open(args.output,"w") as outfile:
         writehead(outfile)
         if args.atlas:
             outfile.write("\\renewcommand\\sfdefault{phv}\n")
             outfile.write("\\renewcommand\\rmdefault{phv}\n")
-            outfile.write("\\renewcommand\\ttdefault{pcr}\n")            
+            outfile.write("\\renewcommand\\ttdefault{pcr}\n")
         outfile.write("\\begin{tikzpicture}[\n")
         if args.atlas:
             outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
         outfile.write("]\n")
         outfile.write("\\begin{axis}[clip=false,minor tick num=4,\n")
         if args.atlas:
-            outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")            
+            outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")
             outfile.write("xticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
             outfile.write("yticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
         if len(args.labels) == 2:
@@ -241,7 +241,7 @@ def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
             writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
-        writefoot(outfile)    
+        writefoot(outfile)
         print("wrote "+args.output)
 
 def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thresholds):
@@ -276,7 +276,7 @@ def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thr
             for drawopts,points in scan.items():
                 for pnamelist_merge,scan_merge in scans2d_merge.items():
                     for drawopts,points_merge in scan_merge.items():
-                         writemergescan2d(args,points,points_merge,outfile,percent_thresholds,parsedict(drawopts))
+                        writemergescan2d(args,points,points_merge,outfile,percent_thresholds,parsedict(drawopts))
         for drawopts,points in extrapoints.items():
             writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")
@@ -289,7 +289,7 @@ def writepoints2d(args,points,outfile,style):
     outfile.write("\\addplot[mark=x,mark options={scale=.5},only marks,draw="+style.get("color","black")+"] coordinates {\n")
     i = 0
     red = int(style.get("reduce",0))
-    from random import randint    
+    from random import randint
     for point in points:
         i = i + 1
         if red > 0 and randint(0, red) != 0: continue
@@ -297,10 +297,10 @@ def writepoints2d(args,points,outfile,style):
         if args.flipAxes:
             outfile.write("    ({:f},{:f})\n".format(point[keys[1]],point[keys[0]]))
         else:
-            outfile.write("    ({:f},{:f})\n".format(point[keys[0]],point[keys[1]]))            
+            outfile.write("    ({:f},{:f})\n".format(point[keys[0]],point[keys[1]]))
     outfile.write("};\n")
 
-                          
+
 def writescan2d(args,allpoints,outfile,percent_thresholds,style,npoints):
     """write a single 2d scan to a pgfplots tex file"""
     from RooFitUtils.interpolate import findcontours
@@ -312,7 +312,7 @@ def writescan2d(args,allpoints,outfile,percent_thresholds,style,npoints):
     else:
         outfile.write("{:f},{:f}".format(minimum[0],minimum[1]))
     outfile.write(") node[cross,color="+style.get("color","black")+"] {};\n")
-    
+
     first = True
     i = 0
     for v,conts in zip(thresholds,contours):
@@ -324,7 +324,7 @@ def writescan2d(args,allpoints,outfile,percent_thresholds,style,npoints):
             outfile.write("] coordinates {\n")
             for x,y in c:
                 if args.flipAxes:
-                    outfile.write("    ({:f},{:f})\n".format(y,x))                    
+                    outfile.write("    ({:f},{:f})\n".format(y,x))
                 else:
                     outfile.write("    ({:f},{:f})\n".format(x,y))
             outfile.write("} ;\n")
@@ -341,26 +341,26 @@ def writemergescan2d(args,allpoints1,allpoints2,outfile,percent_thresholds,style
      contours,minimum = findmergecontours(allpoints1,allpoints2,thresholds,args.smooth,npoints)
      outfile.write("\\draw (axis cs:")
      if args.flipAxes:
-         outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))
+        outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))
      else:
-         outfile.write("{:f},{:f}".format(minimum[0],minimum[1]))
+        outfile.write("{:f},{:f}".format(minimum[0],minimum[1]))
      outfile.write(") node[cross,color="+style.get("color","black")+"] {};\n")
- 
+
      first = True
      for v,conts in zip(thresholds,contours):
          icont = 0
          for c in conts:
-             outfile.write("% contour {:d} of {:f}\n".format(icont,v))
-             outfile.write("\\addplot[color="+style.get("color","black")+","+contourdefs[v]+",mark=none,smooth")
-             if not first: outfile.write(",forget plot")
-             outfile.write("] coordinates {\n")
-             for x,y in c:
-                 if args.flipAxes:
-                     outfile.write("    ({:f},{:f})\n".format(y,x))
-                 else:
-                     outfile.write("    ({:f},{:f})\n".format(x,y))
-             outfile.write("} ;\n")
-             if first and "title" in style.keys():
-                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
-             first=False
+            outfile.write("% contour {:d} of {:f}\n".format(icont,v))
+            outfile.write("\\addplot[color="+style.get("color","black")+","+contourdefs[v]+",mark=none,smooth")
+            if not first: outfile.write(",forget plot")
+            outfile.write("] coordinates {\n")
+            for x,y in c:
+                if args.flipAxes:
+                    outfile.write("    ({:f},{:f})\n".format(y,x))
+                else:
+                    outfile.write("    ({:f},{:f})\n".format(x,y))
+            outfile.write("} ;\n")
+            if first and "title" in style.keys():
+                outfile.write("\\addlegendentry{"+style["title"]+"};\n")
+            first=False
 
