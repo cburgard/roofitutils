@@ -7,7 +7,7 @@ def main(args):
     pdf = mc.GetPdf()
     pdfname = pdf.GetName()
     pdf.SetName(pdfname+"_old")
-    
+
     oldpoi = ws.var(args.old)
     if not oldpoi:
         print("unable to find parameter '"+args.old+"', parmeters are:")
@@ -29,7 +29,7 @@ def main(args):
             if g.dependsOn(f):
                 toreplace.remove(g)
         toreplace.append(f)
-        
+
     pdfreplace = {}
     for f in toreplace:
         fname = f.GetName()
@@ -51,8 +51,8 @@ def main(args):
     if newpdf.dependsOn(oldpoi):
         print("new Pdf still depends on old parameter - not all occurences were replaced!")
     else:
-        print("all occurences were replaced!")        
-    
+        print("all occurences were replaced!")
+
     import RooFitUtils
     newws = ROOT.RooFitUtils.makeCleanWorkspace(ws,"combined")
     newws.writeToFile(args.output)
@@ -63,9 +63,9 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input workspace to be used")
     parser.add_argument("--output", default="workspace-output.root", help="Output workspace")
     parser.add_argument("--name", default="combined", help="Workspace name")
-    parser.add_argument("--mc", default="ModelConfig", help="ModelConfig name")    
+    parser.add_argument("--mc", default="ModelConfig", help="ModelConfig name")
     parser.add_argument("--old", required=True, help="old parameter name")
     parser.add_argument("--splits", nargs="+", help="list of splits to be made", metavar="key:newparameter")
-    
+
     args = parser.parse_args()
     main(args)

@@ -28,7 +28,7 @@ def colored(s,c):
 
 def isclose(a, b, rel_tol):
     return abs(a-b) <= rel_tol * max(abs(a), abs(b))
-    
+
 def notin(a,l):
     for x in l:
         if x.match(a):
@@ -69,19 +69,19 @@ def makelist(args,type=None):
     retval = []
 
     if hasattr(args,"createIterator"):
-      iter = args.createIterator()
+        iter = args.createIterator()
     else:
-      iter = args
+        iter = args
     try:
-      var = iter.Next()
-      while var :
-          if type and not var.InheritsFrom(type.Class()): continue
-          retval.append(var)
-          var = iter.Next()
+        var = iter.Next()
+        while var :
+            if type and not var.InheritsFrom(type.Class()): continue
+            retval.append(var)
+            var = iter.Next()
     except AttributeError:
-      for var in args:
-          if type and not var.InheritsFrom(type.Class()): continue
-          retval.append(var)
+        for var in args:
+            if type and not var.InheritsFrom(type.Class()): continue
+            retval.append(var)
     return retval
 
 def filter(inlist,whitelist,blacklist=[]):
@@ -98,18 +98,18 @@ def binValues(dhist):
     values = []
     import ROOT
     for obs in makelist(dhist.get()):
-      if obs.InheritsFrom(ROOT.RooRealVar.Class()):
-          for i in range(0,obs.getBins()):
-              x = dhist.get(i)
-              values.append(dhist.weight())
-      if obs.InheritsFrom(ROOT.RooAbsCategory.Class()):
-          continue
+        if obs.InheritsFrom(ROOT.RooRealVar.Class()):
+            for i in range(0,obs.getBins()):
+                x = dhist.get(i)
+                values.append(dhist.weight())
+        if obs.InheritsFrom(ROOT.RooAbsCategory.Class()):
+            continue
     return values
 
-def compare(first,second):    
+def compare(first,second):
     #returns true if either one of the two names of the TObjects provided are equal
     #if one of the two arguments is None False is returned, if both are None True is returned
-    global ignoreComponents    
+    global ignoreComponents
     f = removeAll(first,ignoreComponents)
     s = removeAll(second,ignoreComponents)
     if f == s: return True
@@ -254,7 +254,7 @@ def diffDataVals(firstlabel,firstdata,secondlabel,seconddata,firstws,secondws):
         if not secondd: continue
 
         secondhf = getHistFunc(secondd,secondws)
-        secondvar = getInterpolationVariable(secondhf)        
+        secondvar = getInterpolationVariable(secondhf)
         if firstvar and secondvar and not compareNames(firstvar,secondvar):
             secondhf = getSisterFunction(secondhf,firstvar.GetName())
             secondd = secondhf.dataHist()
@@ -272,7 +272,7 @@ def diffDataVals(firstlabel,firstdata,secondlabel,seconddata,firstws,secondws):
                 print(firstd.GetName()+"/"+secondd.GetName() + " ("+firstvar.GetName()+"/"+secondvar.GetName()+") " + " ".join(["{:f}/{:f}".format(a,b) for a,b in zip(firstvals,secondvals)]))
             else:
                 print(firstd.GetName() + " " + " ".join(["{:f}/{:f}".format(a,b) for a,b in zip(firstvals,secondvals)]))
-            
+
 
 def getWS(filename):
     import ROOT
@@ -293,10 +293,10 @@ def sortobjects(mylist):
 
 def checkCompleteness(orig,sync):
     for o in orig:
-      if not o: continue
-      if not o in sync:
-        raise RuntimeError("object '{:s}' is not in output list".format(o.GetName()))
-       
+        if not o: continue
+        if not o in sync:
+            raise RuntimeError("object '{:s}' is not in output list".format(o.GetName()))
+
 def synchronizeLists(first,second, recurse=True):
     #returns tuple of two lists corresponding to 'first' and 'second' with additionally inserted None entries in order to align the two lists based on the names of the contained objets (using compareNames)
     #do not externally provide the 'recurse' argument!
@@ -314,7 +314,7 @@ def synchronizeLists(first,second, recurse=True):
                 break
             s = None
             localOffset += 1 #for next try
-        
+
         if (index+offset+localOffset) < len(second): #no matching element in second list
             #we got a match
             firstOut += [None]*localOffset #we skipped this many elements from the second list until the match. Hence, fill first list with the same number of dummy (None) entries
@@ -326,7 +326,7 @@ def synchronizeLists(first,second, recurse=True):
             if f:
                 firstOut.append(f)
                 secondOut.append(None)
-                offset -= 1 #original first list advances by one more step compared to the second one.  
+                offset -= 1 #original first list advances by one more step compared to the second one.
             elif (index+offset<len(second)) and second[index+offset]: #we might have 'None' in first but a non-None in the second list. We therefore need to add the one in the second input to the second output (and None to the first output)
                 firstOut.append(None)
                 secondOut.append(second[index+offset])
@@ -337,19 +337,19 @@ def synchronizeLists(first,second, recurse=True):
     #sanity check for the logic above, uncomment for debugging
     #checkCompleteness(first,firstOut)
     #checkCompleteness(second,secondOut)
-    return (firstOut,secondOut)            
-    
+    return (firstOut,secondOut)
+
 def diffPdfTrees(firstpdf,secondpdf,indent=0):
     myindent = indent+1
     firstcomps  = makelist(firstpdf.serverIterator())
     secondcomps = makelist(secondpdf.serverIterator())
     firstfuncs  = sortobjects(filter(firstcomps, [ROOT.RooAbsReal],[ROOT.RooConstVar]))
     secondfuncs = sortobjects(filter(secondcomps,[ROOT.RooAbsReal],[ROOT.RooConstVar]))
-    
+
     classes = set(firstfuncs.keys())
     classes.update(secondfuncs.keys())
     firstfuncsSync,secondfuncsSync = ({},{})
-    for c in classes: 
+    for c in classes:
         if (c in firstfuncs) and (c in secondfuncs):
             firstfuncsSync[c],secondfuncsSync[c] = synchronizeLists(firstfuncs[c],secondfuncs[c])
         elif c in secondfuncs:
@@ -358,12 +358,12 @@ def diffPdfTrees(firstpdf,secondpdf,indent=0):
         elif c in firstfuncs:
             firstfuncsSync[c] = firstfuncs[c]
             secondfuncsSync[c] = [None]*len(firstfuncs[c])
-            
+
     for c in classes:
-        if not c in firstfuncsSync.keys(): 
+        if not c in firstfuncsSync.keys():
             for elem in secondfuncsSync[c]:
                 print("  "*(myindent)+colored(elem.GetName()+"/(None)","red")+ " ("+elem.ClassName()+")")
-        elif not c in secondfuncsSync.keys(): 
+        elif not c in secondfuncsSync.keys():
             for elem in firstfuncsSync[c]:
                 print("  "*(myindent)+colored("(None)/"+elem.GetName(),"red")+ " ("+elem.ClassName()+")")
         else:
@@ -373,8 +373,8 @@ def diffPdfTrees(firstpdf,secondpdf,indent=0):
                 if i < len(secondfuncsSync[c]): second = secondfuncsSync[c][i]
                 else: second = None
                 if first and second:
-                    #if not first.GetName().startswith(second.GetName()) and not second.GetName().startswith(first.GetName()): 
-                    if not compareNames(first,second): 
+                    #if not first.GetName().startswith(second.GetName()) and not second.GetName().startswith(first.GetName()):
+                    if not compareNames(first,second):
                         print("  "*(myindent) + colored("{:s}/{:s} ".format(first.GetName(),second.GetName()),"red") + " ("+c+")")
                         diffPdfTrees(first,second,myindent)
                     else:
@@ -392,14 +392,14 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("wsdiff",description="investigate differences between workspaces")
     parser.add_argument("first",type=str,help="first workspace")
-    parser.add_argument("second",type=str,help="second workspace")    
-    parser.add_argument("--ignore",nargs="+",type=str,default=["auto","alpha","Constraint$","constraint$","_"],help="ignore certain name components")    
-    parser.add_argument("--blacklist",nargs="+",type=str,default=["nom_.*"],help="do not show certain objects")   
-    parser.add_argument("--map",nargs="+",type=str,help="map certain names",default=[])    
+    parser.add_argument("second",type=str,help="second workspace")
+    parser.add_argument("--ignore",nargs="+",type=str,default=["auto","alpha","Constraint$","constraint$","_"],help="ignore certain name components")
+    parser.add_argument("--blacklist",nargs="+",type=str,default=["nom_.*"],help="do not show certain objects")
+    parser.add_argument("--map",nargs="+",type=str,help="map certain names",default=[])
     parser.add_argument('--models',                           dest='models', action='store_true'   , help="show models", default=True )
     parser.add_argument('--no-models',                        dest='models', action='store_false'  , help="do not show models", default=True )
     parser.add_argument('--variables',                           dest='vars', action='store_true'   , help="show variables", default=True )
-    parser.add_argument('--no-variables',                        dest='vars', action='store_false'  , help="do not show variables", default=True )    
+    parser.add_argument('--no-variables',                        dest='vars', action='store_false'  , help="do not show variables", default=True )
     parser.add_argument('--variations',                           dest='variations', action='store_true'   , help="show variations", default=True )
     parser.add_argument('--no-variations',                        dest='variations', action='store_false'  , help="do not show variations", default=True )
     parser.add_argument('--functions',                           dest='funcs', action='store_true'   , help="show functions", default=True )
@@ -407,7 +407,7 @@ if __name__ == "__main__":
     parser.add_argument('--data',                           dest='data', action='store_true'   , help="show data", default=True )
     parser.add_argument('--no-data',                        dest='data', action='store_false'  , help="do not show data", default=True )
     parser.add_argument('--all',                           dest='all', action='store_true'   , help="show list of all objects", default=True )
-    parser.add_argument('--no-all',                        dest='all', action='store_false'  , help="do not show list of all objects", default=True )    
+    parser.add_argument('--no-all',                        dest='all', action='store_false'  , help="do not show list of all objects", default=True )
     parser.add_argument('--tolerance',                      dest='tolerance', type=int, default=4  , help="number of digits in precision to compare" )
     args = parser.parse_args()
     first = getWS(args.first)
@@ -441,7 +441,7 @@ if __name__ == "__main__":
 
     firstmodels = makelist(first.allGenericObjects(),ROOT.RooStats.ModelConfig)
     secondmodels = makelist(second.allGenericObjects(),ROOT.RooStats.ModelConfig)
-    
+
     if args.models:
         print("== models ==")
         diffObjects(first.GetTitle(),secondmodels,firstmodels)
@@ -469,9 +469,9 @@ if __name__ == "__main__":
                     obs.setVal(obs.getMin())
                     obs.setConstant(True)
                 if obs.InheritsFrom(ROOT.RooAbsCategory.Class()):
-                    obs.setIndex(0)                    
+                    obs.setIndex(0)
             for obs in secondobs:
-                if obs.InheritsFrom(ROOT.RooRealVar.Class()):                
+                if obs.InheritsFrom(ROOT.RooRealVar.Class()):
                     obs.setVal(obs.getMin())
                     obs.setConstant(True)
                 if obs.InheritsFrom(ROOT.RooAbsCategory.Class()):
@@ -495,14 +495,14 @@ if __name__ == "__main__":
         print("\n\n== functions ==")
         firstfuncs = makelist(first.allFunctions())
         secondfuncs = makelist(second.allFunctions())
-        diffObjects(second.GetTitle(),firstfuncs,secondfuncs)        
+        diffObjects(second.GetTitle(),firstfuncs,secondfuncs)
         print("")
         diffObjects(first.GetTitle(),secondfuncs,firstfuncs)
         print("")
-        diffFuncVals(first.GetTitle(),firstfuncs,second.GetTitle(),secondfuncs)    
-       
+        diffFuncVals(first.GetTitle(),firstfuncs,second.GetTitle(),secondfuncs)
+
     if args.data:
-        print("\n\n== embedded datasets ==")    
+        print("\n\n== embedded datasets ==")
         firstdata = first.allEmbeddedData()
         seconddata = second.allEmbeddedData()
 #        diffObjects(second.GetTitle(),firstdata,seconddata)
@@ -511,20 +511,20 @@ if __name__ == "__main__":
         print("")
         diffDataVals(first.GetTitle(),firstdata,second.GetTitle(),seconddata,first,second)
 
-        print("\n\n== datasets ==")            
+        print("\n\n== datasets ==")
         firstdata = first.allData()
         seconddata = second.allData()
         diffObjects(second.GetTitle(),firstdata,seconddata)
         print("")
         diffObjects(first.GetTitle(),seconddata,firstdata)
         print("")
-        diffDataVals(first.GetTitle(),firstdata,second.GetTitle(),seconddata,first,second)            
+        diffDataVals(first.GetTitle(),firstdata,second.GetTitle(),seconddata,first,second)
 
     if args.all:
         print("\n\n== generic objects ==")
         firstfuncs = makelist(first.allGenericObjects())
         secondfuncs = makelist(second.allGenericObjects())
-        diffObjects(second.GetTitle(),firstfuncs,secondfuncs)        
+        diffObjects(second.GetTitle(),firstfuncs,secondfuncs)
         print("")
         diffObjects(first.GetTitle(),secondfuncs,firstfuncs)
 
