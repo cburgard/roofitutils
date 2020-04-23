@@ -91,7 +91,7 @@ def main(args):
             raise IOError("unable to find workspace '{:s}' in file '{:s}', available objects of type RooWorkspace are: {:s}".format(args.workspace,args.inFileName,",".join(workspaces)))
         else:
             raise IOError("unable to any workspace in file '{:s}'".format(args.inFileName))
-        
+
     mc = workspace.obj(args.modelconfig)
     if not mc:
         raise IOError("unable to find model config '{:s}' in workspace '{:s}'".format(args.modelconfig,workspace.GetName()))
@@ -102,7 +102,7 @@ def main(args):
 
     for poi in orig_pois:
         workspace.var(poi).setConstant(True)
-    
+
     pdf = mc.GetPdf()
     pdfName = pdf.GetName()
 
@@ -110,8 +110,8 @@ def main(args):
     funcs = {}
     new_pois = []
     new_nps = []
-    new_globs = []    
-    
+    new_globs = []
+
     for m in args.modelFiles:
         if m.endswith(".xml"):
             insertions,assignments = parseXML(m)
@@ -134,7 +134,7 @@ def main(args):
         # replacement
         print("editing PDF with command '{:s}'".format(editstr))
         workspace.factory(editstr)
-        
+
         newpdf = workspace.obj(pdfName)
 
         if not newpdf:
@@ -154,12 +154,12 @@ def main(args):
     newmc.SetGlobalObservables(",".join(sorted(set(new_globs+orig_globs))))
     print("writing output to "+args.outFileName)
     newws.writeToFile(args.outFileName,True)
-    
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("reparametrize a workspace given one (or more) models")
     parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="Input file.", required=True, metavar="path/to/workspace.root")
-    parser.add_argument( "--models"        , type=str,     dest="modelFiles"                  , help="Model file.", required=True, metavar="path/to/model.txt", nargs="+")    
+    parser.add_argument( "--models"        , type=str,     dest="modelFiles"                  , help="Model file.", required=True, metavar="path/to/model.txt", nargs="+")
     parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=True, metavar="output.root")
     parser.add_argument( "--workspace"     , type=str,     dest="workspace"                     , help="name of the workspace." , default="combined" )
     parser.add_argument( "--modelconfig"   , type=str,     dest="modelconfig"                     , help="name of the model config." , default="ModelConfig" )

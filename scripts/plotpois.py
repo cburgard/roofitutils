@@ -1,6 +1,6 @@
 #!/bin/env python
 
-from RooFitUtils.pgfplotter import writepois 
+from RooFitUtils.pgfplotter import writepois
 from RooFitUtils.io import collectresults,collectpoints
 
 if __name__ == '__main__':
@@ -24,10 +24,10 @@ if __name__ == '__main__':
         files = inset[1:]
         collectresults(scans,results,files,label)
 
-    print args.pois
+    print(args.pois)
     poivals = { k: v for k, v in results.items() if k in args.pois}
 
-    print poivals
+    print(poivals)
 
     with open(args.output,"w") as outfile:
        writepois(args.atlas,args.labels[0],poivals,args.output,args.ymax)

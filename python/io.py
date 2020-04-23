@@ -31,7 +31,7 @@ def writeResult(out,result,writehesse):
                 out.write(matrix.GetXaxis().GetBinLabel(i+1)+" ")
                 out.write(matrix.GetYaxis().GetBinLabel(j+1)+" ")
                 out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
-                out.write("\n")                   
+                out.write("\n")
     for scan in result.scans:
         out.write((" ".join(scan.parNames)) + " nll status\n")
         for i in range(0,len(scan.nllValues)):
@@ -46,7 +46,7 @@ def collectpoints(points,files,label):
         print("no points found in "+",".join(files))
         exit(0)
     from RooFitUtils.util import parsedict
-    allpoints = []    
+    allpoints = []
     for filename in filenames:
         if os.path.isfile(filename):
             with open(filename,'r') as infile:
@@ -60,8 +60,8 @@ def reduceparams(allpars,parfilter):
     skimpars = ""
     parpat = re.compile("^"+parfilter)
     for x in allpars:
-        if x.startswith(parfilter) : 
-          skimpars += " "+ texprep(x)
+        if x.startswith(parfilter):
+            skimpars += " "+ texprep(x)
     return skimpars[1:len(skimpars)]
 
 def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
@@ -73,31 +73,31 @@ def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
         with open(filename,"r") as infile:
              lines = [line for line in infile ]
              for lineno in range(0,len(lines)):
-                     line = lines[lineno]
-                     ncorrmatch = ncorrpat.match(line)
-                     if ncorrmatch:
-                         ncorr = int(ncorrmatch.group(1))
-                         lineno = lineno + 1
-                         parline = lines[lineno]
-                         allpars = parline.split(" ")
-                         allpars = allpars[0:len(allpars)-1]
-                         if len(parfilter) != 0: 
-                           redpars = reduceparams(allpars,parfilter) 
-                           parnames.append(redpars)
-                         else:
-			   for x in allpars: parnames.append(texprep(x))
-                         pattern = ""
-                         for x in range(0, ncorr): 
-                           pattern += "([-]*\d+.\d+)[ ]"
-                         rowpat = re.compile("([a-zA-Z0-9_.]+)[ ]([a-zA-Z0-9_.]+)[ ]"+"([-]*\d+.\d+)") 
-                         for lineno in range(lineno,len(lines)):
-                           rowmatch = rowpat.match(lines[lineno])
-                           if rowmatch:
-                               par1 = (rowmatch.group(1),rowmatch.group(2))
-                               if (len(parfilter) != 0 and par1[0].startswith(parfilter) and par1[1].startswith(parfilter)) or len(parfilter) == 0:
-                                  results.append( texprep((par1[0])) +" "+ texprep((par1[1]))+" "+rowmatch.group(3))
+                line = lines[lineno]
+                ncorrmatch = ncorrpat.match(line)
+                if ncorrmatch:
+                    ncorr = int(ncorrmatch.group(1))
+                    lineno = lineno + 1
+                    parline = lines[lineno]
+                    allpars = parline.split(" ")
+                    allpars = allpars[0:len(allpars)-1]
+                    if len(parfilter) != 0:
+                        redpars = reduceparams(allpars,parfilter)
+                        parnames.append(redpars)
+                    else:
+                        for x in allpars: parnames.append(texprep(x))
+                    pattern = ""
+                    for x in range(0, ncorr):
+                        pattern += "([-]*\d+.\d+)[ ]"
+                    rowpat = re.compile("([a-zA-Z0-9_.]+)[ ]([a-zA-Z0-9_.]+)[ ]"+"([-]*\d+.\d+)")
+                    for lineno in range(lineno,len(lines)):
+                        rowmatch = rowpat.match(lines[lineno])
+                        if rowmatch:
+                            par1 = (rowmatch.group(1),rowmatch.group(2))
+                            if (len(parfilter) != 0 and par1[0].startswith(parfilter) and par1[1].startswith(parfilter)) or len(parfilter) == 0:
+                                results.append( texprep((par1[0])) +" "+ texprep((par1[1]))+" "+rowmatch.group(3))
     parnames = (parnames[0])
-    
+
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re
@@ -108,7 +108,7 @@ def collectresults(scans,results,files,label):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        print filenames
+        print(filenames)
         print("no points found in "+",".join(files))
         exit(0)
     for filename in filenames:
@@ -140,17 +140,17 @@ def collectresults(scans,results,files,label):
                         else:
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
-			    print pvals, nllval
+                            print(pvals, nllval)
                             scans[key][label][pvals] = nllval
                     except KeyError:
                         if nllmatch:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value")
                         elif match:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as parameter value")
-                        else:      
+                        else:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"'")
                         continue
-                            
+
                 for p in scans.keys():
                     if p in results.keys():
                         scans[p][label][results[p][label][0]]=minnll;

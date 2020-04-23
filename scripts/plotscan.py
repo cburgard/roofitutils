@@ -46,7 +46,7 @@ if __name__ == '__main__':
     results = {}
 
     scans_merge = {}
-    results_merge = {}  
+    results_merge = {}
 
     mergeinp = ""
     for inset in args.input:
@@ -57,15 +57,15 @@ if __name__ == '__main__':
         for inset in args.mergeinput:
             label,files = parseInput(inset)
             collectresults(scans_merge,results_merge,files_merge,label_merge)
-    
+
     points = {}
     for inset in args.points:
         label,files = parseInput(inset)
         collectpoints(points,files,label)
-        
+
     if len(scans) == 0 and len(results) == 0:
         print("no files found matching any of the given input paths")
-    
+
     pois = [tuple(p.split(",")) for p in args.poi]
 
     scans1d       = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
