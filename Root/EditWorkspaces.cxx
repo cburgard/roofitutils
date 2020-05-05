@@ -43,6 +43,7 @@ Author: Tim Adye <T.J.Adye@rl.ac.uk>, 23 Oct 2014.
 #include "TFile.h"
 #include "TIterator.h"
 #include "TKey.h"
+#include "TError.h"
 #include "TNamed.h"
 #include "TObjArray.h"
 #include "TPRegexp.h"
