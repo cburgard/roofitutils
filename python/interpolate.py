@@ -1,4 +1,3 @@
-#!/bin/evn python
 
 inf = float("inf")
 nan = float("nan")

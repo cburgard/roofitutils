@@ -1,5 +1,4 @@
-#!/bin/env python
-
+#!/usr/bin/env python
 def main(args):
     import gc
     gc.disable()

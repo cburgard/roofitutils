@@ -1,4 +1,3 @@
-#!/bin/evn python
 
 _nodel = []
 def nodel(something):
@@ -331,4 +330,54 @@ def createAsimov(ws,mc,asmName):
     asimovData.SetName(asmName)
     getattr(ws,"import")(asimovData)
 
+def makePOIstring(infilename):
+  from ROOT import TFile, RooStats
+  f = TFile.Open(infilename)
+  for key in f.GetListOfKeys():
+    if "ProcessID" not in key.GetName():
+      wkspc = f.Get(key.GetName())
+      modelconfig = wkspc.obj("ModelConfig")
+      pois = modelconfig.GetParametersOfInterest()
+      itr = pois.createIterator()
+      pois, var = "", itr.Next()
+      while var:
+        pois = pois + var.GetName() + ","
+        var = itr.Next()
+      pois = pois[0:len(pois)-1]
+  return pois
 
+def retriveObj(filename):
+  import ROOT
+  file0 = ROOT.TFile.Open(filename)
+  for x in file0.GetListOfKeys():
+    if "ProcessID" not in x.GetName():
+      obj = file0.Get(x.GetName())
+  return obj
+
+def makepctstring(pois,pct):
+  pctstring, npois = "", len(pois.split(","))
+  for i in range(0,npois): pctstring = pctstring + str(pct)+","
+  return pctstring[0:len(pctstring)-1]
+
+def getjobdims(dim,time):
+ import math
+ dimred = dim/1000.
+ t = 25*dimred*dimred*dimred*dimred
+ # split into n jobs such that 
+ njobs = int(math.ceil(t/time))
+ dimsize = int(math.ceil(dim/njobs))
+ k = 0
+ dims = []
+ for i in range(0,njobs):
+   lo = k 
+   hi = k+dimsize
+   if lo >=dim: break
+   if hi >=dim: hi = dim
+   dims.append([lo,hi])
+   k = k+dimsize+1
+ return dims
+
+def getnofNPs(hesse,pois):
+  N = hesse.GetNcols()
+  npois = len(pois.strip(","))
+  return N - npois

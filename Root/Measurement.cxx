@@ -253,11 +253,11 @@ void RooFitUtils::Measurement::initialise() {
   // Make the fPdf the physics pdf of the model
   fPdf = (RooSimultaneous *)thisSim;
 
-  // Prune nuisance parameters if requested
+  /* Prune nuisance parameters if requested
   if (fIsPrunable) {
     PruneNuisanceParameters();
-  }
-
+  }*/
+  
   // All initialised
   fIsInitialised = kTRUE;
 }

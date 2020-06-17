@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from RooFitUtils.pgfplotter import writescans1d,writemergescans2d,writescans2d
 from RooFitUtils.io import collectresults,collectpoints

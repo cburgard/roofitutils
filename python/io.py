@@ -1,4 +1,3 @@
-#!/bin/evn python
 
 import os
 
@@ -13,14 +12,14 @@ def texprep(string):
     else : x = string
     return x
 
-def writeResult(out,result,writehesse):
+def writeResult(out,result,writecorrmat):
     if result.min.nll:
         out.write("Minimization: minNll = ")
         out.write(str(result.min.nll))
         out.write("\n")
         for p in result.parameters:
             out.write("{0:s} = {1:g} - {2:g} + {3:g}\n".format(p.name,p.value,abs(p.errLo),abs(p.errHi)))
-    if result.fit and writehesse:
+    if result.fit and writecorrmat:
         matrix = result.fit.correlationHist()
         out.write("Correlations {:d}\n".format(matrix.GetNbinsX()))
         for i in range (0,matrix.GetXaxis().GetNbins()):

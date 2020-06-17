@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from RooFitUtils.pgfplotter import writepois
 from RooFitUtils.io import collectresults,collectpoints
@@ -31,4 +31,3 @@ if __name__ == '__main__':
 
     with open(args.output,"w") as outfile:
        writepois(args.atlas,args.labels[0],poivals,args.output,args.ymax)
-#
