@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import sys
 from RooFitUtils.util import makelist
@@ -37,7 +37,6 @@ def buildModel(args):
                                            args.binnedLikelihood, "pdf_")
 
     if args.fixAllNP:          model.fixNuisanceParameters()
-#   if args.breakdownErrors:   model.breakdownErrors()
     if args.setInitialError:   model.setInitialErrors()
     if args.fixParameters:     model.fixParameters(",".join(args.fixParameters))
 
@@ -95,6 +94,7 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.NumCPU(args.numCPU, args.mpStrategy),
                 ROOT.RooFit.Offset(args.offsetting),
                 ROOT.RooFit.Optimize(args.constOpt),
+                ROOT.RooFit.PrintLevel(args.printLevel),
                 ROOT.RooFit.Precision(args.precision),
                 ROOT.RooFit.Hesse(args.hesse),
                 ROOT.RooFit.Save()]
@@ -202,24 +202,12 @@ def fit(args,model,minimizer):
             outpath,outfile = os.path.split(args.outFileName)
             mkdir(outpath)
             with open(args.outFileName,'w') as out:
-                writeResult(out,result,args.hesse)
+                writeResult(out,result,args.correlationMatrix)
             print("wrote output to "+args.outFileName)
-            if args.correlationMatrix:
-                from ROOT import TCanvas, TGraphErrors
-                from ROOT import gROOT
-                fitresult = minimizer.GetFitResult()
-                fitresult.printArgs()
-                paramset = model.GetParameterSet()
-                obs = model.GetObservables()
-                corrmatrix = fitresult.correlationMatrix()
-                c1 = TCanvas( 'c1', 'A Simple Graph with error bars', 200, 10, 700, 500 )
-                c1.SetGrid()
-                c1.GetFrame().SetFillColor( 21 )
-                c1.GetFrame().SetBorderSize( 12 )
-                corrmatrix.Draw( 'ALP' )
-                c1.Print("output.pdf")
-                obs.Print()
-                paramset.Print()
+        if args.writeResult:
+            outpath,outfile = os.path.split(args.outFileName.strip(".txt")+".root")
+	    minimizer.GetHesseMatrix().SaveAs(outfile+"_hesse.root")
+            result.fit.SaveAs(outfile+"_fitresult.root")
         else:
             print("no output requested")
     else:
@@ -338,6 +326,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--data"          , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
     arglist.append(parser.add_argument( "--minimizerType" , type=str,     dest="minimizerType"              , help="Minimizer type.", default="Minuit2" ))
     arglist.append(parser.add_argument( "--minimizerAlgo" , type=str,     dest="minimizerAlgo"              , help="Minimizer algorithm.", default="Migrad" ))
+    arglist.append(parser.add_argument( "--printLevel" , type=int,     dest="printLevel"              , help="print level of minimizer", default=1))
     arglist.append(parser.add_argument( "--hesse"         , action='store_true',    dest="hesse"       , help="enable HESSE", default=False ))
     arglist.append(parser.add_argument( "--no-hesse"      , action='store_false',   dest="hesse"         , help="disable HESSE", default=False ))
     arglist.append(parser.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=1 ))
@@ -351,8 +340,8 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--no-starfix"    , action='store_false',   dest="fixCache"                   , help="Do not fix StarMomentMorph cache.", default=False ))
     arglist.append(parser.add_argument( "--multifix"      , action='store_true',    dest="fixMulti"                   , help="Fix MultiPdf level 2.", default=True ))
     arglist.append(parser.add_argument( "--no-multifix"   , action='store_false',   dest="fixMulti"                   , help="Do not fix MultiPdf level 2.", default=False ))
-    arglist.append(parser.add_argument( "--precision"     , type=float,   dest="precision"                  , help="Precision for scan.", default=0.001 ))
-    arglist.append(parser.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=5e-2 ))
+    arglist.append(parser.add_argument( "--precision"     , type=float,   dest="precision"                  , help="Precision for scan.", default=0.0005 ))
+    arglist.append(parser.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=0.01 ))
     arglist.append(parser.add_argument( "--eigen"         , action='store_true',   dest="eigendecomposition"         , help="Eigenvalues and vectors.", default=False ))
     arglist.append(parser.add_argument( "--offset"        , action='store_true',   dest="offsetting"                 , help="Offset likelihood.", default=True ))
     arglist.append(parser.add_argument( "--no-offset"     , action='store_false',  dest="offsetting"                 , help="Do not offset likelihood.", default=False ))
@@ -366,6 +355,8 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
     arglist.append(parser.add_argument( "--correlationMatrix", action='store_true',   dest="correlationMatrix",help="option to save correlation matrix", default=False ))
+    arglist.append(parser.add_argument( "--printHesse", action='store_true',   dest="printHesse",help="option to print Hesse matrix", default=False ))
+    arglist.append(parser.add_argument( "--writeResult", action='store_true',   dest="writeResult",help="option to write the RooFitResult and HESSE matrix", default=False ))
 
     args = parser.parse_args()
 

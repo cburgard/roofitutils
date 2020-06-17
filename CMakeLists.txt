@@ -137,6 +137,16 @@ ELSE()
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libRooFitUtils_rdict.pcm DESTINATION lib)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libRooFitUtils.rootmap DESTINATION lib)
 
+
+  file(GLOB pyfiles "scripts/*")
+  foreach(pyfile ${pyfiles})
+    install(FILES
+      ${pyfile}
+      PERMISSIONS OWNER_EXECUTE
+      DESTINATION bin
+    )
+  endforeach()
+
   install(FILES
     "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake"
     DESTINATION cmake

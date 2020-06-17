@@ -1,6 +1,6 @@
 #include "RooFitUtils/AbsMeasurement.h"
 #include "RooFitUtils/ExtendedMinimizer.h"
-
+#include "TKey.h"
 #include "TArrayI.h"
 #include "TH1.h"
 #include "TMath.h"
@@ -67,9 +67,8 @@ RooFitUtils::AbsMeasurement::~AbsMeasurement() {
 
 void RooFitUtils::AbsMeasurement::enablePruning(const std::string &poi,
                                                 const std::string &filter,
-                                                const std::string &weight,
-                                                const std::string &threshold,
-                                                int additionalDigit) {
+                                                const std::string &percentage) {
+
   coutP(InputArguments) << "AbsMeasurement::enablePruning(" << fName
                         << ") pruning enabled" << std::endl;
   std::cout << "\n*************************************************************"
@@ -97,28 +96,38 @@ void RooFitUtils::AbsMeasurement::enablePruning(const std::string &poi,
   fIsPrunable = kTRUE;
   fPruningPoi = poi;
   fPruningFilter = filter;
-  fPruningWeight = weight;
-  fPruningThreshold = threshold;
-  fPruningAdditionalDigit = additionalDigit;
+  fPruningPercentage = percentage;
 }
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::AbsMeasurement::SetPrunedNuisanceParameters(
-    std::string parameters) {
-  TString allParameters = parameters;
-  allParameters.ReplaceAll(" ", "");
-  TObjArray *allParametersArray = allParameters.Tokenize(",");
-  unsigned int numParameters = allParametersArray->GetEntries();
-  for (unsigned int itrPar = 0; itrPar < numParameters; ++itrPar) {
-    TString thisPar =
-        ((TObjString *)allParametersArray->At(itrPar))->GetString();
-    fPrunedNuisanceParameters.push_back(thisPar.Data());
-  }
+void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
+     std::string infilename, std::string insnapshot, 
+     std::string parameters, std::string outwsname,
+     std::string outsnapshot){
+   TFile* file = new TFile(infilename.c_str(),"READ");
+   TIter next(file->GetListOfKeys()); TKey *key;
+   RooWorkspace* ws;
+    while ((key = (TKey*)next())) {
+      TString keyname = key->GetName();
+      if (!keyname.Contains("ProcessID"))
+      ws = (RooWorkspace*) file->Get(keyname);
+     }
+   ws->loadSnapshot(insnapshot.c_str());
+   TString allParameters = parameters;
+   allParameters.ReplaceAll(" ", "");
+   TObjArray *allParametersArray = allParameters.Tokenize(",");
+   unsigned int numParameters = allParametersArray->GetEntries();
+   for (unsigned int itrPar = 0; itrPar < numParameters; ++itrPar) {
+     TString varname = ((TObjString *)allParametersArray->At(itrPar))->GetString();
+     ws->var(varname)->setConstant(kTRUE);
+   }
+   ws->saveSnapshot(outsnapshot.c_str(), parameters.c_str());
+   ws->writeToFile(outwsname.c_str(),kFALSE);
 }
 
 // ____________________________________________________________________________|__________
-
+/*
 void RooFitUtils::AbsMeasurement::PruneNuisanceParameters() {
   coutP(ObjectHandling)
       << "AbsMeasurement::PruneNuisanceParameters(" << fName
@@ -153,157 +162,94 @@ void RooFitUtils::AbsMeasurement::PruneNuisanceParameters() {
   RooFitResult *fitresult = minimizer.GetFitResult();
   TMatrixDSym hesse = minimizer.GetHesseMatrix();
 
-  fPrunedNuisanceParameters = PruneNuisanceParameters(
-      hesse, fitresult, fPruningPoi, fPruningFilter, fPruningWeight,
-      fPruningThreshold, fPruningAdditionalDigit, fPrunedNuisanceParameters);
+//  auto x = PruneNuisanceParameters( hesse, fitresult, fPruningPoi, fPruningFilter, 
+//                                    fPruningPercentage, fPrunedNuisanceParameters);
 
   fWorkSpace->loadSnapshot("tmpBeforePruning");
 
   delete fitresult;
-}
+}*/
 
 // ____________________________________________________________________________|__________
 
-std::list<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
-    const TMatrixDSym chesse, RooFitResult *fitresult, const std::string &poi,
-    const std::string &filter, const std::string &weight,
-    const std::string &threshold, int additionalDigit,
-    std::list<std::string> prePrunedParameters) {
-  // Ranking/pruning function. Compute symmetric uncertainty on POIs using the
-  // Hessian matrix. Remove iteratively a single NP and compare uncertainty from
-  // reduced Hessian matrix to initial one. Multiple POIs are combined by
-  // computing
-  // the weighted average and propagating the partial uncertainties and taking
-  // the
-  // OR of the individual rankings.
+std::set<std::pair<double,std::string>> RooFitUtils::AbsMeasurement::OrderNuisanceParameters(
+  const TMatrixDSym chesse, RooFitResult *fitresult, const std::string &poi,
+  const std::string &filter, unsigned int nlo, unsigned nhi) {
+  // Ranking/pruning function 
+  // Two step Procedure -
+  // 1. Rank the nuisance parameters according to a criteria 
+  //    current criteria is,
+  //    rank(NP) = max. (fractional change in variance due NP) over all POIs
+  // 
 
   // Decompose POI names and associated weights and thresholds
   TString allPoi = poi;
-  TString allWeight = weight;
-  TString allThreshold = threshold;
   TString allFilter = filter;
   allPoi.ReplaceAll(" ", "");
-  allWeight.ReplaceAll(" ", "");
-  allThreshold.ReplaceAll(" ", "");
   allFilter.ReplaceAll(" ", "");
   TObjArray *allPoiArray = allPoi.Tokenize(",");
-  TObjArray *allWeightArray = allWeight.Tokenize(",");
-  TObjArray *allThresholdArray = allThreshold.Tokenize(",");
   TObjArray *allFilterArray = allFilter.Tokenize(",");
   unsigned int numPoi = allPoiArray->GetEntries();
-  unsigned int numWeight = allWeightArray->GetEntries();
-  unsigned int numThreshold = allThresholdArray->GetEntries();
   unsigned int numFilter = allFilterArray->GetEntries();
-
-  // Check if number of POIs and weights match
-  if (numPoi != numWeight && numWeight != 1) {
-    coutE(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
-                          << ") Number of POIs does not match number of "
-                             "specified weights. No additional pruning."
-                          << std::endl;
-    return prePrunedParameters;
-  }
-
-  // Check if number of POIs and thresholds match
-  if (numPoi != numThreshold && numThreshold != 1) {
-    coutE(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
-                          << ") Number of POIs does not match number of "
-                             "specified thresholds. No additional pruning."
-                          << std::endl;
-    return prePrunedParameters;
-  }
 
   // Store information in easier usable objects
   std::vector<TString> PoiList;
-  std::map<std::string, double> WeightList;
-  std::map<std::string, TString> ThresholdList;
-  std::map<std::string, double> ThresholdCutList;
   std::vector<TString> FilterList;
-  double totalWeights = 0.0;
 
+  // Loop over the POIs to check for pruning and collect assigned percentages
   for (unsigned int itrPoi = 0; itrPoi < numPoi; ++itrPoi) {
     TString thisPoi = ((TObjString *)allPoiArray->At(itrPoi))->GetString();
-    TString thisWeight =
-        (numWeight == 1)
-            ? ((TObjString *)allWeightArray->At(0))->GetString()
-            : ((TObjString *)allWeightArray->At(itrPoi))->GetString();
-    TString thisThreshold =
-        (numThreshold == 1)
-            ? ((TObjString *)allThresholdArray->At(0))->GetString()
-            : ((TObjString *)allThresholdArray->At(itrPoi))->GetString();
-    double tmpWeight = atof(thisWeight.Data());
-
-    TObjArray *thisThresholdArray = thisThreshold.Tokenize(":");
-    TString thisSaveThreshold =
-        ((TObjString *)thisThresholdArray->At(0))->GetString();
-    double thisThresholdCut =
-        (thisThresholdArray->GetEntries() == 1)
-            ? 0.0
-            : atof(((TObjString *)thisThresholdArray->At(1))
-                       ->GetString()
-                       .Data());
-
     PoiList.push_back(thisPoi);
-    WeightList[thisPoi.Data()] = tmpWeight;
-    ThresholdList[thisPoi.Data()] = thisSaveThreshold;
-    ThresholdCutList[thisPoi.Data()] = thisThresholdCut;
-
-    totalWeights += tmpWeight;
-
-    coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+    coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
                           << ") Parsed POI " << thisPoi.Data()
-                          << ", assigning weight " << tmpWeight
-                          << " and threshold " << thisThreshold.Data()
                           << std::endl;
   }
 
+  // Check if there are filters for checking the nuisance parameters to prune
+  // in a particular order
   if (numFilter > 0) {
-    coutI(ObjectHandling)
-        << "AbsMeasurement::PruneNuisanceParameters(" << fName
-        << ") Nuisance parameters will be pruned in the following order:";
+    coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
+			  << ") Nuisance parameters will be pruned in the following order:";
+
     for (unsigned int itrSet = 0; itrSet < numFilter; ++itrSet) {
       TString thisSet = ((TObjString *)allFilterArray->At(itrSet))->GetString();
       FilterList.push_back(thisSet);
       std::cout << " " << thisSet.Data() << ";";
     }
-    std::cout << std::endl;
-  } else {
-    coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+
+  }
+  // If none are provide choose all the nuisance paramter in the model to check 
+  // for pruning
+  else {
+    coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
                           << ") Include all parameters in ranking" << std::endl;
     FilterList.push_back(".*");
   }
-
+  std::cout << std::endl;
   // Clean up
   delete allPoiArray;
-  delete allWeightArray;
-  delete allThresholdArray;
   delete allFilterArray;
 
-  // Normalize weights
-  for (auto itrWeight = WeightList.begin(); itrWeight != WeightList.end();
-       ++itrWeight) {
-    WeightList[itrWeight->first] = itrWeight->second / totalWeights;
-  }
-
   // Print the RooFitResult used for pruning
-  fitresult->Print();
+  // fitresult->Print();
 
   // Get initial information, such as
   //   - covariance matrix
   //   - floating parameters
   //   - position of POIs in the list of floating parameters
   //   - best fit and initial Hesse error
-  // TMatrixDSym cov = fitresult->covarianceMatrix();
   TMatrixDSym hes(chesse);
   TMatrixDSym cov(hes.Invert());
   RooArgList pars = fitresult->floatParsFinal();
 
+  // maps to keep track of the position, initial error, best fit value
+  // and the sign of the init error
   std::map<std::string, int> index;
   std::map<std::string, double> initErr;
   std::map<std::string, double> bestFit;
   std::map<std::string, double> initErrSig;
 
-  // map<std::string, double> ThresholdList;
+  // loop over the pois to prune and extract the necessary info.
   for (std::vector<TString>::const_iterator itr = PoiList.begin(),
                                             end = PoiList.end();
        itr != end; ++itr) {
@@ -311,7 +257,209 @@ std::list<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
     double thisInitErr = sqrt(cov[thisIndex][thisIndex]);
     double thisBestFit = ((RooRealVar *)pars.at(thisIndex))->getVal();
     std::pair<double, double> tmpVals =
-        PDGrounding(thisBestFit, thisInitErr, additionalDigit);
+        std::make_pair(thisBestFit, thisInitErr);
+
+    index[itr->Data()] = thisIndex;
+    initErr[itr->Data()] = thisInitErr;
+    initErrSig[itr->Data()] = tmpVals.second;
+    bestFit[itr->Data()] = thisBestFit;
+
+    coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
+                          << ") Harvest parameter (" << thisIndex
+                          << "): " << *itr << " with Hesse error "
+                          << tmpVals.first << " (" << thisBestFit << ") +/- "
+                          << tmpVals.second << " (" << thisInitErr << ")"
+                          << std::endl;
+  }
+
+  // Ranking step starts here.
+  // Iteratively remove parameters and recompute Hesse uncertainty
+  // on the POI and obtain the max. of their fractional changes
+  // final ranking.
+  // Maybe filter list of parameters to prune base on regexp.
+
+
+  // ranks is a set of the NP and their estimated rank rank
+  std::set<std::pair<double, std::string>> ranks;
+  unsigned int tmpSum = pars.getSize() + 1 - numPoi;
+  // Start looping over the different NP sets if any order is mentioned
+  // if everything is looked at in one go
+  for (std::vector<TString>::const_iterator itrFilter = FilterList.begin(),
+                                            end = FilterList.end();
+       itrFilter != end; ++itrFilter) {
+    TString thisFilter = *itrFilter;
+    std::string stringFilter = thisFilter.Data();
+
+    TRegexp reg(thisFilter);
+    Ssiz_t dummy(0);
+
+    // loop over all the parameters that are floating in the final fit
+    // and find their rank 
+    unsigned int itrpos = 0;
+    nhi = (nhi > 0) ? nhi : tmpSum;
+    coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
+			  << ") Estimating ranks for " << nhi - nlo + 1 
+                          << " nuisance parameters." << std::endl;
+
+    for (RooLinkedListIter it = pars.iterator();
+         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+      std::string name = v->GetName();
+      ++itrpos;
+      if (itrpos  <= nlo || itrpos > nhi + 1) continue;
+      // Skip removing POIs
+      if (allPoi.Contains(name) || (stringFilter != "" &&
+          reg.Index(TString(v->GetName()), &dummy, 0) == -1)) continue;
+
+      std::list<std::string> names;
+     
+      // make and invert reduced hesse matrix used for ranking 
+      names.push_back(name);
+      TMatrixDSym tmp_hesse(chesse);
+      RooArgList tmp_pars = fitresult->floatParsFinal();
+      RemoveParameter(tmp_hesse, tmp_pars, names);
+      TMatrixDSym tmp_cov = tmp_hesse.Invert();
+
+      // calculating the rank of the nuisance parameter
+      // -- find the absolute fractional change in 
+      //    variance relative to the intial error 
+      //    for all POIs and then choose
+      //    the maximum from this group
+
+      std::vector<double> poisfracErr;
+      std::map<std::string, int> index_red;
+      for (std::vector<TString>::const_iterator itr = PoiList.begin(),
+           end = PoiList.end(); itr != end; ++itr) {
+ 
+        int thisIndex = tmp_pars.index(itr->Data());
+	double thisErr = sqrt(tmp_cov[thisIndex][thisIndex]);
+ 	index_red[itr->Data()] = thisIndex;
+
+	double diff = initErr[itr->Data()] - thisErr;
+	double fracErr = diff/(initErr[itr->Data()]);
+	poisfracErr.push_back(std::abs(fracErr));
+      }
+
+      // find the maximum amongst the group of absolute fractional variance changes
+      double max_val = *std::max_element(std::begin(poisfracErr), std::end(poisfracErr));
+      ranks.insert(std::make_pair(max_val, name));
+    }
+  }
+    coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
+			  << ") Ranked " << ranks.size() 
+                          << " nuisance parameters." << std::endl;
+    return ranks;
+}
+
+// ____________________________________________________________________________|__________
+
+std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
+  std::set<std::pair<double,std::string>> ranks,
+  const TMatrixDSym chesse, RooFitResult *fitresult,
+  const std::string &poi,const std::string &percentage, const std::string &filter) {
+
+// 2. Once ranked find the largest ranked nuisance parameter 
+//    by performing a binary search
+//    -- if necessary the remain NPs can be also checked using checkAll option
+
+  // Decompose POI names and associated weights and thresholds
+  TString allPoi = poi;
+  TString allPercentage = percentage;
+  TString allFilter = filter;
+  allPoi.ReplaceAll(" ", "");
+  allFilter.ReplaceAll(" ", "");
+  allPercentage.ReplaceAll(" ", "");
+  TObjArray *allPoiArray = allPoi.Tokenize(",");
+  TObjArray *allFilterArray = allFilter.Tokenize(",");
+  TObjArray *allPercentageArray = allPercentage.Tokenize(",");
+  unsigned int numPoi = allPoiArray->GetEntries();
+  unsigned int numFilter = allFilterArray->GetEntries();
+  unsigned int numPercentage = allPercentageArray->GetEntries();
+
+  // Check if number of POIs and percentages match
+  if (numPoi != numPercentage && numPercentage != 1) {
+    coutE(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+                          << ") Number of POIs does not match number of "
+                             "specified threshold percentages. No additional pruning."
+                          << std::endl;
+    return std::set<std::string>();
+  }
+  // Store information in easier usable objects
+  std::vector<TString> PoiList;
+  std::map<std::string, double> PercentageList;
+  std::vector<TString> FilterList;
+
+  // Loop over the POIs to check for pruning and collect assigned percentages
+  for (unsigned int itrPoi = 0; itrPoi < numPoi; ++itrPoi) {
+    TString thisPoi = ((TObjString *)allPoiArray->At(itrPoi))->GetString();
+    TString thisPercentage =
+      	    (numPercentage == 1)
+     	    ? ((TObjString *)allPercentageArray->At(0))->GetString()
+            : ((TObjString *)allPercentageArray->At(itrPoi))->GetString();
+
+    double tmpPercentage = atof(thisPercentage.Data());
+
+    PoiList.push_back(thisPoi);
+    PercentageList[thisPoi.Data()] = 0.01*tmpPercentage;
+    coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+                          << ") Parsed POI " << thisPoi.Data()
+                          << ", assigning percentage " << tmpPercentage << " %"
+                          << std::endl;
+  }
+
+  // Check if there are filters for checking the nuisance parameters to prune
+  // in a particular order
+  if (numFilter > 0) {
+    coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+              << ") Nuisance parameters will be pruned in the following order:";
+
+    for (unsigned int itrSet = 0; itrSet < numFilter; ++itrSet) {
+      TString thisSet = ((TObjString *)allFilterArray->At(itrSet))->GetString();
+      FilterList.push_back(thisSet);
+      std::cout << " " << thisSet.Data() << ";";
+    }
+
+  }
+  // If none are provide choose all the nuisance paramter in the model to check 
+  // for pruning
+  else {
+   coutI(ObjectHandling)  << "AbsMeasurement::PruneNuisanceParameters(" << fName
+                          << ") Include all parameters in ranking" << std::endl;
+    FilterList.push_back(".*");
+  }
+  std::cout << std::endl;
+  // Clean up
+  delete allPoiArray;
+  delete allPercentageArray;
+  delete allFilterArray;
+
+  // Print the RooFitResult used for pruning
+  // fitresult->Print();
+
+  // Get initial information, such as
+  //   - covariance matrix
+  //   - floating parameters
+  //   - position of POIs in the list of floating parameters
+  //   - best fit and initial Hesse error
+  TMatrixDSym hes(chesse);
+  TMatrixDSym cov(hes.Invert());
+  RooArgList pars = fitresult->floatParsFinal();
+
+  // maps to keep track of the position, initial error, best fit value
+  // and the sign of the init error
+  std::map<std::string, int> index;
+  std::map<std::string, double> initErr;
+  std::map<std::string, double> bestFit;
+  std::map<std::string, double> initErrSig;
+
+  // loop over the pois to prune and extract the necessary info.
+  for (std::vector<TString>::const_iterator itr = PoiList.begin(),
+                                            end = PoiList.end();
+       itr != end; ++itr) {
+    int thisIndex = pars.index(itr->Data());
+    double thisInitErr = sqrt(cov[thisIndex][thisIndex]);
+    double thisBestFit = ((RooRealVar *)pars.at(thisIndex))->getVal();
+    std::pair<double, double> tmpVals =
+        std::make_pair(thisBestFit, thisInitErr);
 
     index[itr->Data()] = thisIndex;
     initErr[itr->Data()] = thisInitErr;
@@ -326,53 +474,16 @@ std::list<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
                           << std::endl;
   }
 
-  // Compute the weighted average of POIs
-  double totalBestFit = 0.0;
-  for (std::vector<TString>::const_iterator itr = PoiList.begin(),
-                                            end = PoiList.end();
-       itr != end; ++itr) {
-    totalBestFit += WeightList[itr->Data()] * bestFit[itr->Data()];
-  }
+  // Ranking step starts here.
+  // Iteratively remove parameters and recompute Hesse uncertainty
+  // on the POI and obtain the max. of their fractional changes
+  // final ranking.
+  // Maybe filter list of parameters to prune base on regexp.
 
-  // Compute uncertainty on the weighted average of the POIs using error
-  // propagation.
-  // This takes into account the two-point correlations between the POIs.
-  double initTotalErrorSquared = 0.0;
-
-  for (std::vector<TString>::const_iterator itr = PoiList.begin(),
-                                            end = PoiList.end();
-       itr != end; ++itr) {
-    for (std::vector<TString>::const_iterator jtr = PoiList.begin(),
-                                              end = PoiList.end();
-         jtr != end; ++jtr) {
-      initTotalErrorSquared += WeightList[itr->Data()] *
-                               WeightList[jtr->Data()] *
-                               cov[index[itr->Data()]][index[jtr->Data()]];
-    }
-  }
-  double initTotalError = sqrt(initTotalErrorSquared);
-
-  coutI(ObjectHandling)
-      << "AbsMeasurement::PruneNuisanceParameters(" << fName
-      << ") Initial averaged POI with propagated uncertainties: "
-      << totalBestFit << " +/- " << initTotalError << std::endl;
-  ;
-
-  // Ranking starts here.
-  // Iteratively remove parameters and recompute Hesse uncertainty on the POI
-  // and on
-  // the averaged parameter used for the final ranking. Maybe filter list of
-  // parameters
-  // to prune base on regexp.
-  std::list<std::string> order = prePrunedParameters;
   unsigned int allParams = pars.getSize();
-  for (auto itr = order.begin(); itr != order.end(); ++itr) {
-    std::string name(*itr);
-    int par2rem_index = pars.index(name.c_str());
-    pars.remove(*pars.at(par2rem_index));
-  }
-  std::set<std::pair<double, std::string>> uncertsPmO;
-
+  std::set<std::string> finalNPnames;
+  // Start looping over the different NP sets if any order is mentioned
+  // if everything is looked at in one go
   for (std::vector<TString>::const_iterator itrFilter = FilterList.begin(),
                                             end = FilterList.end();
        itrFilter != end; ++itrFilter) {
@@ -382,258 +493,194 @@ std::list<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
     TRegexp reg(thisFilter);
     Ssiz_t dummy(0);
 
-    while ((unsigned int)order.size() < allParams - (numPoi + 1)) {
-      std::set<std::pair<double, std::string>> uncerts;
-      std::map<std::string, std::set<std::pair<double, std::string>>>
-          part_uncerts;
+    // ranks is a set of the NP and their estimated rank rank
+    // part_uncerts is the variance change due to the NP for all POIs
+    if (ranks.empty()) break;
 
-      for (RooLinkedListIter it = pars.iterator();
-           RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
-        std::string name = v->GetName();
-
-        // Skip removing POIs
-        if (allPoi.Contains(name)) {
-          continue;
-        }
-
-        // Apply filtering on a subset of parameters
-        if (stringFilter != "" &&
-            reg.Index(TString(v->GetName()), &dummy, 0) == -1) {
-          continue;
-        }
-
-        // Attach current parameter to a temporary list of parameters that
-        // should be removed from
-        // Hesse matrix. This includes the previously ranked, and already
-        // removed parameters.
-        std::list<std::string> names = order;
-        names.push_back(name);
-
-        // Grab covariance matrix and floating parameters for doing
-        // calculations. These objects will
-        // be modified for every parameter, and thus need to be reverted to the
-        // original ones in
-        // in every iteration.
-        // TMatrixDSym tmp_cov = fitresult->covarianceMatrix();
-        TMatrixDSym tmp_hesse(chesse);
-        RooArgList tmp_pars = fitresult->floatParsFinal();
-
-        // Reduce temporary Hesse matrix by a set of parameters and keep track
-        // of the parameters left
-        RemoveParameter(tmp_hesse, tmp_pars, names);
-        TMatrixDSym tmp_cov = tmp_hesse.Invert();
-
-        // Harvest and store reduced components
-        std::map<std::string, int> index_red;
-        // map<string, double > errred;
-        for (std::vector<TString>::const_iterator itr = PoiList.begin(),
-                                                  end = PoiList.end();
-             itr != end; ++itr) {
-          int thisIndex = tmp_pars.index(itr->Data());
-          double thisErr = sqrt(tmp_cov[thisIndex][thisIndex]);
-
-          index_red[itr->Data()] = thisIndex;
-          // errred[itr->Data()] = thisErr;
-
-          // Store individual uncertainties for reference
-          part_uncerts[itr->Data()].insert(std::make_pair(thisErr, name));
-        }
-
-        // Compute uncertainty on the weighted average of the POIs using error
-        // propagation.
-        // This takes into account the two-point correlations between the POIs.
-        double redTotalErrorSquared = 0.0;
-        for (std::vector<TString>::const_iterator i = PoiList.begin(),
-                                                  end = PoiList.end();
-             i != end; ++i) {
-          for (std::vector<TString>::const_iterator j = PoiList.begin(),
-                                                    end = PoiList.end();
-               j != end; ++j) {
-            redTotalErrorSquared +=
-                WeightList[i->Data()] * WeightList[j->Data()] *
-                tmp_cov[index_red[i->Data()]][index_red[j->Data()]];
-          }
-        }
-        double redTotalError = sqrt(redTotalErrorSquared);
-
-        // Store total uncertainty for the ranking for remaining parameters
-        uncerts.insert(std::make_pair(redTotalError, name));
-      }
-      if (uncerts.empty())
-        break;
-
-      // Print ranking of remaining parameters based on uncertainty on combined
-      // inclusive POI
-      std::cout << std::endl;
-      coutI(ObjectHandling)
-          << "AbsMeasurement::PruneNuisanceParameters(" << fName
-          << ") Ranking of remaining parameters based on combined inclusive POI"
-          << std::endl;
-      PrintRanking(uncerts, initTotalError);
-
-      // Find the lowest ranked parameter which changes none of the
-      // uncertainties of the individual
-      // parameters above the given threshold
-      bool foundPar2Rem = false;
-      std::string par2rem = uncerts.rbegin()->second;
-      double par2rem_err = uncerts.rbegin()->first;
-      unsigned int tmpSum = pars.getSize() + 1 - numPoi;
-
-      // Loop over all remaining parameters in the global ranking
-      for (std::set<std::pair<double, std::string>>::reverse_iterator rankitr =
-               uncerts.rbegin();
-           rankitr != uncerts.rend(); ++rankitr) {
-        par2rem = rankitr->second;
-        par2rem_err = rankitr->first;
-        bool passThreshold = true;
-        int tmpIndex = 0;
-
-        coutI(ObjectHandling)
-            << "AbsMeasurement::PruneNuisanceParameters(" << fName
-            << ") --> Testing " << par2rem << std::endl;
-        ;
-
-        // Loop over the individual POIs to test effect of removing proposed
-        // parameter on each of them
-        for (auto iterator = part_uncerts.begin();
-             iterator != part_uncerts.end(); ++iterator) {
-          std::string thisPoi = iterator->first;
-
-          coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters("
-                                << fName << ")  | " << thisPoi;
-
-          std::set<std::pair<double, std::string>> thisRanking =
-              iterator->second;
-          unsigned int thisPosition = 1;
-          double thisReduction = 1.0;
-          double thisInitError = initErr[thisPoi];
-          TString thisThreshold = ThresholdList[thisPoi];
-
-          // Find the proposed parameter, the position in the individual ranking
-          // and the estimated uncertainty reduction
-          for (std::set<std::pair<double, std::string>>::reverse_iterator
-                   subitr = thisRanking.rbegin();
-               subitr != thisRanking.rend(); ++subitr) {
-            std::string varName(subitr->second);
-            double thisUncert = subitr->first;
-
-            // Check the individual uncertainty reduction if the parameter is
-            // found and exit search
-            if (varName == par2rem) {
-              thisReduction = thisUncert / thisInitError - 1;
-
-              // Check if the threshold is passed, either the relative reduction
-              // or check
-              // whether quoted uncertainty would be changed in case of 'auto'
-              if (thisThreshold != "auto") {
-                double tmpThreshold = atof(thisThreshold.Data());
-                if (fabs(thisReduction) > tmpThreshold) {
-                  passThreshold = false;
-                }
-              } else {
-                std::pair<double, double> tmpVals =
-                    PDGrounding(bestFit[thisPoi], thisUncert, additionalDigit);
-
-                std::ostringstream streamInit, streamRed;
-                streamInit << initErrSig[thisPoi];
-                streamRed << tmpVals.second;
-                TString strInit(streamInit.str());
-                TString strRed(streamRed.str());
-
-                strInit.ReplaceAll(".", "");
-                strRed.ReplaceAll(".", "");
-
-                while (strInit.Length() < strRed.Length()) {
-                  strInit.Append("0");
-                }
-
-                while (strRed.Length() < strInit.Length()) {
-                  strRed.Append("0");
-                }
-
-                double lastInit = atof(strInit.Data());
-                double lastRed = atof(strRed.Data());
-
-                std::cout << ": absolute change " << initErrSig[thisPoi]
-                          << " --> " << tmpVals.second;
-
-                // Allow the specified non-significant digit to change by a
-                // specified value
-                if (tmpVals.second < initErrSig[thisPoi]) {
-                  if (additionalDigit > 0) {
-                    if (!AlmostEqualUlpsAndAbs(lastInit, lastRed,
-                                               ThresholdCutList[thisPoi], 4)) {
-                      std::cout << " reduced too much: " << lastInit << " - "
-                                << lastRed << " > "
-                                << ThresholdCutList[thisPoi];
-                      passThreshold = false;
-                    } else {
-                      std::cout << " tolerated: " << lastInit << " - "
-                                << lastRed << " < "
-                                << ThresholdCutList[thisPoi];
-                    }
-                  } else {
-                    passThreshold = false;
-                  }
-                }
-              }
-              break;
-            }
-            thisPosition++;
-          }
-
-          tmpIndex++;
-
-          std::cout << ", position " << thisPosition << " of " << tmpSum << " ("
-                    << Form("%09f%%", thisReduction * 100) << ")" << std::endl;
-        }
-        // std::cout << std::endl;
-
-        // All individual changes of the uncertainties on the POIs to combine
-        // are below
-        // the specified thresholds. Accept the found parameter and leave loop
-        if (!passThreshold) {
-          coutI(ObjectHandling)
+    // Print ranking of parameters
+    std::cout << std::endl;
+    coutI(ObjectHandling)
               << "AbsMeasurement::PruneNuisanceParameters(" << fName
-              << ")  └-> Vetoed parameter because uncertainty on one POI "
-                 "reduced too much!"
+              << ") Ranking of parameters"
               << std::endl;
-        } else {
-          coutI(ObjectHandling)
-              << "AbsMeasurement::PruneNuisanceParameters(" << fName
-              << ")  └-> Removing parameter!" << std::endl;
-          foundPar2Rem = true;
-          break;
+    PrintRanking(ranks);
+
+    bool foundPar2Rem = false;
+    std::string par2rem = ranks.begin()->second;
+    double par2rem_err  = ranks.begin()->first;
+    unsigned int tmpSum = pars.getSize() + 1 - numPoi;
+
+    unsigned int hipos = ranks.size();
+    unsigned int lopos = 0;
+    unsigned int pos = 0;
+    // Loop over parameters in the global ranking
+    for (std::set<std::pair<double, std::string>>::iterator rankitr =
+         ranks.begin(); rankitr != ranks.end(); ++rankitr) {
+      std::set<std::string> pruneNPnames;
+      par2rem = rankitr->second;
+      par2rem_err = rankitr->first;
+      bool passThreshold = true;
+      int tmpIndex = 0;
+
+      coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+                            << ") --> Testing " << par2rem << std::endl;
+ 
+      std::map<std::string, std::set<std::pair<double, std::string>>> pois_uncerts;
+
+      TMatrixDSym tmp_hesse(chesse);
+      RooArgList tmp_pars = fitresult->floatParsFinal();
+
+      auto x = ranks.begin();
+      pos = (hipos + lopos)/2;
+      for(int j = 0; j < pos; ++j){
+        pruneNPnames.insert(x->second);
+        ++x;
+      }
+      std::list<std::string> nuis_names;
+      std::cout << "Number of NPs set " << pruneNPnames.size() << std::endl;
+      for (RooLinkedListIter it = tmp_pars.iterator();
+        RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());){
+        std::string varname = v->GetName();
+        bool found = (std::find(pruneNPnames.begin(), pruneNPnames.end(), varname) != pruneNPnames.end());
+        if (found) nuis_names.push_back(varname);
+        else{if (allPoi.Contains(varname)) continue;
+        if (varname == rankitr->second) continue;}
+      } 
+
+      RemoveParameter(tmp_hesse, tmp_pars, nuis_names);
+      TMatrixDSym tmp_cov = tmp_hesse.Invert();
+      std::map<std::string, int> index_red;
+      for (std::vector<TString>::const_iterator itr = PoiList.begin(), end = PoiList.end(); itr != end; ++itr) {
+        int thisIndex = tmp_pars.index(itr->Data());
+        double thisErr = sqrt(tmp_cov[thisIndex][thisIndex]);
+        index_red[itr->Data()] = thisIndex;
+        pois_uncerts[itr->Data()].insert(std::make_pair(thisErr, par2rem));
+      }
+
+      // Loop over the individual POIs to test effect of removing proposed
+      // parameter on each of them
+      for (auto iterator = pois_uncerts.begin();
+             iterator != pois_uncerts.end(); ++iterator) {
+        std::string thisPoi = iterator->first;
+       
+        coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters("
+       	               << fName << ")  | " << thisPoi;
+       
+        std::set<std::pair<double, std::string>> thisRanking = iterator->second;
+        unsigned int thisPosition = 1;
+        double thisReduction = 1.0;
+        double thisInitError = initErr[thisPoi];
+       
+        // Find the proposed parameter, the position in the individual ranking
+        // and the estimated uncertainty reduction
+        for (std::set<std::pair<double, std::string>>::reverse_iterator
+              subitr = thisRanking.rbegin(); subitr != thisRanking.rend(); ++subitr) {
+           std::string varName(subitr->second);
+          double thisUncert = subitr->first;
+        
+          // Check the individual uncertainty reduction if the parameter is
+          // found and exit search
+          if (varName == par2rem) {
+            thisReduction = thisUncert / thisInitError - 1;
+        
+            // Check if the threshold is passed, either the relative reduction
+            // or check
+            // whether quoted uncertainty would be changed in case of 'auto'
+            std::pair<double, double> tmpVals = std::make_pair(bestFit[thisPoi], thisUncert);
+        
+            std::cout << ": absolute change " << initErrSig[thisPoi]
+                      << " --> " << tmpVals.second;
+        
+            // Allow the specified non-significant digit to change by a
+            // specified value
+            if (tmpVals.second < initErrSig[thisPoi]) {
+              if (!AlmostEqualUlpsAndAbs(initErrSig[thisPoi], tmpVals.second,
+        			         PercentageList[thisPoi]*initErrSig[thisPoi], 4)) {
+                std::cout << " reduced too much: " << initErrSig[thisPoi] << " - "
+        	 	  << tmpVals.second << " > "
+        	 	  << PercentageList[thisPoi]*initErrSig[thisPoi];
+        	passThreshold = false;
+              } else {
+                std::cout << " tolerated: " << initErrSig[thisPoi] << " - "
+        	  	  << tmpVals.second << " < "
+                          << PercentageList[thisPoi]*initErrSig[thisPoi];
+              }
+            }
+            break;
+          }
+          thisPosition++;
         }
+        tmpIndex++;
+        std::cout << ", ("
+	      << Form("%09f%%", thisReduction * 100) << ")" << std::endl;
+      }
+
+      // All individual changes of the uncertainties on the POIs to check
+      // are below
+      // the specified thresholds. Accept the found parameter and leave loop
+      if (!passThreshold) {
+          coutI(ObjectHandling)
+          << "AbsMeasurement::PruneNuisanceParameters(" << fName
+          << ")  └-> Vetoed parameter because uncertainty on one POI "
+             "reduced too much!"
+          << std::endl;
+      hipos = pos - 1;
+      } else {
+          coutI(ObjectHandling)
+          << "AbsMeasurement::PruneNuisanceParameters(" << fName
+          << ")  └-> Removing parameter "<< par2rem << std::endl;
+          lopos = pos + 1;
+          foundPar2Rem = true;
+          pruneNPnames.insert(par2rem);
       }
 
       // If no parameter is found, break the pruning procedure
-      if (!foundPar2Rem) {
+      if (!foundPar2Rem || lopos > hipos) {
         coutI(ObjectHandling)
-            << "AbsMeasurement::PruneNuisanceParameters(" << fName
-            << ")  └-> No more parameters found to prune!" << std::endl;
+        << "AbsMeasurement::PruneNuisanceParameters(" << fName
+        << ")  └-> No more parameters found to prune!" << std::endl;
+      
+        coutI(ObjectHandling)
+        << "AbsMeasurement::PruneNuisanceParameters(" << fName
+        << ") Nuisance Parameters identified for the following criteria, " << std::endl;
+        for (std::vector<TString>::const_iterator itr = PoiList.begin(),
+                                                  end = PoiList.end();
+             itr != end; ++itr) {
+          int thisIndex = pars.index(itr->Data());
+          double thisInitErr = sqrt(cov[thisIndex][thisIndex]);
+          double thisBestFit = ((RooRealVar *)pars.at(thisIndex))->getVal();
+          std::pair<double, double> tmpVals =
+              std::make_pair(thisBestFit, thisInitErr);
+      
+          index[itr->Data()] = thisIndex;
+          initErr[itr->Data()] = thisInitErr;
+          initErrSig[itr->Data()] = tmpVals.second;
+          bestFit[itr->Data()] = thisBestFit;
+      
+          coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
+                                << ") (" << thisIndex
+                                << " ): " << *itr << " with Hesse error "
+                                << tmpVals.first << " (" << thisBestFit << ") +/- "
+                                << tmpVals.second << " (" << thisInitErr << ")"
+                                << " for a fractional variation of "
+                                << 100*PercentageList[itr->Data()] <<" %"
+                                << std::endl;
+        }
+     
+        for (auto v : pruneNPnames){
+           finalNPnames.insert(v);
+           std::cout << v << "\n";
+        }
         break;
       }
-
       // Add the found parameter to the global ranking and remove it from
       // the list of parameters present in the covariance matrix
-      order.push_back(par2rem);
       int par2rem_index = pars.index(par2rem.c_str());
       pars.remove(*pars.at(par2rem_index));
-      uncertsPmO.insert(std::make_pair(par2rem_err, par2rem));
     }
   }
-
-  // Print final ranking of non-filtered parameters based on the uncertainty on
-  // combined inclusive POI
-  coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
-                        << ") Ranking of all non-filtered parameters based on "
-                           "combined inclusive POI"
-                        << std::endl;
-  PrintRanking(uncertsPmO, initTotalError);
-
   // Return the set of parameters that can be pruned safely
-  return order;
+  return finalNPnames;
 }
 
 // ____________________________________________________________________________|__________
@@ -679,20 +726,17 @@ void RooFitUtils::AbsMeasurement::RemoveParameter(
 // ____________________________________________________________________________|__________
 
 void RooFitUtils::AbsMeasurement::PrintRanking(
-    std::set<std::pair<double, std::string>> uncerts, double initTotalError) {
+    std::set<std::pair<double, std::string>> uncerts) {
   // Print ranking, which is stored in a (ordered) set
   for (std::set<std::pair<double, std::string>>::reverse_iterator itr =
-           uncerts.rbegin();
+	   uncerts.rbegin();
        itr != uncerts.rend(); ++itr) {
     std::string varName(itr->second);
     double uncert(itr->first);
 
-    double delta = uncert / initTotalError - 1;
-
     coutI(ObjectHandling) << "AbsMeasurement::PrintRanking(" << fName << ") "
-                          << Form("%09f%% (%05f -> %05f): %s", delta * 100,
-                                  initTotalError, uncert, varName.c_str())
-                          << std::endl;
+			  << Form(" (%03f %): %s", 100*uncert, varName.c_str())
+                  << std::endl;
   }
   std::cout << std::endl;
 }

@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 def main(args):
     import ROOT
     infile = ROOT.TFile.Open(args.input)

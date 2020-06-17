@@ -52,5 +52,19 @@ which provides extensive help with the `--help` command line option. The results
     scripts/plotscan.py
 
 
+## Pruning
 
+As an example, the directory `/afs/cern.ch/user/r/rabalasu/public/test_prune` contains the 5XS 80ifb workspace (pre-fit and post-fit) and the corresponding hesse and fitresults as root files. To test the pruning code, copy it's contents to `test`.
 
+ To perform the prune run the `order_NPs.py` script. We run the order_NPs script with `--writeSubmit` options which creates a txt files whose lines split the rank-finding into multiple jobs.
+
+    python scripts/order_NPs.py --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --hesse test/WS-Comb-5XS_80ifb_hesse.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --writeSubmit test/joblines_5XS.txt --jobTime 10 --output test/order_NPs.txt
+
+This creates the joblines file `test/joblines_5XS.txt`. You can run these lines in parallel which will write out the nuisance parameters and their ranks.
+Once all of them have finished, you will see the ranks for the nuisance parameters witten in §`test/order_NPs_*.txt`. You can then run the 
+pruning procedure with the following line,
+
+    python scripts/prune_NPs.py --input test/WS-Comb-5XS_80ifb_postFit.root --hesse test/WS-Comb-5XS_80ifb_hesse.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --order test/order_5XS_*.txt --output test/WS-Comb-5XS_80ifb_postFit_prune.root 2>&1 | tee test/prune_NPs_WS-Comb-5XS_80ifb.log
+    
+This creates a workspace `WS-Comb-5XS_80ifb_postFit_prune.root` that contain the snapshots `prune_combData_1pct`,`prune_combData_5pct`, and `prune_combData_10pct` 
+that contains the nuisance parameters identified for their respective thresholds set to constant. The snapshot can be loaded before subsequent fits to fix the pruned nuisance parameters.

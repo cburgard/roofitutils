@@ -139,19 +139,16 @@ public:
   void
   enablePruning(const std::string &poi = "mu_ggF,mu_VBF,mu_WH,mu_ZH,mu_ttH",
                 const std::string &filter = ".*",
-                const std::string &weight = "19.12,1.573,0.6951,0.4102,0.1277",
-                const std::string &threshold = "auto:3",
-                int additionalDigit = 1);
+                const std::string &percentage = "5.0,5.0,5.0,5.0,5.0");
   void disablePruning() { fIsPrunable = kFALSE; }
   bool isPrunable() { return fIsPrunable; }
 
   RooWorkspace *GetWorkspace() { return fWorkSpace; }
   RooAbsData *GetAsimovData() { return fAsimovData; }
-
-  void SetPrunedNuisanceParameters(std::string parameters);
-  void SetPrunedNuisanceParameters(std::list<std::string> parameters) {
-    fPrunedNuisanceParameters = parameters;
-  }
+  void MakeConstSnapshot(
+     std::string infilename, std::string insnapshot,
+     std::string parameters, std::string outwsname, 
+     std::string outsnapshot);
   std::list<std::string> GetPrunedNuisanceParameters() {
     return fPrunedNuisanceParameters;
   }
@@ -172,18 +169,21 @@ public:
                                     int maxUlpsDiff);
 
   // ____________________________________________________________________________|__________
-protected:
-  std::list<std::string> PruneNuisanceParameters(
+  std::set<std::pair<double,std::string>> OrderNuisanceParameters(
+      const TMatrixDSym chesse, RooFitResult *fitresult, 
+      const std::string &poi="mu_ggF,mu_VBF,mu_WH,mu_ZH,mu_ttH",
+      const std::string &filter=".*", unsigned int nlo=0.0, unsigned int nhi=0.0);
+
+  std::set<std::string> PruneNuisanceParameters(
+      std::set<std::pair<double,std::string>> rank,
       const TMatrixDSym chesse, RooFitResult *fitresult,
       const std::string &poi = "mu_ggF,mu_VBF,mu_WH,mu_ZH,mu_ttH",
-      const std::string &filter = ".*",
-      const std::string &weight = "19.12,1.573,0.6951,0.4102,0.1277",
-      const std::string &threshold = "auto:3", int additionalDigit = 1,
-      std::list<std::string> prePrunedParameters = std::list<std::string>());
+      const std::string &percentage = "5.0,5.0,5.0,5.0,5.0",
+      const std::string &filter = ".*");
+  protected:
   void RemoveParameter(TMatrixDSym &hes, RooArgList &pars,
                        std::list<std::string> names);
-  void PrintRanking(std::set<std::pair<double, std::string>> uncerts,
-                    double initTotalError);
+  void PrintRanking(std::set<std::pair<double, std::string>> uncerts);
   std::pair<double, double> PDGrounding(double value, double error,
                                         int additionalDigit = 1);
   int GetThreeDigits(double error);
@@ -218,9 +218,7 @@ private:
 
   std::string fPruningPoi;
   std::string fPruningFilter;
-  std::string fPruningWeight;
-  std::string fPruningThreshold;
-  int fPruningAdditionalDigit;
+  std::string fPruningPercentage;
   std::list<std::string> fPrunedNuisanceParameters;
 
   Int_t fSetNbins;

@@ -1,4 +1,3 @@
-#!/bin/evn python
 
 from RooFitUtils.util import getThreshold
 thresholdColors = ["blue","green","yellow","orange","red"]
@@ -160,13 +159,15 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         for pnamelist,curve in allscans.items():
             for options,scan in curve.items():
                 print("writing scan for "+pnamelist[0])
-                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},outfile,percent_thresholds,drawpoints,ymax)
+                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},options,outfile,percent_thresholds,drawpoints,ymax)
+        outfile.write("\\addplot[gray,densely dashed,thick] {1};\n")
+        outfile.write("\\addplot[gray,densely dashed,thick] {4};\n") 
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,drawpoints=False,ymax=None):
+def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,drawpoints=False,ymax=None):
     """write a single 1d sncan to a pgfplots tex file"""
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
@@ -174,7 +175,7 @@ def writescan1d(parname,parlabel,allpoints,outfile,percent_thresholds,drawpoints
     """obtaining the - 2 log Lambda(x), where Lambda = LL(x)/LL(x0)  """
     nllmin = findminimum(allpoints)
     points = graphrescale(allpoints,nllmin,2)
-    outfile.write("\\addplot[color=black,very thick,mark=none,smooth] coordinates {\n")
+    outfile.write("\\addplot["+options+",very thick,mark=none,smooth] coordinates {\n")
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
     if drawpoints:
