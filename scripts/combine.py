@@ -131,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--const", default=[], nargs="+", help="Parameters to set constant")
     parser.add_argument("--poi", default=[], nargs="+", help="Parameters of Interest in the new workspace")
 
-      args = parser.parse_args()
+    args = parser.parse_args()
 
     try:
         import ROOT

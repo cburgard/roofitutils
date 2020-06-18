@@ -22,4 +22,4 @@ if __name__ == '__main__':
 
 
     with open(args.output,"w") as outfile:
-    writecorrmatrix(args.atlas,parnames,results,args.output,ymax=None)
+        writecorrmatrix(args.atlas,parnames,results,args.output,ymax=None)

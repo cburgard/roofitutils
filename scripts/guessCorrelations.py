@@ -1,4 +1,3 @@
-#!/bin/env python
 #!/usr/bin/env python
 try:
     from fuzzywuzzy import fuzz
