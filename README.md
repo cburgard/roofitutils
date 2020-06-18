@@ -54,9 +54,13 @@ which provides extensive help with the `--help` command line option. The results
 
 ## Pruning
 
-As an example, the directory `/afs/cern.ch/user/r/rabalasu/public/test_prune` contains the 5XS 80ifb workspace (pre-fit and post-fit) and the corresponding hesse and fitresults as root files. To test the pruning code, copy it's contents to `test`.
+As an example, you can try the pruning code on a Higgs 5XS workspace. The directory `/afs/cern.ch/user/r/rabalasu/public/test_prune` contains the 5XS 80ifb workspace (pre-fit and post-fit) and the corresponding hesse and fitresults as root files. To test the pruning code, copy it's contents to `test`.
+The first step would be to obtain the following inputs for the pruning code, the postfit workspace, hesse matrix, and the fitresult. You can skip this step for the example as they
+are already available. 
 
- To perform the prune run the `order_NPs.py` script. We run the order_NPs script with `--writeSubmit` options which creates a txt files whose lines split the rank-finding into multiple jobs.
+    python scripts/fit.py --input test/WS-Comb-5XS_80ifb.root --workspace combWS --data combData —-no-findSigma —-hesse --writeResult —-make-snapshots —-write-workspace prune_test/WS-Comb-5XS_80ifb_postFit.root
+
+ To perform the prune run the `order_NPs.py` script. Running the order_NPs script with `--writeSubmit` options creates a txt file whose lines split the rank-finding into multiple jobs.
 
     python scripts/order_NPs.py --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --hesse test/WS-Comb-5XS_80ifb_hesse.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --writeSubmit test/joblines_5XS.txt --jobTime 10 --output test/order_NPs.txt
 
