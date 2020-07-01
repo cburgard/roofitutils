@@ -58,7 +58,7 @@ As an example, you can try the pruning code on a Higgs 5XS workspace. The direct
 The first step would be to obtain the following inputs for the pruning code, the postfit workspace, hesse matrix, and the fitresult. You can skip this step for the example as they
 are already available. 
 
-    python scripts/fit.py --input test/WS-Comb-5XS_80ifb.root --output test/WS-Comb-5XS.txt --workspace combWS --data combData —-no-findSigma —-hesse --writeResult —-make-snapshots —-write-workspace prune_test/WS-Comb-5XS_80ifb_postFit.root
+    python scripts/fit.py --input test/WS-Comb-5XS_80ifb.root --output test/WS-Comb-5XS.txt --workspace combWS --data combData --no-findSigma —-hesse --writeResult —-make-snapshots —-write-workspace prune_test/WS-Comb-5XS_80ifb_postFit.root
 
  To perform the prune run the `order_NPs.py` script. Running the order_NPs script with `--writeSubmit` options creates a txt file whose lines split the rank-finding into multiple jobs.
 
