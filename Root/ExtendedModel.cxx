@@ -16,6 +16,7 @@
 
 #include "TMath.h"
 #include "TROOT.h"
+#include "TObjString.h"
 #include "TSystem.h"
 #include "TTime.h"
 
