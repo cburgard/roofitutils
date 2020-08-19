@@ -47,6 +47,7 @@ Author: Tim Adye <T.J.Adye@rl.ac.uk>, 23 Oct 2014.
 #include "TNamed.h"
 #include "TObjArray.h"
 #include "TPRegexp.h"
+#include "TObjString.h"
 #include "TROOT.h"
 #include "TRealData.h"
 #include <algorithm>
