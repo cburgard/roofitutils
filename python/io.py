@@ -32,7 +32,7 @@ def writeResult(out,result,writecorrmat):
                 out.write("{:.6f} ".format(matrix.GetBinContent(i+1,j+1)))
                 out.write("\n")
     for scan in result.scans:
-        out.write((" ".join(scan.parNames)) + " nll status\n")
+        out.write((" ".join(map(str,scan.parNames))) + " nll status\n")
         for i in range(0,len(scan.nllValues)):
             out.write((" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]))+" "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i])+"\n")
 

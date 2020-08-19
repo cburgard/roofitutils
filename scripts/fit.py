@@ -219,7 +219,7 @@ def fit(args,model,minimizer):
         coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
         coordsdict = generateCoordsDict(args.scan)
         parnames = vec(sorted(coordsdict[0].keys()),"string")
-        coords = vec([ vec([d[k] for k in parnames],"double") for d in coordsdict],"vector<double>")
+        coords = vec([ vec([d[str(k)] for k in parnames],"double") for d in coordsdict],"vector<double>")
 
     if args.points != None:
         with open(args.points) as infile:
