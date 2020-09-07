@@ -100,14 +100,14 @@ def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re
-    parpat = re.compile("([a-zA-Z0-9_.]+)[ ]*=[ ]*([0-9.naife-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife-]+)[ ]*")
-    nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife-]+)")
+    parpat = re.compile("([a-zA-Z0-9_.-]+)[ ]*=[ ]*([0-9.naife+-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife+-]+)[ ]*")
+    parpat_legacy = re.compile("[ \t]*([a-zA-Z0-9_.-]+)[ \t=]+([0-9.naife+-]+)[ \t]*\+/-[ \t]*([0-9.naife+-]+).*")
+    nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife+-]+)")
     import glob
     filenames = []
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        print(filenames)
         print("no points found in "+",".join(files))
         exit(0)
     for filename in filenames:
@@ -120,6 +120,7 @@ def collectresults(scans,results,files,label):
                         parts = line.split()
                         nllmatch = nllpat.match(line)
                         match = parpat.match(line)
+                        match_legacy = parpat_legacy.match(line)
                         if nllmatch:
                             minnll = float(nllmatch.group(1))
                         elif match:
@@ -128,6 +129,12 @@ def collectresults(scans,results,files,label):
                             if not pname in results.keys():
                                 results[pname] = {}
                             results[pname][label] = result
+                        elif match_legacy:
+                            pname,cv,e = match_legacy.group(1).strip(),match_legacy.group(2),match_legacy.group(3)
+                            result = (float(cv),-float(e),float(e))
+                            if not pname in results.keys():
+                                results[pname] = {}
+                            results[pname][label] = result                            
                         elif parts[-2].strip() == "nll":
                             npars = len(parts)-2
                             scanps = parts[0:npars]
@@ -139,15 +146,14 @@ def collectresults(scans,results,files,label):
                         else:
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
-                            print(pvals, nllval)
                             scans[key][label][pvals] = nllval
-                    except KeyError:
+                    except (KeyError,ValueError) as err:
                         if nllmatch:
-                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value")
+                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value. "+str(err))
                         elif match:
-                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as parameter value")
+                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as parameter value. "+str(+err))
                         else:
-                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"'")
+                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', "+str(err))
                         continue
 
                 for p in scans.keys():
