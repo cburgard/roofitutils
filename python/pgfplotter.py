@@ -370,3 +370,63 @@ def writemergescan2d(args,allpoints1,allpoints2,outfile,percent_thresholds,style
                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
             first=False
 
+def getColorDefStringLaTeX(name,color):
+    c = ROOT.gROOT.GetColor(color)
+    return getColorDefStringLaTeX(name,c)
+
+def getColorDefStringLaTeX(name,color):
+  if not color: return ""
+  r,g,b = 0.,0.,0.
+  color.GetRGB(r,g,b);
+  return "\\definecolor{"+name+"}{rgb}{"+str(r)+","+str(g)+","+str(b)+"}"
+
+
+def writepulls(args,results,outfile):
+    writehead(outfile)
+    xunit = 3
+    yunit = .5
+    outfile.write("\\begin{tikzpicture}[x="+str(xunit)+"cm,y="+str(yunit)+"cm,%\n")
+    outfile.write("  lbl/.style={scale=1,anchor=west},%\n")
+    outfile.write("  axlbl/.style={scale=0.5,anchor=center},%\n")
+    outfile.write("  pull/.style={{|[scale=1]}-{|[scale=1]}},%\n")
+    outfile.write("  dot/.style={circle,fill,inner sep=1pt},\n")
+    outfile.write("  every node/.append style={font=\\sffamily}\n")
+    outfile.write("]\n")
+    outfile.write("\\pgfdeclarelayer{background}\\pgfsetlayers{background,main}\n")
+    allpars = sorted(results.keys())
+    npar = len(allpars)
+    for np in range(0,npar):
+        text = allpars[np]
+        outfile.write("\\node[lbl] at ("+str(args.range[1]+1)+","+str(np-npar)+") {")
+        if "{" in text and not "$" in text:
+            outfile.write("\\ensuremath{"+text+"}")
+        else:
+            outfile.write(text.replace("_","\\_"))
+        outfile.write("};\n")
+    for np in range(0,npar):
+        res = results[allpars[np]]
+        ires = 0
+        for style,(cv,edn,eup) in res.items():
+            ires = ires+1
+            offset = float(ires)/(len(res)+1) - 0.5
+            if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
+                print("unable to print parameter "+allpars[np]+", dimension too large: "+str(cv)+" +"+str(eup)+" "+str(edn))
+            else:
+                outfile.write("  \\draw["+style+"] (" +str(cv-abs(edn)) + "," + str(np-npar+offset) + ") -- (" + str(cv+abs(eup)) + "," + str(np-npar+offset) + ");")
+                outfile.write("  \\node[dot,"+style+"] at ("+str(cv)+","+str(np-npar+offset)+ ") {};\n")
+    from numpy import arange
+    for x in arange(int(args.range[0]),int(args.range[1])+1.1,step=0.25):
+        outfile.write("\\draw[black] (" +str(x)+ "," + str(-npar-0.5+0.2) + ") -- (" +str(x)+ "," +str(-npar-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
+#        outfile.write("\\node[axlbl,black,below left=5pt] at (" +str(args.range[0]-0.1)+ "," +str(-npar-0.5)+ ") {$\\frac{\\theta-\\theta_0}{\\Delta\\theta_0}$};\n")
+        outfile.write("\\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-npar-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-npar-0.5)+ ");\n")
+        for x in range(int(args.range[0]),int(args.range[1])):
+            outfile.write("\\draw[dashed,black] (" +str(x)+ "," +str(-npar-0.5)+ ") -- (" +str(x)+ "," +str(0)+ ");\n")
+                
+    outfile.write("\\begin{pgfonlayer}{background}\n")
+    outfile.write("  \\foreach \\i in ")
+    if npar>3: outfile.write("{-1,-3,...,"+str(-2*((npar+1)/2))+"}")
+    else: outfile.write("{1}")
+    outfile.write("{\\fill[fill=white!90!black] let \\p1 = (current bounding box.east), \\p2 = (current bounding box.west) in (\\x1,\\i-0.5) rectangle (\\x2,\\i+0.5); }\n")
+    outfile.write("\\end{pgfonlayer}\n")
+    outfile.write("\\end{tikzpicture}\n")
+    writefoot(outfile)
