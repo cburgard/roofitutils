@@ -18,10 +18,8 @@ def runOrdering(args):
   else:
      pois = makePOIstring(args.inFileName)
 
-  fitresult,chesse = retriveObj(args.fitResult), retriveObj(args.hesse)
-
-  if not chesse.GetNcols() > 0:
-    chesse = fitresult.covarianceMatrix().Invert()
+  fitresult = retriveObj(args.fitResult)
+  chesse = fitresult.covarianceMatrix().Invert()
 
   dim = chesse.GetNcols()
 
@@ -30,7 +28,7 @@ def runOrdering(args):
     with open(args.writeSubmit,"w") as f:
       for matind in matindices:
         outfilename = args.outFileName.replace(".txt","")+"_"+str(matind[0])+"_"+str(matind[1])+".txt"
-        f.write("python scripts/order_NPs.py --output "+outfilename+" --pois "+pois+" --hesse "+args.hesse+" --fitResult "+args.fitResult+" --nlo "+str(matind[0])+" --nhi "+str(matind[1])+"\n")  
+        f.write("python /project/atlas/users/rahulb/project/hcomb/caf4hcomb/RooFitUtils/scripts/order_NPs.py --output "+outfilename+" --pois "+pois+" --fitResult "+args.fitResult+" --nlo "+str(matind[0])+" --nhi "+str(matind[1])+" & \n")  
     print("INFO : wrote joblines in "+args.writeSubmit)
    
   else:
@@ -52,7 +50,6 @@ if __name__ == "__main__":
    arglist.append(parser.add_argument( "--pois"          , type=str,  dest="pois"         , help="POIs to measure."))
    arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"     , help="NPs for prune check", default=".*"))
    arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"    , help="path to fit result"))
-   arglist.append(parser.add_argument( "--hesse"         , type=str,  dest="hesse"        , help="path to hesse"))
    arglist.append(parser.add_argument( "--nlo"           , type=int,  dest="nlo"          , help="start position in NP list",default=0))
    arglist.append(parser.add_argument( "--nhi"           , type=int,  dest="nhi"          , help="end pposition in NP list",default=0))
    arglist.append(parser.add_argument( "--writeSubmit"   , type=str,  dest="writeSubmit"  , help="create a txt file for splitting the process",default=""))

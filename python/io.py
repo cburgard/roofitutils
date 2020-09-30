@@ -107,7 +107,7 @@ def collectresults(scans,results,files,label):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        print(filenames)
+        #print(filenames)
         print("no points found in "+",".join(files))
         exit(0)
     for filename in filenames:
@@ -122,12 +122,13 @@ def collectresults(scans,results,files,label):
                         match = parpat.match(line)
                         if nllmatch:
                             minnll = float(nllmatch.group(1))
-                        elif match:
-                            pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
-                            result = (float(cv),float(ed),float(eu))
-                            if not pname in results.keys():
-                                results[pname] = {}
-                            results[pname][label] = result
+                        elif match or "BkgTheory" in line:
+                          t = 0
+                        #  pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
+                        #  result = (float(cv),float(ed),float(eu))
+                        #  if not pname in results.keys():
+                        #      results[pname] = {}
+                        #  results[pname][label] = result
                         elif parts[-2].strip() == "nll":
                             npars = len(parts)-2
                             scanps = parts[0:npars]
@@ -139,8 +140,9 @@ def collectresults(scans,results,files,label):
                         else:
                             pvals   = tuple([float(parts[i]) for i in range(0,len(parts)-2)])
                             nllval = float(parts[-2])
-                            print(pvals, nllval)
-                            scans[key][label][pvals] = nllval
+                            #print(pvals, nllval)
+                            if int(parts[-1]) == 0: # check if fit ended with status 0
+                                scans[key][label][pvals] = nllval
                     except KeyError:
                         if nllmatch:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value")

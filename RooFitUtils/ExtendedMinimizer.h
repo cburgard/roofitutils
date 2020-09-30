@@ -156,7 +156,6 @@ public:
   static RooCmdArg ReuseNLL(Bool_t flag = kTRUE) {
     return RooCmdArg("ReuseNLL", flag, 0, 0, 0, 0, 0, 0, 0);
   }
-
   template <class A> int parseFitConfig(const A &cmdList);
   template <class A> int parseNllConfig(const A &cmdList);
 
@@ -210,6 +209,8 @@ protected:
   Double_t fEps;
   Double_t fNsigma;
   Double_t fPrecision;
+  const RooArgSet *fPenaltyMini  = NULL;
+  const RooArgSet *fPoiSet  = NULL;
   const RooArgSet *fMinosSet = NULL;
   const RooArgSet *fCondSet  = NULL;
   const RooArgSet *fScanSet  = NULL;

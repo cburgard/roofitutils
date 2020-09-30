@@ -146,7 +146,7 @@ public:
   RooWorkspace *GetWorkspace() { return fWorkSpace; }
   RooAbsData *GetAsimovData() { return fAsimovData; }
   void MakeConstSnapshot(
-     std::string infilename, std::string insnapshot,
+     std::string infilename, RooFitResult* ptr,
      std::string parameters, std::string outwsname, 
      std::string outsnapshot);
   std::list<std::string> GetPrunedNuisanceParameters() {

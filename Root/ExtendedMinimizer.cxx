@@ -1,15 +1,16 @@
 #include <limits>
 #include <math.h>
 #include <cmath>
-
+#include <fstream>  
 #include "RooFitUtils/ExtendedMinimizer.h"
-
+#include <iostream>
 #include "TFile.h"
 #include "TMath.h"
 #include "TMatrixDSymEigen.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
+#include "RooAddition.h"
 #include "RooMinimizer.h"
 #include "RooNLLVar.h"
 #include "RooRealVar.h"
@@ -425,10 +426,13 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
 											model->GetData(),
 											model->GetWorkspace()) {
   // Constructor
-	RooLinkedList newargList(argList);
-	fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-	newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
-
+  RooLinkedList newargList(argList);
+  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+  newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  fPenaltyMini = model->GetPenalty();
+  std::cout << "inside construct" << std::endl;
+  model->GetPenalty()->Print();
+  fPenaltyMini->Print();
   parseNllConfig(newargList);
   parseFitConfig(newargList);
 }
@@ -441,10 +445,14 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
 											model->GetData(),
 											model->GetWorkspace()) {
   // Constructor
-	RooLinkedList argList;
-	fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-	argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  RooLinkedList argList;
+  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+  argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
   parseNllConfig(argList);
+  fPenaltyMini = model->GetPenalty();
+  model->GetPenalty()->Print();
+  std::cout << "inside construct" << std::endl;
+  fPenaltyMini->Print("v");
 }
 
 
@@ -556,7 +564,31 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     double nllval = 0.;
     try {
       fNll = fPdf->createNLL(*fData, fNllCmdList);
-      nllval = fNll->getVal();
+      coutI(ObjectHandling) << "adding NLL_pre_pen " ;
+      fNll->Print();
+      //here goes the penalty 
+      if (fPenaltyMini){
+	   int ipen = 0;	
+           std::string s("fNLL");
+	   RooArgSet fnset = RooArgSet();
+	   fPenaltyMini->Print();
+           for (RooLinkedListIter it = fPenaltyMini->iterator();
+               RooFormulaVar *pen = dynamic_cast<RooFormulaVar *>(it.Next());) {
+               coutI(ObjectHandling) << "adding penalty for " << pen->GetName();
+	       pen->Print("v");
+	       s = s +"+"+pen->GetName();
+	       fnset.add(*pen);
+	  }
+      fnset.add(*fNll);    
+      std::cout << s << std::endl;
+      RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
+      fNll = nllpen;
+      }
+      coutI(ObjectHandling) << "adding NLL_post_pen ";
+      fNll->Print();
+      
+   //   nllval = fNll->getVal();
+     nllval = 0.0;
     } catch (std::exception& ex){
       throw ex;
     } catch (std::string& s){
@@ -1088,22 +1120,46 @@ void RooFitUtils::ExtendedMinimizer::scan(
   }
   bool hesse = fHesse;
   ExtendedMinimizer::Result::Scan scan(parnames);
+
+//  auto scanWS = this->fWorkspace;
+//  auto mc = (RooStats::ModelConfig*) scanWS->obj("ModelConfig");
+//  auto pois = mc->GetParametersOfInterest();
+//  auto fltpars = new TString("");
+//  for (RooLinkedListIter it = pois->iterator();
+//      RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+
+//     if (!v->isConstant()) 
+//     *fltpars = *fltpars + "," + v->GetName();}
+  //std::fstream myfile;
+  //myfile.open (*parstring+".txt",std::ofstream::out | std::ofstream::app);
+
+ // myfile.seekg(0, std::ios::end);  
+ // if (myfile.tellg() == 0)
+ //    myfile << "status,nll" << *fltpars << "\n";
+
   for (const auto &point : points) {
     if (point.size() != parnames.size()) {
       throw std::runtime_error("inconsistent vector lengths in scan!");
     }
+    auto pntstr = new TString("");
     for (size_t i = 0; i < params.size(); ++i) {
       params[i]->setVal(point[i]);
       params[i]->setConstant(true);
+  //    *pntstr = *pntstr + "_" + TString::Format("%.3f",point[i]) ; 
     }
     fHesse = false;
+    auto valstr = new TString("");
     auto min = this->robustMinimize();
     if (min.ok()) {
       std::vector<double> vals(params.size());
       for (size_t i = 0; i < params.size(); ++i) {
         vals[i] = params[i]->getVal();
+      //  *valstr = *valstr + "," + TString::Format("%.5f",vals[i]);
       }
-      scan.add(vals, min.status, min.nll);
+
+   //   myfile << min.status <<"," << min.nll << *valstr << "\n";
+    //  myfile.close();
+
     }
   }
   if (scan.nllValues.size() > 0)

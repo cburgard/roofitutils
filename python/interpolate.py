@@ -193,10 +193,12 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
 #    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)
+    print nllmin
+    print values
     if algorithm == "ROOT":
-        allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+        allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
     elif algorithm == "skimage":
-        allcontours = find_contours_skimage(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+        allcontours = find_contours_skimage(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
     else:
         print("unknown contour finding algorithm '"+algorithm+"'")
 
