@@ -18,7 +18,11 @@ def runOrdering(args):
   else:
      pois = makePOIstring(args.inFileName)
 
-  fitresult = retriveObj(args.fitResult)
+ # fitresult = retriveObj(args.fitResult)
+  print args.fitResult
+  file0 = ROOT.TFile.Open(args.fitResult[0][0])
+  fitresult = file0.Get(args.fitResult[0][1])
+
   chesse = fitresult.covarianceMatrix().Invert()
 
   dim = chesse.GetNcols()
@@ -28,7 +32,7 @@ def runOrdering(args):
     with open(args.writeSubmit,"w") as f:
       for matind in matindices:
         outfilename = args.outFileName.replace(".txt","")+"_"+str(matind[0])+"_"+str(matind[1])+".txt"
-        f.write("python /project/atlas/users/rahulb/project/hcomb/caf4hcomb/RooFitUtils/scripts/order_NPs.py --output "+outfilename+" --pois "+pois+" --fitResult "+args.fitResult+" --nlo "+str(matind[0])+" --nhi "+str(matind[1])+" & \n")  
+        f.write("python /project/atlas/users/rahulb/project/hcomb/caf4hcomb/RooFitUtils/scripts/order_NPs.py --output "+outfilename+" --pois "+pois+" --fitResult "+args.fitResult[0][0] + " "+ args.fitResult[0][1] +" --nlo "+str(matind[0])+" --nhi "+str(matind[1])+" & \n")  
     print("INFO : wrote joblines in "+args.writeSubmit)
    
   else:
@@ -49,7 +53,7 @@ if __name__ == "__main__":
    arglist.append(parser.add_argument( "--output"        , type=str,  dest="outFileName"  , help="Output text file. (outname.txt)", required=True, default=None))
    arglist.append(parser.add_argument( "--pois"          , type=str,  dest="pois"         , help="POIs to measure."))
    arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"     , help="NPs for prune check", default=".*"))
-   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"    , help="path to fit result"))
+   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"    , action='append',nargs="+", help="path to fit result"))
    arglist.append(parser.add_argument( "--nlo"           , type=int,  dest="nlo"          , help="start position in NP list",default=0))
    arglist.append(parser.add_argument( "--nhi"           , type=int,  dest="nhi"          , help="end pposition in NP list",default=0))
    arglist.append(parser.add_argument( "--writeSubmit"   , type=str,  dest="writeSubmit"  , help="create a txt file for splitting the process",default=""))

@@ -13,7 +13,10 @@ def runPruning(args):
   else: 
    pois = args.pois
 
-  fitresult = retriveObj(args.fitResult)
+#  fitresult = retriveObj(args.fitResult)
+  file0 = ROOT.TFile.Open(args.fitResult[0][0])
+  fitresult = file0.Get(args.fitResult[0][1])
+
   chesse = fitresult.covarianceMatrix().Invert()
 
   dim = chesse.GetNcols()
@@ -60,7 +63,7 @@ if __name__ == "__main__":
    arglist.append(parser.add_argument( "--pois"          , type=str,  dest="pois"        , help="POIs to measure.", default=""))
    arglist.append(parser.add_argument( "--snapshot"      , type=str,  dest="snapname"    , help="name of the pruned snapshot", default=""))
    arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"    , help="NPs for prune check", default=".*"))
-   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , help="path to fit result"))
+   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , action='append',nargs="+", help="path to fit result"))
    arglist.append(parser.add_argument( "--percentages"   , type=str,  dest="pct"         , help="percentage change in poi variances"))
    arglist.append(parser.add_argument( "--order"         ,action='append',nargs="+"      , dest="orderfiles", help="files with the NPs and their ranks"))
    arglist.append(parser.add_argument( "--logsave"       , action='store_true',  dest="logsave" , help="save a log"))

@@ -564,31 +564,30 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     double nllval = 0.;
     try {
       fNll = fPdf->createNLL(*fData, fNllCmdList);
-      coutI(ObjectHandling) << "adding NLL_pre_pen " ;
-      fNll->Print();
+    // coutI(ObjectHandling) << "adding NLL_pre_pen " ;
+    //  fNll->Print();
       //here goes the penalty 
       if (fPenaltyMini){
 	   int ipen = 0;	
            std::string s("fNLL");
 	   RooArgSet fnset = RooArgSet();
-	   fPenaltyMini->Print();
+	//   fPenaltyMini->Print();
            for (RooLinkedListIter it = fPenaltyMini->iterator();
                RooFormulaVar *pen = dynamic_cast<RooFormulaVar *>(it.Next());) {
-               coutI(ObjectHandling) << "adding penalty for " << pen->GetName();
-	       pen->Print("v");
+             //  coutI(ObjectHandling) << "adding penalty for " << pen->GetName();
+	     //  pen->Print("v");
 	       s = s +"+"+pen->GetName();
 	       fnset.add(*pen);
 	  }
       fnset.add(*fNll);    
-      std::cout << s << std::endl;
+     // std::cout << s << std::endl;
       RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
       fNll = nllpen;
       }
-      coutI(ObjectHandling) << "adding NLL_post_pen ";
-      fNll->Print();
+     // coutI(ObjectHandling) << "adding NLL_post_pen ";
+     // fNll->Print();
       
-   //   nllval = fNll->getVal();
-     nllval = 0.0;
+      nllval = fNll->getVal();
     } catch (std::exception& ex){
       throw ex;
     } catch (std::string& s){
@@ -1154,12 +1153,8 @@ void RooFitUtils::ExtendedMinimizer::scan(
       std::vector<double> vals(params.size());
       for (size_t i = 0; i < params.size(); ++i) {
         vals[i] = params[i]->getVal();
-      //  *valstr = *valstr + "," + TString::Format("%.5f",vals[i]);
       }
-
-   //   myfile << min.status <<"," << min.nll << *valstr << "\n";
-    //  myfile.close();
-
+       scan.add(vals, min.status, min.nll);
     }
   }
   if (scan.nllValues.size() > 0)

@@ -150,7 +150,7 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         domain = "domain={0:f}:{1:f}".format(min(allvals),max(allvals))
       #  outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
-        outfile.write("    ymin=0,\n")
+        outfile.write("    ymin=0,ymax=10.\n")
         if ymax:
             outfile.write("    ymax="+str(ymax)+",\n")
         outfile.write("    "+domain+",\n")
