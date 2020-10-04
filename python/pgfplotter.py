@@ -85,6 +85,11 @@ def makelabels(listofstrings):
 
 def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None):
     """write a correlation matrix to a pgfplots tex file"""
+    if len(ycoords) != len(allvalues):
+        print(len(allvalues),len(ycoords))
+        raise RuntimeError("incompatible lengths in y")
+    if len(xcoords) != len(allvalues[0]):
+        raise RuntimeError("incompatible lengths in x")    
     xlabels = [ i.replace("_","\_") for i in xcoords ]
     ylabels = [ i.replace("_","\_") for i in ycoords ]
     with open(outfilename,"w") as outfile:
@@ -114,22 +119,22 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    minor tick num=1,\n")
         outfile.write("    symbolic x coords={"+ concat(xcoords) + "},\n")
         outfile.write("    symbolic y coords={"+ concat(ycoords) + "},\n")
-        outfile.write("    xticklabels={"+ concat(ylabels) + "},\n") # no typo
-        outfile.write("    yticklabels={"+ concat(xlabels) + "},\n") # no typo
+        outfile.write("    xticklabels={"+ concat(xlabels) + "},\n") # no typo
+        outfile.write("    yticklabels={"+ concat(ylabels) + "},\n") # no typo
         outfile.write("    axis on top,")
         outfile.write("       x tick label style={rotate=90},\n")
         outfile.write("    tick style={draw=none}\n ]\n")
-        outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(xcoords))+",mesh/rows="+str(len(ycoords))+"] table [meta=correlations] {\n")
+        outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
         outfile.write("x  y  correlations\n")
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
-                outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[x][y])+"\n")
+                outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[y][x])+"\n")
         outfile.write("};\n")
         outfile.write("\\node (atlas) [scale=2,above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
-                if abs(allvalues[x][y]) > 0:
-                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+str(allvalues[x][y])+"};\n")        
+                if abs(allvalues[y][x]) > 0:
+                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+str(allvalues[y][x])+"};\n")        
         outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {"+atlas+"};\n")
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
