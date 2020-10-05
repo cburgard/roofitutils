@@ -94,7 +94,10 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
     ylabels = [ i.replace("_","\_") for i in ycoords ]
     with open(outfilename,"w") as outfile:
         writehead(outfile)
-        outfile.write("\\begin{tikzpicture}\n")
+        outfile.write("\\begin{tikzpicture}[\n")
+        if atlas:
+            outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")        
+        outfile.write("]\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
         outfile.write("    clip = false,\n")
@@ -130,12 +133,13 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
             for y in range(0,len(ycoords)):
                 outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[y][x])+"\n")
         outfile.write("};\n")
-        outfile.write("\\node (atlas) [scale=2,above right, font={\\fontfamily{phv}\\fontseries{b}\selectfont}] at (rel axis cs:0,1) {ATLAS};\n")
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
                 if abs(allvalues[y][x]) > 0:
-                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+str(allvalues[y][x])+"};\n")        
-        outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {"+atlas+"};\n")
+                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+str(allvalues[y][x])+"};\n")
+        if atlas:
+            outfile.write("\\node (atlas) [scale=2,above right] at (rel axis cs:0,1) {\\bfseries ATLAS};\n")
+            outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {\\itshape "+atlas+"};\n")
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
