@@ -83,7 +83,7 @@ def makelabels(listofstrings):
     x = [ i.replace("_","\_") for i in listofstrings]
     return x
 
-def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None):
+def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90):
     """write a correlation matrix to a pgfplots tex file"""
     if len(ycoords) != len(allvalues):
         print(len(allvalues),len(ycoords))
@@ -125,7 +125,7 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    xticklabels={"+ concat(xlabels) + "},\n") # no typo
         outfile.write("    yticklabels={"+ concat(ylabels) + "},\n") # no typo
         outfile.write("    axis on top,")
-        outfile.write("       x tick label style={rotate=90},\n")
+        outfile.write("       x tick label style={rotate="+str(rotatelabels)+"},\n")
         outfile.write("    tick style={draw=none}\n ]\n")
         outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
         outfile.write("x  y  correlations\n")
@@ -138,8 +138,8 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
                 if abs(allvalues[y][x]) > 0:
                     outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+str(allvalues[y][x])+"};\n")
         if atlas:
-            outfile.write("\\node (atlas) [scale=2,above right] at (rel axis cs:0,1) {\\bfseries ATLAS};\n")
-            outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {\\itshape "+atlas+"};\n")
+            outfile.write("\\node (atlas) [scale=2,above right] at (rel axis cs:0,1) {\\bfseries\\itshape ATLAS};\n")
+            outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {"+atlas+"};\n")
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
