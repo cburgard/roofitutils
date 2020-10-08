@@ -124,11 +124,12 @@ def collectresults(scans,results,files,label):
                             minnll = float(nllmatch.group(1))
                         elif match or "BkgTheory" in line:
                           t = 0
-                        #  pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
-                        #  result = (float(cv),float(ed),float(eu))
-                        #  if not pname in results.keys():
-                        #      results[pname] = {}
-                        #  results[pname][label] = result
+		          print line	  
+                          pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
+                          result = (float(cv),float(ed),float(eu))
+                          if not pname in results.keys():
+                              results[pname] = {}
+                          results[pname][label] = result
                         elif parts[-2].strip() == "nll":
                             npars = len(parts)-2
                             scanps = parts[0:npars]
