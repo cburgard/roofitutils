@@ -3,42 +3,52 @@ from RooFitUtils.util import getThreshold
 thresholdColors = ["blue","green","yellow","orange","red"]
 thresholdStyles = ["solid","dashed","loosely dashed","dotted","loosely dotted"]
 
-def writehead(stream):
+def writehead(stream,atlas=True):
     stream.write("\\documentclass{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
     stream.write("\\usepackage{pgfplots,tikz}\n")
     stream.write("\\usetikzlibrary{calc}\n")
-    stream.write("\\usepackage[scaled=1]{helvet}\n")
-    stream.write("\\usepackage[helvet]{sfmath}\n")
+    if atlas:
+        stream.write("\\usepackage[scaled=1]{helvet}\n")
+        stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
     stream.write("\\usetikzlibrary{shapes.misc,positioning}\n")
     stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
     stream.write("\\pgfplotsset{compat=newest}\n")
-#    stream.write("\\catcode`_=\\active\n")
-#    stream.write("\\newcommand_[1]{\\ensuremath{\\sb{\\scriptscriptstyle #1}}}\n")
     stream.write("\\begin{document}\n")
     stream.write("\\pgfplotsset{scaled x ticks=false}\n")
-    stream.write("\\renewcommand\\sfdefault{phv}\n")
-    stream.write("\\renewcommand\\rmdefault{phv}\n")
-    stream.write("\\renewcommand\\ttdefault{pcr}\n")
     stream.write("\\definecolor{myyellow}{rgb}{0.96,0.742,0.29}\n")
     stream.write("\\definecolor{myblue}{rgb}{0.1,0.32,0.738}\n")
     stream.write("\\definecolor{myotheryellow}{rgb}{0.98828125,0.5625,0.13671875}\n")
-    stream.write("\\definecolor{myotherblue}{rgb}{0.18359375,0.3515625,0.7578125}\n")    
+    stream.write("\\definecolor{myotherblue}{rgb}{0.18359375,0.3515625,0.7578125}\n")
+    if atlas:
+        stream.write("\\renewcommand\\sfdefault{phv}\n")
+        stream.write("\\renewcommand\\rmdefault{phv}\n")
+        stream.write("\\renewcommand\\ttdefault{pcr}\n")
+        stream.write("\\font\\greekcapstenrm=cmr10\n")
+        stream.write("\\font\\greekcapssevenrm=cmr7\n")
+        stream.write("\\font\\greekcapsfiverm=cmr5\n")
+        stream.write("\\newfam\\greekcapsfam\n")
+        stream.write("\\textfont\\greekcapsfam=\\greekcapstenrm\n")
+        stream.write("\\scriptfont\\greekcapsfam=\\greekcapssevenrm\n")
+        stream.write("\\scriptscriptfont\\greekcapsfam=\\greekcapsfiverm\n")
+        stream.write("\\let\\tmpLambda=\\Lambda \\def\\Lambda{{\\fam\\greekcapsfam\\tmpLambda}}\n")
+
+        
 
 def writefoot(stream):
     stream.write("\\end{document}\n")
 
 def writeATLAS(label,outfile,inside=True,
                labels=["\\scriptsize{$\\sqrt{s}=$13 TeV, 139 fb$^{\\scriptsize{-1}}$}",
-                       "\\scriptsize{$m_{\\scalebox{.9}{$\\scriptstyle H$}}=$ 125.09 GeV, $|y_{\\scalebox{.9}{$\\scriptstyle H$}}|$ $<$ 2.5}"],labelspread=1.5):
+                       "\\scriptsize{$m_{\\scalebox{.9}{$\\scriptstyle H$}}=$ 125.09 GeV, $|y_{\\scalebox{.9}{$\\scriptstyle H$}}|$ $<$ 2.5}"],labelspread=1.8):
     if inside:
         outfile.write("\\node (atlas) at (rel axis cs:0.025,0.975) [anchor=north west,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape}]{ATLAS};\n")
     else:
         outfile.write("\\node (atlas) at (rel axis cs:0,1) [anchor=south west,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape},yshift="+str(labelspread*len(labels))+"em]{ATLAS};\n")
     outfile.write("\\node [right=.5ex of atlas,font={\\fontfamily{qhv}\\selectfont}]{"+label+"};\n")        
     for i in range(0,len(labels)):
-        outfile.write("\\node at (atlas.west) [anchor=west,yshift=-"+str(labelspread*(i+1))+"em]{"+labels[i]+"};\n")
+        outfile.write("\\node at (atlas.west) [anchor=west,scale=0.8,yshift=-"+str(labelspread*(i+1))+"em]{"+labels[i]+"};\n")
 
 def concat(strlist):
     string = ""
@@ -85,39 +95,42 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
                 cv = tup[0]
             except TypeError:
                 cv = tup
-            outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+"] at (axis cs:{:.5f},{:.2f})".format(scale*cv,spread*count)+ "{};\n")
+            outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(scale*cv,spread*count)+ "{};\n")
         count = count+1
     
-def writepois(atlas,pois,allsets,outfilename):
+def writepois(atlas,pois,allsets,outfilename,labels=[],range=[-2,2]):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texprep
     spread=1
     if isinstance(pois, dict):
         poinames = pois.keys()
         poiopts = pois
-    elif isinstance(pois, list):
-        poinames = pois
-        poiopts = {}
     else:
-        poinames = [ p[0] for p in pois ]
-        poiopts = { p[0]:p[1:]  for p in pois }
+        if isinstance(pois[0],str):
+            poinames = pois
+            poiopts = {}
+        else:
+            poinames = [ p[0] for p in pois ]
+            poiopts = { p[0]:p[1] for p in pois }
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    width = 0.8\\textwidth,\n")
-        outfile.write("    height = 1\\textwidth, \n")
-        outfile.write("    xlabel = Best fit value, \n")
+        outfile.write("    height = "+str(2*len(poinames))+"cm,\n")
+        outfile.write("    xlabel = {Parameter Value}, \n")
         outfile.write("    clip = false,\n")
         outfile.write("    ymin=-1,\n")
-        outfile.write("    ymax= "+str(2 + spread * len(poinames))+ ",\n")
-        outfile.write("    xmin= -1.75,\n")
-        outfile.write("    xmax=  2,\n")
+        outfile.write("    ymax= "+str(len(labels) + spread * len(poinames))+ ",\n")
+        outfile.write("    xmin="+str(range[0])+",\n")
+        outfile.write("    xmax="+str(range[1])+",\n")
         outfile.write("    minor tick num=4,\n")
         outfile.write("    ytick style={draw=none},\n")
-        outfile.write("    yticklabels=\empty\n")
+        outfile.write("    yticklabels=\empty,\n")
+        outfile.write("    xticklabel style={/pgf/number format/fixed},\n")
+        outfile.write("    scaled ticks=false,\n")
         outfile.write("]\n")
-        if atlas: writeATLAS(atlas,outfile)            
+        if atlas: writeATLAS(atlas,outfile,True,labels)            
         count = 0
         outfile.write("\\draw (0,-1) -- (0,"+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:

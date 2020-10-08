@@ -208,17 +208,10 @@ def findintervals(points,nllval):
     from math import isnan
     xvals = [ x for x,y in points ]
     yvals = [ y for x,y in points ]
-    i0 = 0
-    ymin = inf
-    for i in range(0,len(xvals)):
-        if yvals[i] < ymin:
-            ymin = yvals[i]
-            i0 = i
-    x0 = xvals[i0]
     xl,xr = min(xvals),max(xvals)
     r = abs(xr - xl)
-    xll = xl - 0.2*r
-    xrr = xr + 0.2*r
+    xll = xl - 0.1*r
+    xrr = xr + 0.1*r
     n = 50
     step = (xrr-xll)/n
     interp = interpolate(xvals, yvals, extrapolate=True)
@@ -250,7 +243,7 @@ def findcrossings(points,nllval):
     i0 = 0
     ymin = inf
     for i in range(0,len(xvals)):
-        if yvals[i] < ymin:
+        if yvals[i] < ymin or (yvals[i] == ymin and abs(xvals[i]) < abs(xvals[i0])):
             ymin = yvals[i]
             i0 = i
     x0 = xvals[i0]
