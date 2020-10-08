@@ -29,11 +29,24 @@ def writehead(stream):
 def writefoot(stream):
     stream.write("\\end{document}\n")
 
-def writeATLAS(label,outfile):
-    outfile.write("\\node at (rel axis cs:0.025,0.975) [anchor= north west,text width=4cm]{\\textit{\\textbf{ATLAS}} Internal};\n")
-    outfile.write("\\node at (rel axis cs:0.025,0.920) [anchor= north west,text width=4cm]{\\scriptsize{$\\sqrt{s}=$13 TeV, 139 fb$^{\\scriptsize{-1}}$}};\n")
-    outfile.write("\\node at (rel axis cs:0.025,0.865) [anchor= north west,text width=4cm]{\\scriptsize{$m_{\\scalebox{.9}{$\\scriptstyle H$}}=$ 125.09 GeV, $|y_{\\scalebox{.9}{$\\scriptstyle H$}}|$ $<$ 2.5}};\n")
+def writeATLAS(label,outfile,inside=True,
+               labels=["\\scriptsize{$\\sqrt{s}=$13 TeV, 139 fb$^{\\scriptsize{-1}}$}",
+                       "\\scriptsize{$m_{\\scalebox{.9}{$\\scriptstyle H$}}=$ 125.09 GeV, $|y_{\\scalebox{.9}{$\\scriptstyle H$}}|$ $<$ 2.5}}"]):
+    if inside:
+        outfile.write("\\node (atlas) at (rel axis cs:0.025,0.975) [anchor= north west,text width=4cm]{\\textit{\\textbf{ATLAS}} Internal};\n")
+        for l in labels:
+            outfile.write("\\node [below=2em of atlas]{"+l+"};\n")
+    else:
+        outfile.write("\\node at (rel axis cs:0,1) [anchor=south west,text width=3cm]{\\textbf{ATLAS} "+label+"};\n")
+        for l in labels:
+            outfile.write("\\node [below=2em of atlas]{"+l+"};\n")        
 
+def writepois(atlas,par,allscans,outfilename,ymax=None):
+    """write a pois/NP ranking styled plot to a pgfplots tex file"""
+    with open(outfilename,"w") as outfile:
+        writehead(outfile)
+        allvals = [v[0] for pois in allscans.values() for v in pois.values()]
+        writefoot(outfile)
 
 def concat(strlist):
     string = ""
@@ -76,12 +89,17 @@ def writepois(atlas,poinames,allpois,outfilename,ymax=None):
         outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
-        writefoot(outfile)
         print("wrote "+outfilename)
 
 def makelabels(listofstrings):
     x = [ i.replace("_","\_") for i in listofstrings]
     return x
+
+def guessanchor(angle):
+    if angle < 45:
+        return "north"
+    else:
+        return "north east"
 
 def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90):
     """write a correlation matrix to a pgfplots tex file"""
@@ -125,7 +143,7 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    xticklabels={"+ concat(xlabels) + "},\n") # no typo
         outfile.write("    yticklabels={"+ concat(ylabels) + "},\n") # no typo
         outfile.write("    axis on top,")
-        outfile.write("       x tick label style={rotate="+str(rotatelabels)+"},\n")
+        outfile.write("       x tick label style={anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
         outfile.write("    tick style={draw=none}\n ]\n")
         outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
         outfile.write("x  y  correlations\n")
@@ -135,10 +153,10 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("};\n")
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
-                if abs(allvalues[y][x]) > 0:
-                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+str(allvalues[y][x])+"};\n")
+                if abs(allvalues[y][x]) > 0.005:
+                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+"{:.2f}".format(allvalues[y][x])+"};\n")
         if atlas:
-            outfile.write("\\node (atlas) [scale=2,above right] at (rel axis cs:0,1) {\\bfseries\\itshape ATLAS};\n")
+            outfile.write("\\node (atlas) [scale=2,above right,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape}] at (rel axis cs:0,1) {ATLAS};\n")
             outfile.write("\\node [scale=2,anchor=west] at (atlas.east) {"+atlas+"};\n")
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
@@ -387,11 +405,12 @@ def getColorDefStringLaTeX(name,color):
   return "\\definecolor{"+name+"}{rgb}{"+str(r)+","+str(g)+","+str(b)+"}"
 
 
-def writepulls(args,results,outfile):
+def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=False):
+    from math import floor,ceil
     writehead(outfile)
     xunit = 3
     yunit = .5
-    outfile.write("\\begin{tikzpicture}[x="+str(xunit)+"cm,y="+str(yunit)+"cm,%\n")
+    outfile.write("\\begin{tikzpicture}[x="+str(xunit)+"cm,y=-"+str(yunit)+"cm,%\n")
     outfile.write("  lbl/.style={scale=1,anchor=west},%\n")
     outfile.write("  axlbl/.style={scale=0.5,anchor=center},%\n")
     outfile.write("  pull/.style={{|[scale=1]}-{|[scale=1]}},%\n")
@@ -399,11 +418,16 @@ def writepulls(args,results,outfile):
     outfile.write("  every node/.append style={font=\\sffamily}\n")
     outfile.write("]\n")
     outfile.write("\\pgfdeclarelayer{background}\\pgfsetlayers{background,main}\n")
-    allpars = sorted(results.keys())
+    if not allpars:
+        allpars = sorted(results.keys())
     npar = len(allpars)
     for np in range(0,npar):
         text = allpars[np]
-        outfile.write("\\node[lbl] at ("+str(args.range[1]+1)+","+str(np-npar)+") {")
+        if labels == "r":
+            outfile.write("\\node[lbl,xshift=1cm,anchor=west] at ("+str(args.range[1])+","+str(np-npar)+") ")
+        else:
+            outfile.write("\\node[lbl,xshift=-1cm,anchor=east] at ("+str(args.range[0])+","+str(np-npar)+") ")            
+        outfile.write("{")            
         if "{" in text and not "$" in text:
             outfile.write("\\ensuremath{"+text+"}")
         else:
@@ -414,20 +438,30 @@ def writepulls(args,results,outfile):
         ires = 0
         for style,(cv,edn,eup) in res.items():
             ires = ires+1
-            offset = float(ires)/(len(res)+1) - 0.5
+            if offset:
+                voffset = float(ires)/(len(res)+1) - 0.5
+            else:
+                voffset = 0
             if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
                 print("unable to print parameter "+allpars[np]+", dimension too large: "+str(cv)+" +"+str(eup)+" "+str(edn))
             else:
-                outfile.write("  \\draw["+style+"] (" +str(cv-abs(edn)) + "," + str(np-npar+offset) + ") -- (" + str(cv+abs(eup)) + "," + str(np-npar+offset) + ");")
-                outfile.write("  \\node[dot,"+style+"] at ("+str(cv)+","+str(np-npar+offset)+ ") {};\n")
+                outfile.write("  \\draw["+style+"] ({:.5f},{:.2f})--({:.5f},{:.2f});".format(cv-abs(edn),np-npar+voffset,cv+abs(eup),np-npar+voffset))
+                outfile.write("  \\node["+style+"] at ({:.5f},{:.2f})".format(cv,np-npar+voffset)+ "{};\n")
+            if numbers:
+                if labels == "r":
+                    hoffset = float(len(res.items())-ires)
+                    outfile.write("\\node[lbl,xshift=-"+str(hoffset)+"cm,anchor=east] at ("+str(args.range[0])+","+str(np-npar)+") ")            
+                else:
+                    hoffset = 2*float(ires)
+                    outfile.write("\\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(np-npar)+") ")
+                outfile.write(("{{${:"+numbers+"}^{{+{:"+numbers+"}}}_{{-{:"+numbers+"}}}$}};").format(cv,abs(eup),abs(edn)))
+                    
     from numpy import arange
-    for x in arange(int(args.range[0]),int(args.range[1])+1.1,step=0.25):
-        outfile.write("\\draw[black] (" +str(x)+ "," + str(-npar-0.5+0.2) + ") -- (" +str(x)+ "," +str(-npar-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
-#        outfile.write("\\node[axlbl,black,below left=5pt] at (" +str(args.range[0]-0.1)+ "," +str(-npar-0.5)+ ") {$\\frac{\\theta-\\theta_0}{\\Delta\\theta_0}$};\n")
-        outfile.write("\\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-npar-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-npar-0.5)+ ");\n")
-        for x in range(int(args.range[0]),int(args.range[1])):
-            outfile.write("\\draw[dashed,black] (" +str(x)+ "," +str(-npar-0.5)+ ") -- (" +str(x)+ "," +str(0)+ ");\n")
-                
+    for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.25):
+        outfile.write("\\draw[black] (" +str(x)+ "," + str(-0.5+0.2) + ") -- (" +str(x)+ "," +str(-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
+    outfile.write("\\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5)+ ") node [pos=1,anchor=north east,yshift=-.5cm]{Parameter of Interest};\n")
+    for x in range(floor(args.range[0]),ceil(args.range[1])+1):
+        outfile.write("\\draw[dashed,black] (" +str(x)+ "," +str(-0.5)+ ") -- (" +str(x)+ "," +str(-0.5-npar)+ ");\n")
     outfile.write("\\begin{pgfonlayer}{background}\n")
     outfile.write("  \\foreach \\i in ")
     if npar>3: outfile.write("{-1,-3,...,"+str(-2*((npar+1)/2))+"}")
