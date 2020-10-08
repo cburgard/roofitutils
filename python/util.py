@@ -318,6 +318,9 @@ def getPercent(nsigma):
     from scipy.stats import norm
     return 1 - (1-norm.cdf(nsigma))*2
 
+def make1dscan(scan):
+    return {k[0]:v for k,v in scan.items()}
+
 def createAsimov(ws,mc,asmName):
     import ROOT
     allParams = ROOT.RooArgSet()

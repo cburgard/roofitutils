@@ -2,15 +2,7 @@
 import os
 
 def texprep(string):
-    import re
-    x = ""
-    wilcoeffpat = re.compile("(^c\w+)")
-    mwilcoeff = wilcoeffpat.search(string)
-    if mwilcoeff:
-        x = string.replace("c","$c_{") + "}$"
-        if "box" in x: x = x.replace("box","\\Box")
-    else : x = string
-    return x
+    return string.replace("_","\\_")
 
 def writeResult(out,result,writecorrmat):
     if result.min.nll:
@@ -63,11 +55,23 @@ def reduceparams(allpars,parfilter):
             skimpars += " "+ texprep(x)
     return skimpars[1:len(skimpars)]
 
-def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
+def getCovariance(infilename,frname,parlist):
+    import ROOT
+    infile = ROOT.TFile.Open(infilename,"READ")
+    fr = infile.Get(frname)
+    rooargs = ROOT.RooArgList()
+    for p in parlist:
+        rooargs.add(fr.floatParsFinal().find(p))
+    mat = fr.reducedCovarianceMatrix(rooargs)
+    from numpy import array
+    return array([ [ mat(i,j) for i in range(0,mat.GetNcols()) ] for j in range(0,mat.GetNrows()) ])
+
+def collectcorrelations(results,filename,parfilter):
     import re
     ncorrpat = re.compile("Correlations[ ](\w+)")
     import glob
     ncorr = 0
+    parnames = []
     if os.path.isfile(filename):
         with open(filename,"r") as infile:
              lines = [line for line in infile ]
@@ -95,7 +99,7 @@ def collectcorrelationmatrix(parnames,results,filename,parfilter,label):
                             par1 = (rowmatch.group(1),rowmatch.group(2))
                             if (len(parfilter) != 0 and par1[0].startswith(parfilter) and par1[1].startswith(parfilter)) or len(parfilter) == 0:
                                 results.append( texprep((par1[0])) +" "+ texprep((par1[1]))+" "+rowmatch.group(3))
-    parnames = (parnames[0])
+    return parnames[0]
 
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
@@ -126,7 +130,7 @@ def collectresults(scans,results,files,label):
                             minnll = float(nllmatch.group(1))
                         elif match or "BkgTheory" in line: # todo: cleanup!
                             pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
-                            result = (float(cv),float(ed),float(eu))
+                            result = (float(cv),-float(ed),float(eu))
                             if not pname in results.keys():
                                 results[pname] = {}
                             results[pname][label] = result

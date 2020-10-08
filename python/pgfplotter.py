@@ -23,6 +23,8 @@ def writehead(stream):
     stream.write("\\renewcommand\\ttdefault{pcr}\n")
     stream.write("\\definecolor{myyellow}{rgb}{0.96,0.742,0.29}\n")
     stream.write("\\definecolor{myblue}{rgb}{0.1,0.32,0.738}\n")
+    stream.write("\\definecolor{myotheryellow}{rgb}{0.98828125,0.5625,0.13671875}\n")
+    stream.write("\\definecolor{myotherblue}{rgb}{0.18359375,0.3515625,0.7578125}\n")    
 
 def writefoot(stream):
     stream.write("\\end{document}\n")
@@ -38,54 +40,98 @@ def writeATLAS(label,outfile,inside=True,
     for i in range(0,len(labels)):
         outfile.write("\\node at (atlas.west) [anchor=west,yshift=-"+str(labelspread*(i+1))+"em]{"+labels[i]+"};\n")
 
-def writepois(atlas,par,allscans,outfilename,ymax=None):
-    """write a pois/NP ranking styled plot to a pgfplots tex file"""
-    with open(outfilename,"w") as outfile:
-        writehead(outfile)
-        allvals = [v[0] for pois in allscans.values() for v in pois.values()]
-        writefoot(outfile)
-
 def concat(strlist):
     string = ""
     for x in range(0,len(strlist)):
         string = string +","+ strlist[x]
     return string[1:len(string)] # remove comma which is the first character
 
-def writepois(atlas,poinames,allpois,outfilename,ymax=None):
+def writepoiset_old(poinames,allpois,outfile,style,poiopts,spread):
+    color = style.get("color","black")
+    outfile.write("\\addplot+ [color="+color+",mark options={color="+color+"},sharp plot,only marks,error bars/.cd,x dir=both, x explicit]\n coordinates{\n")
+    count = 0
+    for ipoi in poinames:
+        x = ipoi
+        scale = poiopts.get(ipoi,{}).get("scale",1)
+        tup = allpois[x]
+        if len(tup) == 1:
+            outfile.write("("+str(tup[0]*scale)+","+ str(spread*count)+")\n")
+        if len(tup) == 3:
+            cv,lo,hi = tup
+            outfile.write("("+str(cv*scale)+","+ str(spread*count)+") += ("+str(abs(hi*scale)) +",0) -= ("+str(abs(lo*scale))+",0) \n")
+        count = count+1
+    outfile.write("};\n")
+
+def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
+    from math import isnan
+    color = style.get("color","black")
+    count = 0
+    for ipoi in poinames:
+        x = ipoi
+        scale = poiopts.get(ipoi,{}).get("scale",1)
+        tup = allpois[x]
+        if style.get("interval",False):
+            for lo,hi in tup:
+                outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(scale*lo,spread*count,scale*hi,spread*count))
+        if style.get("error",True):
+            cv,lo,hi = tup
+            if isnan(lo) or isnan(hi):
+                if isnan(lo): lo=cv
+                if isnan(hi): hi=cv
+                print("encountered nan while plotting!")
+            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format((cv-abs(hi))*scale,spread*count,(cv+abs(lo))*scale,spread*count))
+        if style.get("point",True):
+            try:
+                cv = tup[0]
+            except TypeError:
+                cv = tup
+            outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+"] at (axis cs:{:.5f},{:.2f})".format(scale*cv,spread*count)+ "{};\n")
+        count = count+1
+    
+def writepois(atlas,pois,allsets,outfilename):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texprep
+    spread=1
+    if isinstance(pois, dict):
+        poinames = pois.keys()
+        poiopts = pois
+    elif isinstance(pois, list):
+        poinames = pois
+        poiopts = {}
+    else:
+        poinames = [ p[0] for p in pois ]
+        poiopts = { p[0]:p[1:]  for p in pois }
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    width = 0.8\\textwidth,\n")
         outfile.write("    height = 1\\textwidth, \n")
-        outfile.write("    xlabel = Best fit value \n")
+        outfile.write("    xlabel = Best fit value, \n")
         outfile.write("    clip = false,\n")
         outfile.write("    ymin=-1,\n")
-        outfile.write("    ymax= "+str(4.75 + len(allpois)*1.25)+ ",\n")
+        outfile.write("    ymax= "+str(2 + spread * len(poinames))+ ",\n")
         outfile.write("    xmin= -1.75,\n")
         outfile.write("    xmax=  2,\n")
         outfile.write("    minor tick num=4,\n")
         outfile.write("    ytick style={draw=none},\n")
         outfile.write("    yticklabels=\empty\n")
-        outfile.write("]")
-        outfile.write("\\addplot+ [color=black, sharp plot,only marks,error bars/.cd,x dir=both, x explicit]\n coordinates{\n")
-        count = 0
-        for ipoi in poinames:
-            x = ipoi
-            t = allpois[x]['color=black']
-            outfile.write("("+str(t[0])+","+ str(0.25+1.25*count)+") += ("+str(t[1]) +",0) -= ("+str(t[2])+",0) \n")
-            count = count + 1
-        outfile.write("};\n")
-        count = 0
-        for x in poinames:
-            outfile.write("\\node at ( axis cs:-1.75,"+ str(1.00+1.25*count)+") [anchor = north west]{"+texprep(x)+"};\n")
-            count = count + 1
+        outfile.write("]\n")
         if atlas: writeATLAS(atlas,outfile)            
-        outfile.write("\\node [anchor=west] at (atlas.east) {Internal};\n")
+        count = 0
+        outfile.write("\\draw (0,-1) -- (0,"+str(spread*(len(poinames)-0.5))+");\n")
+        for x in poinames:
+            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{"+texprep(x))
+            scale=poiopts.get(x,{}).get("scale",1.)
+            if scale != 1.:
+                outfile.write(" ($\\times {:g}$)".format(scale))
+            outfile.write("};\n")
+            count = count + 1
+        for options,poiset in allsets:
+            writepoiset(poinames,poiset,outfile,options,poiopts,spread)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
+        writefoot(outfile)
         print("wrote "+outfilename)
 
 def makelabels(listofstrings):
@@ -160,8 +206,9 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
 
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,ymax)
-        
+
 def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None):
+    from util import make1dscan
     """write a bunch of 1d scans to a pgfplots tex file"""
     with open(outfilename,"w") as outfile:
         writehead(outfile)
@@ -183,7 +230,7 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         for pnamelist,curve in allscans.items():
             for options,scan in curve.items():
                 print("writing scan for "+pnamelist[0])
-                writescan1d(pnamelist[0],par,{k[0]:v for k,v in scan.items()},options,outfile,percent_thresholds,drawpoints,ymax)
+                writescan1d(pnamelist[0],par,make1dscan(scan),options,outfile,percent_thresholds,drawpoints,ymax)
         outfile.write("\\addplot[gray,densely dashed,thick] {1};\n")
         outfile.write("\\addplot[gray,densely dashed,thick] {4};\n") 
         outfile.write("\\end{axis}\n")

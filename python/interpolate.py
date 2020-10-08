@@ -193,8 +193,6 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
 #    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)
-    print nllmin
-    print values
     if algorithm == "ROOT":
         allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
     elif algorithm == "skimage":
@@ -204,8 +202,48 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
 
     return allcontours,minimum
 
+def findintervals(points,nllval):
+    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
+    from scipy.interpolate import PchipInterpolator as interpolate
+    from math import isnan
+    xvals = [ x for x,y in points ]
+    yvals = [ y for x,y in points ]
+    i0 = 0
+    ymin = inf
+    for i in range(0,len(xvals)):
+        if yvals[i] < ymin:
+            ymin = yvals[i]
+            i0 = i
+    x0 = xvals[i0]
+    xl,xr = min(xvals),max(xvals)
+    r = abs(xr - xl)
+    xll = xl - 0.2*r
+    xrr = xr + 0.2*r
+    n = 50
+    step = (xrr-xll)/n
+    interp = interpolate(xvals, yvals, extrapolate=True)
+    from scipy.optimize import ridder as solve
+    leftbound = None
+    rightbound = None
+    intervals = []
+    for i in range(1,n):
+        left  =  (xll + i    *step)
+        right =  (xll + (i-1)*step)
+        if (interp(left)-nllval)*(interp(right)-nllval) < 0:
+            xcoord = solve(lambda x : interp(x) - nllval,left,right)
+            if interp(left) < nllval:
+                rightbound = None
+                leftbound = xcoord
+            else:
+                rightbound = xcoord
+            if leftbound != None and rightbound != None:
+                intervals.append((leftbound,rightbound))
+                leftbound = None
+                rightbound=None
+    return intervals
+    
 def findcrossings(points,nllval):
-    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value"""
+    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
     from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
     yvals = [ y for x,y in points ]
