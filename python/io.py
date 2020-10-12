@@ -35,7 +35,7 @@ def collectpoints(points,files,label):
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
         print("no points found in "+",".join(files))
-        exit(0)
+        return
     from RooFitUtils.util import parsedict
     allpoints = []
     for filename in filenames:
@@ -114,7 +114,7 @@ def collectresults(scans,results,files,label):
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
         print("no points found in "+",".join(files))
-        exit(0)
+        return
     for filename in filenames:
         if os.path.isfile(filename):
             with open(filename,'r') as infile:

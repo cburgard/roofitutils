@@ -212,7 +212,7 @@ def findintervals(points,nllval):
     r = abs(xr - xl)
     xll = xl - 0.1*r
     xrr = xr + 0.1*r
-    n = 50
+    n = 100
     step = (xrr-xll)/n
     interp = interpolate(xvals, yvals, extrapolate=True)
     from scipy.optimize import ridder as solve
@@ -235,7 +235,7 @@ def findintervals(points,nllval):
                 rightbound=None
     return intervals
     
-def findcrossings(points,nllval):
+def findcrossings(points,nllval,minthreshold=0.05):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
     from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
@@ -243,7 +243,7 @@ def findcrossings(points,nllval):
     i0 = 0
     ymin = inf
     for i in range(0,len(xvals)):
-        if yvals[i] < ymin or (yvals[i] == ymin and abs(xvals[i]) < abs(xvals[i0])):
+        if yvals[i] < ymin or (yvals[i] < ymin+minthreshold and abs(xvals[i]) < abs(xvals[i0])):
             ymin = yvals[i]
             i0 = i
     x0 = xvals[i0]
@@ -276,7 +276,11 @@ def findminimum(points):
     yvals = [ points[x] for x in xvals ]
     interp = interpolate(xvals, yvals, extrapolate=True)
     minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]), bounds=[[min(xvals),max(xvals)]])
-    return minimum.fun
+    miny = minimum.fun
+    for y in yvals:
+        if y<miny:
+            miny=y
+    return miny
 
 def smoothgraph(graph):
     """smooth a graph by taking the center of each edge and constructing a new graph from those"""

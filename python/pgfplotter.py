@@ -63,6 +63,7 @@ def writepoiset_old(poinames,allpois,outfile,style,poiopts,spread):
     for ipoi in poinames:
         x = ipoi
         scale = poiopts.get(ipoi,{}).get("scale",1)
+        if not x in allpois.keys(): continue
         tup = allpois[x]
         if len(tup) == 1:
             outfile.write("("+str(tup[0]*scale)+","+ str(spread*count)+")\n")
@@ -79,6 +80,7 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
     for ipoi in poinames:
         x = ipoi
         scale = poiopts.get(ipoi,{}).get("scale",1)
+        if not x in allpois.keys(): continue
         tup = allpois[x]
         if style.get("interval",False):
             for lo,hi in tup:
