@@ -57,7 +57,12 @@ def reduceparams(allpars,parfilter):
 
 def getCovariance(infilename,frname,parlist):
     import ROOT
+    from os.path import isfile
+    if not isfile(infilename):
+        raise RuntimeError("unable to open file '{:s}'".format(infilename))    
     infile = ROOT.TFile.Open(infilename,"READ")
+    if not infile or not infile.IsOpen():
+        raise RuntimeError("unable to open file '{:s}'".format(infilename))
     fr = infile.Get(frname)
     rooargs = ROOT.RooArgList()
     for p in parlist:
