@@ -3,6 +3,7 @@ from RooFitUtils.util import getThreshold
 thresholdColors = ["blue","green","yellow","orange","red"]
 thresholdStyles = ["solid","dashed","loosely dashed","dotted","loosely dotted"]
 
+
 def writehead(stream,atlas=True):
     stream.write("\\documentclass{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
@@ -22,6 +23,11 @@ def writehead(stream,atlas=True):
     stream.write("\\definecolor{myotheryellow}{rgb}{0.98828125,0.5625,0.13671875}\n")
     stream.write("\\definecolor{myotherblue}{rgb}{0.18359375,0.3515625,0.7578125}\n")
     if atlas:
+        if atlas == True:
+            atlaslabel = "Internal"
+        else:
+            atlaslabel = atlas
+        stream.write("\\providecommand\\ATLASlabel{"+str(atlaslabel)+"}\n")        
         stream.write("\\renewcommand\\sfdefault{phv}\n")
         stream.write("\\renewcommand\\rmdefault{phv}\n")
         stream.write("\\renewcommand\\ttdefault{pcr}\n")
@@ -39,16 +45,20 @@ def writehead(stream,atlas=True):
 def writefoot(stream):
     stream.write("\\end{document}\n")
 
-def writeATLAS(label,outfile,inside=True,
+def writeATLAS(outfile,label="\\ATLASlabel",inside=True,
                labels=["\\scriptsize{$\\sqrt{s}=$13 TeV, 139 fb$^{\\scriptsize{-1}}$}",
                        "\\scriptsize{$m_{\\scalebox{.9}{$\\scriptstyle H$}}=$ 125.09 GeV, $|y_{\\scalebox{.9}{$\\scriptstyle H$}}|$ $<$ 2.5}"],labelspread=1.8):
     if inside:
         outfile.write("\\node (atlas) at (rel axis cs:0.025,0.975) [anchor=north west,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape}]{ATLAS};\n")
+        outfile.write("\\node (atlaslabel) at (atlas.east) [anchor=west,font={\\fontfamily{qhv}\\selectfont}]{"+label+"};\n")        
     else:
-        outfile.write("\\node (atlas) at (rel axis cs:0,1) [anchor=south west,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape},yshift="+str(labelspread*len(labels))+"em]{ATLAS};\n")
-    outfile.write("\\node [right=.5ex of atlas,font={\\fontfamily{qhv}\\selectfont}]{"+label+"};\n")        
-    for i in range(0,len(labels)):
-        outfile.write("\\node at (atlas.west) [anchor=west,scale=0.8,yshift=-"+str(labelspread*(i+1))+"em]{"+labels[i]+"};\n")
+        outfile.write("\\node (atlas) at (rel axis cs:0,1) [scale=2,above right,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape}]{ATLAS};\n")
+        outfile.write("\\node (atlaslabel) at (atlas.east) [scale=2,anchor=west,font={\\fontfamily{qhv}\\selectfont}]{"+label+"};\n")
+    if inside:
+        for i in range(0,len(labels)):
+            outfile.write("\\node at (atlas.west) [anchor=west,scale=0.8,yshift=-"+str(labelspread*(i+1))+"em]{"+labels[i]+"};\n")
+    else:
+        outfile.write("\\node at (atlaslabel.east) [anchor=west,scale=1.5]{"+", ".join(labels)+"};\n")
 
 def concat(strlist):
     string = ""
@@ -132,7 +142,7 @@ def writepois(atlas,pois,allsets,outfilename,labels=[],range=[-2,2]):
         outfile.write("    xticklabel style={/pgf/number format/fixed},\n")
         outfile.write("    scaled ticks=false,\n")
         outfile.write("]\n")
-        if atlas: writeATLAS(atlas,outfile,True,labels)            
+        if atlas: writeATLAS(outfile,atlas,True,labels)            
         count = 0
         outfile.write("\\draw (0,-1) -- (0,"+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:
@@ -159,7 +169,7 @@ def guessanchor(angle):
     else:
         return "north east"
 
-def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90):
+def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[]):
     """write a correlation matrix to a pgfplots tex file"""
     if len(ycoords) != len(allvalues):
         print(len(allvalues),len(ycoords))
@@ -201,7 +211,9 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    xticklabels={"+ concat(xlabels) + "},\n") # no typo
         outfile.write("    yticklabels={"+ concat(ylabels) + "},\n") # no typo
         outfile.write("    axis on top,\n")
-        outfile.write("    x tick label style={anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
+        outfile.write("    x tick label style={scale=1.5,anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
+        outfile.write("    y tick label style={scale=1.5},\n")
+        outfile.write("    colorbar style={y tick label style={scale=1.5}},\n")        
         outfile.write("    tick style={draw=none}\n ]\n")
         outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
         outfile.write("x  y  correlations\n")
@@ -213,7 +225,7 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
             for y in range(0,len(ycoords)):
                 if abs(allvalues[y][x]) > 0.005:
                     outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+"{:.2f}".format(allvalues[y][x])+"};\n")
-        if atlas: writeATLAS(atlas,outfile,inside=False)                        
+        if atlas: writeATLAS(outfile,atlas,inside=False,labels=plotlabels)                        
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
@@ -241,7 +253,7 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
         outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))
         outfile.write("]\n")
-        if atlas: writeATLAS(atlas,outfile)
+        if atlas: writeATLAS(outfile,atlas)
         for pnamelist,curve in allscans.items():
             for options,scan in curve.items():
                 print("writing scan for "+pnamelist[0])
@@ -319,7 +331,7 @@ def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
                 outfile.write("    xlabel=$"+args.labels[0]+"$,\n")
                 outfile.write("    ylabel=$"+args.labels[1]+"$,\n")
         outfile.write("]\n")
-        if args.atlas: writeATLAS(args.atlas,outfile)
+        if args.atlas: writeATLAS(outfile,args.atlas)
 
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
@@ -357,7 +369,7 @@ def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thr
                 outfile.write("    xlabel="+args.labels[0]+",\n")
                 outfile.write("    ylabel="+args.labels[1]+",\n")
         outfile.write("]\n")
-        if args.atlas: writeATLAS(args.atlas,outfile)
+        if args.atlas: writeATLAS(outfile,args.atlas)
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
                 for pnamelist_merge,scan_merge in scans2d_merge.items():
