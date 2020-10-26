@@ -129,7 +129,7 @@ def writepois(atlas,pois,allsets,outfilename,labels=[],range=[-2,2]):
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    width = 0.8\\textwidth,\n")
-        outfile.write("    height = "+str(2*len(poinames))+"cm,\n")
+        outfile.write("    y=1cm,\n")
         outfile.write("    xlabel = {Parameter Value}, \n")
         outfile.write("    clip = false,\n")
         outfile.write("    ymin=-1,\n")

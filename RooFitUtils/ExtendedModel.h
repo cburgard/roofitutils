@@ -13,6 +13,7 @@
 
 #include "RooAbsData.h"
 #include "RooAbsPdf.h"
+#include "RooFormulaVar.h"
 #include "RooArgSet.h"
 #include "RooMsgService.h"
 #include "RooWorkspace.h"
