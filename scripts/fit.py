@@ -38,46 +38,38 @@ def buildModel(args):
                                            args.binnedLikelihood, ROOT.RooArgSet(), "pdf_")
 
     if args.penalty:
-	npens = len(args.penalty)
+        npens = len(args.penalty)
         ws = model.GetWorkspace()
         if npens > 0:
-	    for ipens in range(0, npens):
-  	        pars = ROOT.RooArgList()
-   	        allpars = args.penalty[0][1].split(",")
-  	        print allpars
-	        for par in allpars[0:len(allpars)]:
-	            par = par.strip(" ") 
-		    print "Adding ",par
-	            par = par.strip("\"") 
-		    ws.obj(par).Print()
-	   	    pars.add(ws.obj(par))
-
-  	        name = "penalty_"+str(ipens)
-	        penaltyform = ROOT.RooFormulaVar(name, args.penalty[ipens][0], pars)
-	        print penaltyform
-	        model.addPenalty(penaltyform)
+            for ipens in range(0, npens):
+                pars = ROOT.RooArgList()
+                allpars = args.penalty[0][1].split(",")
+                for par in allpars[0:len(allpars)]:
+                    par = par.strip(" ") 
+                    par = par.strip("\"") 
+                    ws.obj(par).Print()
+                    pars.add(ws.obj(par))
+        
+                name = "penalty_"+str(ipens)
+                penaltyform = ROOT.RooFormulaVar(name, args.penalty[ipens][0], pars)
+                model.addPenalty(penaltyform)
 
     if args.penaltyfile:
         ws = model.GetWorkspace()
-	ipens = 0
+        ipens = 0
         for penline in open(args.penaltyfile,"r"):
-	    ipens = ipens + 1
-            print " "
-	    lineparts = penline.strip("\n").split("|")
+            ipens = ipens + 1
+            lineparts = penline.strip("\n").split("|")
             lineparts = (lineparts[0], lineparts[1])
-  	    pars = ROOT.RooArgList()
-   	    allpars = lineparts[1].split(",")
-	    for par in allpars[0:len(allpars)]:
-	        par = par.strip(" ")
-		print "Adding ",par
-	   	pars.add(ws.obj(par))
-
-	    print lineparts[0]
-	    print pars
-  	    name = "penalty_"+str(ipens)
-	    penaltyform = ROOT.RooFormulaVar(name, lineparts[0], pars)
-	    print penaltyform
-	    model.addPenalty(penaltyform)
+            pars = ROOT.RooArgList()
+            allpars = lineparts[1].split(",")
+            for par in allpars[0:len(allpars)]:
+                par = par.strip(" ")
+                pars.add(ws.obj(par))
+            
+            name = "penalty_"+str(ipens)
+            penaltyform = ROOT.RooFormulaVar(name, lineparts[0], pars)
+            model.addPenalty(penaltyform)
 
     if args.fixAllNP:          model.fixNuisanceParameters()
     if args.setInitialError:   model.setInitialErrors()
