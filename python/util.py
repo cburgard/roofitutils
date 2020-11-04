@@ -384,3 +384,7 @@ def getnofNPs(hesse,pois):
   N = hesse.GetNcols()
   npois = len(pois.strip(","))
   return N - npois
+
+def sgnstr(x):
+    if x<0: return str(x)
+    return "+"+str(x)

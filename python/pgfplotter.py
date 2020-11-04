@@ -133,7 +133,7 @@ def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
         outfile.write("    xlabel = {Parameter Value}, \n")
         outfile.write("    clip = false,\n")
         outfile.write("    ymin=-1,\n")
-        outfile.write("    ymax= "+str(len(labels) + spread * len(poinames))+ ",\n")
+        outfile.write("    ymax= "+str(len(plotlabels) + spread * len(poinames))+ ",\n")
         outfile.write("    xmin="+str(range[0])+",\n")
         outfile.write("    xmax="+str(range[1])+",\n")
         outfile.write("    minor tick num=4,\n")
@@ -169,7 +169,7 @@ def guessanchor(angle):
     else:
         return "north east"
 
-def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[]):
+def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],manual=True):
     """write a correlation matrix to a pgfplots tex file"""
     if len(ycoords) != len(allvalues):
         print(len(allvalues),len(ycoords))
@@ -182,7 +182,10 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}[\n")
         if atlas:
-            outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")        
+            outfile.write("  font={\\fontfamily{qhv}\\selectfont},\n")
+        from .util import sgnstr
+        outfile.write("  map color/.code={\\pgfmathparse{"+str(int(-minval*(1000./(maxval-minval))))+" + "+str(int(1000./(maxval-minval)))+"*#1}\\pgfplotscolormapdefinemappedcolor{\\pgfmathresult}},\n")
+        outfile.write("  meta/.style={map color=#1,minimum size=3em,fill=mapped color}\n")        
         outfile.write("]\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
@@ -215,16 +218,25 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    y tick label style={scale=1.5},\n")
         outfile.write("    colorbar style={y tick label style={scale=1.5}},\n")        
         outfile.write("    tick style={draw=none}\n ]\n")
-        outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
-        outfile.write("x  y  correlations\n")
-        for x in range(0,len(xcoords)):
-            for y in range(0,len(ycoords)):
-                outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[y][x])+"\n")
-        outfile.write("};\n")
+        if not manual:
+            outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
+            outfile.write("x  y  correlations\n")
+            for x in range(0,len(xcoords)):
+                for y in range(0,len(ycoords)):
+                    outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[y][x])+"\n")
+            outfile.write("};\n")
+#        else:
+#            for x in range(0,len(xcoords)):
+#                for y in range(0,len(ycoords)):
+#                    if abs(allvalues[y][x]) > 0:
+#                        outfile.write("\\fill[map color="+str(allvalues[y][x])+",mapped color] (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+") ++ (-1.5em,-1.5em) rectangle ++ (3em,3em);\n")
+#
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
                 if abs(allvalues[y][x]) > 0.005:
-                    outfile.write("\\node at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+"{:.2f}".format(allvalues[y][x])+"};\n")
+                    outfile.write("\\node ")
+                    if manual: outfile.write("[meta="+str(allvalues[y][x])+"]")
+                    outfile.write(" at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+"{:.2f}".format(allvalues[y][x])+"};\n")
         if atlas: writeATLAS(outfile,atlas,inside=False,labels=plotlabels)                        
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
