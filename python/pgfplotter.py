@@ -66,23 +66,6 @@ def concat(strlist):
         string = string +","+ strlist[x]
     return string[1:len(string)] # remove comma which is the first character
 
-def writepoiset_old(poinames,allpois,outfile,style,poiopts,spread):
-    color = style.get("color","black")
-    outfile.write("\\addplot+ [color="+color+",mark options={color="+color+"},sharp plot,only marks,error bars/.cd,x dir=both, x explicit]\n coordinates{\n")
-    count = 0
-    for ipoi in poinames:
-        x = ipoi
-        scale = poiopts.get(ipoi,{}).get("scale",1)
-        if not x in allpois.keys(): continue
-        tup = allpois[x]
-        if len(tup) == 1:
-            outfile.write("("+str(tup[0]*scale)+","+ str(spread*count)+")\n")
-        if len(tup) == 3:
-            cv,lo,hi = tup
-            outfile.write("("+str(cv*scale)+","+ str(spread*count)+") += ("+str(abs(hi*scale)) +",0) -= ("+str(abs(lo*scale))+",0) \n")
-        count = count+1
-    outfile.write("};\n")
-
 def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
     from math import isnan
     color = style.get("color","black")
@@ -109,21 +92,15 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
                 cv = tup
             outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(scale*cv,spread*count)+ "{};\n")
         count = count+1
-    
+
+
+        
 def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texprep
+    from RooFitUtils.util import parsepois
+    poinames,poiopts = parsepois(pois)
     spread=1
-    if isinstance(pois, dict):
-        poinames = pois.keys()
-        poiopts = pois
-    else:
-        if isinstance(pois[0],str):
-            poinames = pois
-            poiopts = {}
-        else:
-            poinames = [ p[0] for p in pois ]
-            poiopts = { p[0]:p[1] for p in pois }
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")

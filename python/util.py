@@ -388,3 +388,17 @@ def getnofNPs(hesse,pois):
 def sgnstr(x):
     if x<0: return str(x)
     return "+"+str(x)
+
+def parsepois(pois):
+    if isinstance(pois, dict):
+        poinames = list(pois.keys())
+        poiopts = pois
+    else:
+        if isinstance(pois[0],str):
+            poinames = pois
+            poiopts = {}
+        else:
+            poinames = [ p[0] for p in pois ]
+            poiopts = { p[0]:p[1] for p in pois }
+    return poinames,poiopts
+            

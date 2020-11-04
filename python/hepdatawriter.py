@@ -21,8 +21,42 @@ def getmatrix(xcoords,ycoords,allvalues,label):
             mat["dependent_variables"][0]["values"].append(float(allvalues[j][i]))
     return mat
 
+def getvalues(pois,allsets):
+    """convert postfit values and confidence intervals to a hepdata dictionary"""
+    from RooFitUtils.util import parsepois
+    poinames,poiopts = parsepois(pois)    
+    values = {"independent_variables":[{"header":{"name":"POI"},"values":poinames}],"dependent_variables":[]}
+    for x in poinames:
+        for options,poiset in allsets:
+            label = options.get("label","default")
+            variable = {"header":{"name":x,"label":label},"values":[],"qualifiers":[{"POI":x,"label":label}]}
+            if not x in poiset.keys(): continue
+            tup = poiset[x]
+            if options.get("interval",False):
+                for lo,hi in tup:
+                    variable["values"].append({"low":lo,"high":hi})
+            if options.get("error",True):
+                print(tup)
+                cv,lo,hi = tup
+                if isnan(lo) or isnan(hi):
+                    if isnan(lo): lo=cv
+                    if isnan(hi): hi=cv
+                    variable["values"].append({"high":cv-abs(hi),"low":cv+abs(lo)})
+            if options.get("point",True):
+                try:
+                    cv = tup[0]
+                except TypeError:
+                    cv = tup
+                    variable["values"].append({"value":cv})
+            values["dependent_variables"].append(variable)
+    return values
 
 def writematrix(xcoords,ycoords,allvalues,outfilename,label="correlation"):
     """write a correlation matrix to a hepdata yml file"""    
     yml = getmatrix(xcoords,ycoords,allvalues,label)
+    writeyaml(outfilename,yml)
+
+def writepois(pois,allsets,outfilename):
+    """write postfit values and confidence intervals of the POIs to a hepdata yml file"""    
+    yml = getvalues(pois,allsets)
     writeyaml(outfilename,yml)
