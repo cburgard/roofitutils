@@ -110,7 +110,7 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
             outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(scale*cv,spread*count)+ "{};\n")
         count = count+1
     
-def writepois(atlas,pois,allsets,outfilename,labels=[],range=[-2,2]):
+def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texprep
     spread=1
@@ -142,7 +142,7 @@ def writepois(atlas,pois,allsets,outfilename,labels=[],range=[-2,2]):
         outfile.write("    xticklabel style={/pgf/number format/fixed},\n")
         outfile.write("    scaled ticks=false,\n")
         outfile.write("]\n")
-        if atlas: writeATLAS(outfile,atlas,True,labels)            
+        if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)            
         count = 0
         outfile.write("\\draw (0,-1) -- (0,"+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:
@@ -234,7 +234,7 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,ymax)
 
-def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[]):
     from util import make1dscan
     """write a bunch of 1d scans to a pgfplots tex file"""
     with open(outfilename,"w") as outfile:
@@ -253,7 +253,7 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
         outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))
         outfile.write("]\n")
-        if atlas: writeATLAS(outfile,atlas)
+        if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)
         for pnamelist,curve in allscans.items():
             for options,scan in curve.items():
                 print("writing scan for "+pnamelist[0])
@@ -270,7 +270,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
     from RooFitUtils.util import graphrescale
-    """obtaining the - 2 log Lambda(x), where Lambda = LL(x)/LL(x0)  """
+    # obtaining the - 2 log Lambda(x), where Lambda = LL(x)/LL(x0)
     nllmin = findminimum(allpoints)
     points = graphrescale(allpoints,nllmin,2)
     outfile.write("\\addplot["+options+",very thick,mark=none,smooth] coordinates {\n")
@@ -305,7 +305,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
-def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
+def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds,plotlabels=[]):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:
@@ -331,7 +331,7 @@ def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
                 outfile.write("    xlabel=$"+args.labels[0]+"$,\n")
                 outfile.write("    ylabel=$"+args.labels[1]+"$,\n")
         outfile.write("]\n")
-        if args.atlas: writeATLAS(outfile,args.atlas)
+        if args.atlas: writeATLAS(outfile,args.atlas,inside=True,labels=plotlabels)
 
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
@@ -343,7 +343,7 @@ def writescans2d(args,scans2d,extrapoints,npoints,percent_thresholds):
         writefoot(outfile)
         print("wrote "+args.output)
 
-def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thresholds):
+def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thresholds,plotlabels):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     with open(args.output,"w") as outfile:
@@ -369,7 +369,7 @@ def writemergescans2d(args,scans2d,scans2d_merge,extrapoints,npoints,percent_thr
                 outfile.write("    xlabel="+args.labels[0]+",\n")
                 outfile.write("    ylabel="+args.labels[1]+",\n")
         outfile.write("]\n")
-        if args.atlas: writeATLAS(outfile,args.atlas)
+        if args.atlas: writeATLAS(outfile,args.atlas,inside=True,labels=plotlabels)
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
                 for pnamelist_merge,scan_merge in scans2d_merge.items():
