@@ -55,7 +55,7 @@ def reduceparams(allpars,parfilter):
             skimpars += " "+ texprep(x)
     return skimpars[1:len(skimpars)]
 
-def getCovariance(infilename,frname,parlist):
+def getCovariance_ROOT(infilename,frname,parlist):
     import ROOT
     from os.path import isfile
     if not isfile(infilename):
@@ -63,13 +63,31 @@ def getCovariance(infilename,frname,parlist):
     infile = ROOT.TFile.Open(infilename,"READ")
     if not infile or not infile.IsOpen():
         raise RuntimeError("unable to open file '{:s}'".format(infilename))
-    fr = infile.Get(frname)
-    rooargs = ROOT.RooArgList()
-    for p in parlist:
-        rooargs.add(fr.floatParsFinal().find(p))
-    mat = fr.reducedCovarianceMatrix(rooargs)
+    if frname:
+        fr = infile.Get(frname)
+    else:
+        for obj in infile.GetListOfKeys():
+            if obj.GetClassName() == "RooFitResult":
+                fr = obj.ReadObj()
+                break
+    if parlist:
+        rooargs = ROOT.RooArgList()
+        for p in parlist:
+            rooargs.add(fr.floatParsFinal().find(p))
+        return fr.reducedCovarianceMatrix(rooargs)
+    else:
+        return fr.covarianceMatrix()        
+
+def getCovariance(infilename,frname=None,parameters=None):
+    mat = getCovariance_ROOT(infilename,frname,parlist=parameters)
     from numpy import array
     return array([ [ mat(i,j) for i in range(0,mat.GetNcols()) ] for j in range(0,mat.GetNrows()) ])
+
+def getCorrelation(infilename,frname=None,parameters=None):
+    mat = getCovariance_ROOT(infilename,frname,parlist=parameters)
+    from numpy import array
+    from math import sqrt
+    return array([ [ mat(i,j) / sqrt(mat(i,i) * mat(j,j)) for i in range(0,mat.GetNcols()) ] for j in range(0,mat.GetNrows()) ])
 
 def collectcorrelations(results,filename,parfilter):
     import re

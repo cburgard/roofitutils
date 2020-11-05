@@ -146,7 +146,7 @@ def guessanchor(angle):
     else:
         return "north east"
 
-def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],manual=True):
+def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],manual=True,showall=False,whitefont=lambda x,xmin,xmax: x-xmin>0.8*(xmax-xmin)):
     """write a correlation matrix to a pgfplots tex file"""
     if len(ycoords) != len(allvalues):
         print(len(allvalues),len(ycoords))
@@ -160,7 +160,7 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("\\begin{tikzpicture}[\n")
         if atlas:
             outfile.write("  font={\\fontfamily{qhv}\\selectfont},\n")
-        from .util import sgnstr
+        from RooFitUtils.util import sgnstr,formatNumber
         outfile.write("  map color/.code={\\pgfmathparse{"+str(int(-minval*(1000./(maxval-minval))))+" + "+str(int(1000./(maxval-minval)))+"*#1}\\pgfplotscolormapdefinemappedcolor{\\pgfmathresult}},\n")
         outfile.write("  meta/.style={map color=#1,minimum size=3em,fill=mapped color}\n")        
         outfile.write("]\n")
@@ -173,10 +173,10 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    y=3em,\n")
         outfile.write("    xtick=data,\n")
         outfile.write("    ytick=data,\n")
-        outfile.write("    ymin="+ ycoords[0] + ",\n")
-        outfile.write("    ymax="+ ycoords[len(ycoords)-1] +",\n")
-        outfile.write("    xmin="+ xcoords[0] +",\n")
-        outfile.write("    xmax="+ xcoords[len(xcoords)-1] +",\n")
+        outfile.write("    ymin={[normalized]0},\n")
+        outfile.write("    ymax={[normalized]"+str(len(ycoords)-1)+"},\n")
+        outfile.write("    xmin={[normalized]0},\n")
+        outfile.write("    xmax={[normalized]"+str(len(xcoords)-1)+"},\n")        
         outfile.write("    enlarge x limits={abs=1.5em},\n")
         outfile.write("    enlarge y limits={abs=1.5em},\n")
         if minval:
@@ -202,18 +202,13 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
                 for y in range(0,len(ycoords)):
                     outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[y][x])+"\n")
             outfile.write("};\n")
-#        else:
-#            for x in range(0,len(xcoords)):
-#                for y in range(0,len(ycoords)):
-#                    if abs(allvalues[y][x]) > 0:
-#                        outfile.write("\\fill[map color="+str(allvalues[y][x])+",mapped color] (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+") ++ (-1.5em,-1.5em) rectangle ++ (3em,3em);\n")
-#
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
-                if abs(allvalues[y][x]) > 0.005:
-                    outfile.write("\\node ")
-                    if manual: outfile.write("[meta="+str(allvalues[y][x])+"]")
-                    outfile.write(" at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+"{:.2f}".format(allvalues[y][x])+"};\n")
+                if showall or abs(allvalues[y][x]) > 0.005:
+                    outfile.write("\\node [")
+                    if manual: outfile.write("meta="+str(allvalues[y][x])+",")
+                    if minval and maxval and whitefont(allvalues[y][x],minval,maxval): outfile.write("text=white")
+                    outfile.write("] at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+formatNumber(allvalues[y][x],2)+"};\n")
         if atlas: writeATLAS(outfile,atlas,inside=False,labels=plotlabels)                        
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")

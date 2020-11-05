@@ -402,3 +402,25 @@ def parsepois(pois):
             poiopts = { p[0]:p[1] for p in pois }
     return poinames,poiopts
             
+def first_n_nonzero_digits(l, n):
+    from itertools import islice
+    return int(''.join(islice((i for i in str(abs(l)) if i not in {'0', '.'}), n)).ljust(n, '0'))
+
+def formatNumber(x,ndigits):
+    from math import log10
+    if log10(abs(x)) < -ndigits: return "0"
+    return "{:f}".format(round(x,ndigits)).rstrip("0").rstrip(".")
+
+def formatNumberPDG(x):
+    if x == 0: return "0"
+    from math import floor,log10
+    digits = first_n_nonzero_digits(x,3)
+    scale = floor(log10(abs(x)))
+    if digits < 354:
+        fmt =  "{:."+str(max(0,-scale+1))+"f}"
+    elif digits < 949:
+        fmt = "{:."+str(max(0,-scale))+"f}"
+    else:
+        fmt = "{:."+str(max(0,-scale-1))+"f}"
+    return fmt.format(x)
+

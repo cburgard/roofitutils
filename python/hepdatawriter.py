@@ -47,7 +47,7 @@ def getvalues(pois,allsets):
                     cv = tup[0]
                 except TypeError:
                     cv = tup
-                    variable["values"].append({"value":cv})
+                variable["values"].append({"value":cv})
             values["dependent_variables"].append(variable)
     return values
 
