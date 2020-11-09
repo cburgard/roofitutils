@@ -1,7 +1,15 @@
 
 import os
 
-def texprep(string):
+latex_aliases = {}
+
+def texdef(a,b):
+    global latex_aliases
+    latex_aliases[a] = b
+
+def texify(string):
+    if string in latex_aliases.keys():
+        return latex_aliases[string]
     return string.replace("_","\\_")
 
 def writeResult(out,result,writecorrmat):
@@ -52,7 +60,7 @@ def reduceparams(allpars,parfilter):
     parpat = re.compile("^"+parfilter)
     for x in allpars:
         if x.startswith(parfilter):
-            skimpars += " "+ texprep(x)
+            skimpars += " "+ texify(x)
     return skimpars[1:len(skimpars)]
 
 def getCovariance_ROOT(infilename,frname,parlist):
@@ -111,7 +119,7 @@ def collectcorrelations(results,filename,parfilter):
                         redpars = reduceparams(allpars,parfilter)
                         parnames.append(redpars)
                     else:
-                        for x in allpars: parnames.append(texprep(x))
+                        for x in allpars: parnames.append(texify(x))
                     pattern = ""
                     for x in range(0, ncorr):
                         pattern += "([-]*\d+.\d+)[ ]"
@@ -121,7 +129,7 @@ def collectcorrelations(results,filename,parfilter):
                         if rowmatch:
                             par1 = (rowmatch.group(1),rowmatch.group(2))
                             if (len(parfilter) != 0 and par1[0].startswith(parfilter) and par1[1].startswith(parfilter)) or len(parfilter) == 0:
-                                results.append( texprep((par1[0])) +" "+ texprep((par1[1]))+" "+rowmatch.group(3))
+                                results.append( texify((par1[0])) +" "+ texify((par1[1]))+" "+rowmatch.group(3))
     return parnames[0]
 
 def collectresults(scans,results,files,label):

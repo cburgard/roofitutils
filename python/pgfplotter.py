@@ -98,7 +98,7 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
         
 def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
     """write a POI plot to a pgfplots tex file"""
-    from RooFitUtils.io import texprep
+    from RooFitUtils.io import texify
     from RooFitUtils.util import parsepois
     poinames,poiopts = parsepois(pois)
     spread=1
@@ -124,7 +124,7 @@ def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
         count = 0
         outfile.write("\\draw (0,-1) -- (0,"+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:
-            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{"+texprep(x))
+            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{"+texify(x))
             scale=poiopts.get(x,{}).get("scale",1.)
             if scale != 1.:
                 outfile.write(" ($\\times {:g}$)".format(scale))
@@ -151,13 +151,14 @@ def guessanchor(angle):
     
 def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None):
     from RooFitUtils.util import flipped
+    from RooFitUtils.io import texify
     """write a correlation matrix to a pgfplots tex file"""
     if len(ycoords_orig) != len(allvalues):
         raise RuntimeError("incompatible lengths in y")
     if len(xcoords_orig) != len(allvalues[0]):
         raise RuntimeError("incompatible lengths in x")
-    xlabels = [ i.replace("_","\_") for i in xcoords_orig ]
-    ylabels = [ i.replace("_","\_") for i in flipped(ycoords_orig,flip) ]
+    xlabels = [ texify(i) for i in xcoords_orig ]
+    ylabels = [ texify(i) for i in flipped(ycoords_orig,flip) ]
     xcoords = [ i.replace("_","") for i in xcoords_orig]
     ycoords = [ i.replace("_","") for i in flipped(ycoords_orig,flip) ]
     with open(outfilename,"w") as outfile:
