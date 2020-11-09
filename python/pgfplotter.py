@@ -79,18 +79,19 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
             for lo,hi in tup:
                 outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(scale*lo,spread*count,scale*hi,spread*count))
         if style.get("error",True):
-            cv,lo,hi = tup
+            cvs,lo,hi = tup
             if isnan(lo) or isnan(hi):
-                if isnan(lo): lo=cv
-                if isnan(hi): hi=cv
+                if isnan(lo): lo=min(cvs)
+                if isnan(hi): hi=max(cvs)
                 print("encountered nan while plotting!")
-            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format((cv-abs(hi))*scale,spread*count,(cv+abs(lo))*scale,spread*count))
+            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format((cvs[0]-abs(hi))*scale,spread*count,(cvs[-1]+abs(lo))*scale,spread*count))
         if style.get("point",True):
             try:
-                cv = tup[0]
+                cvs = [v for v in tup]
             except TypeError:
-                cv = tup
-            outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(scale*cv,spread*count)+ "{};\n")
+                cvs = [tup]
+            for v in cvs:
+                outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(float(scale*v),float(spread*count))+ "{};\n")
         count = count+1
 
 
@@ -146,7 +147,7 @@ def guessanchor(angle):
     else:
         return "north east"
 
-def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],manual=True,showall=False,whitefont=lambda x,xmin,xmax: x-xmin>0.8*(xmax-xmin)):
+def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,whitefont=lambda x,xmin,xmax: x-xmin>0.8*(xmax-xmin)):
     """write a correlation matrix to a pgfplots tex file"""
     if len(ycoords) != len(allvalues):
         print(len(allvalues),len(ycoords))
@@ -166,6 +167,8 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("]\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
+        outfile.write("    colormap={bluewhiteyellow-texthighlighting}{rgb(0pt)=(0.,0.,0.);rgb(900pt)=(0.,0.,0.);rgb(901pt)=(1.,1.,1.);rgb(1000pt)=(1.,1.,1.);},\n")
+        outfile.write("    nodes near coords style={anchor=center,font=\\footnotesize,/pgf/number format/fixed,/pgf/number format/precision=2,color of colormap=\pgfplotspointmetatransformed of bluewhiteyellow-texthighlighting},\n")
         outfile.write("    clip = false,\n")
         outfile.write("    colorbar,\n")
         outfile.write("    colormap name={bluewhiteyellow},\n")
@@ -195,20 +198,12 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    y tick label style={scale=1.5},\n")
         outfile.write("    colorbar style={y tick label style={scale=1.5}},\n")        
         outfile.write("    tick style={draw=none}\n ]\n")
-        if not manual:
-            outfile.write("\\addplot [matrix plot*,point meta=explicit,mesh/cols="+str(len(ycoords))+",mesh/rows="+str(len(xcoords))+"] table [meta=correlations] {\n")
-            outfile.write("x  y  correlations\n")
-            for x in range(0,len(xcoords)):
-                for y in range(0,len(ycoords)):
-                    outfile.write(" "+xcoords[x]+" "+ycoords[y]+" "+str(allvalues[y][x])+"\n")
-            outfile.write("};\n")
+        outfile.write("\\addplot[only marks,mark=square*,scatter,mark size=1.5em,scatter src=explicit,nodes near coords*] coordinates {\n")
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
                 if showall or abs(allvalues[y][x]) > 0.005:
-                    outfile.write("\\node [")
-                    if manual: outfile.write("meta="+str(allvalues[y][x])+",")
-                    if minval and maxval and whitefont(allvalues[y][x],minval,maxval): outfile.write("text=white")
-                    outfile.write("] at (axis cs:"+str(xcoords[x])+","+str(ycoords[y])+"){"+formatNumber(allvalues[y][x],2)+"};\n")
+                    outfile.write("  ("+str(xcoords[x])+","+str(ycoords[y])+") ["+str(allvalues[y][x])+"]\n")
+        outfile.write("};\n")
         if atlas: writeATLAS(outfile,atlas,inside=False,labels=plotlabels)                        
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")

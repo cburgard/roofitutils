@@ -39,10 +39,11 @@ def getvalues(pois,allsets):
                 row.append(str(cv-abs(hi))+"/"+str(cv+abs(lo)))                    
             if options.get("point",True):
                 try:
-                    cv = tup[0]
+                    cvs = [v for v in tup]
                 except TypeError:
-                    cv = tup
-                row.append(cv)
+                    cvs = [tup]
+                for cv in cvs:
+                    row.append(cv)
         tab.append(row)
     return tab
 

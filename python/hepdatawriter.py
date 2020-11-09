@@ -44,10 +44,11 @@ def getvalues(pois,allsets):
                     variable["values"].append({"high":cv-abs(hi),"low":cv+abs(lo)})
             if options.get("point",True):
                 try:
-                    cv = tup[0]
+                    cvs = [v for v in tup]
                 except TypeError:
-                    cv = tup
-                variable["values"].append({"value":cv})
+                    cvs = [tup]
+                for cv in cvs:
+                    variable["values"].append({"value":cv})
             values["dependent_variables"].append(variable)
     return values
 

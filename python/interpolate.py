@@ -234,7 +234,28 @@ def findintervals(points,nllval):
                 leftbound = None
                 rightbound=None
     return intervals
-    
+
+def findallminima(points,nllmin,minthreshold=0.05):
+    """find all the local minima of the nll curve that are no further than the threshold away from the global minimum"""
+    intervals = []
+    interval = []
+    for x,y in points:
+        if y<nllmin+minthreshold:
+            interval.append((x,y))
+        elif len(interval) > 0:
+            intervals.append(interval)
+            interval = []
+    minima = []
+    for interval in intervals:
+        localmin_y = inf
+        localmin_x = None
+        for x,y in interval:
+            if y<localmin_y:
+                localmin_y = y
+                localmin_x = x
+        minima.append(localmin_x)
+    return minima
+
 def findcrossings(points,nllval,minthreshold=0.05):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
     from scipy.interpolate import PchipInterpolator as interpolate
