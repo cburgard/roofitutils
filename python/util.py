@@ -14,6 +14,12 @@ except NameError:
         """test if an object is a string"""
         return isinstance(s, str)
 
+def flipped(l,flip=True):
+    if flip:
+        return reversed(l)
+    else:
+        return [i for i in l]
+    
 def concat(pieces,delim=" "):
     """concatenate a list of strings to a single string"""
     if isstr(pieces):

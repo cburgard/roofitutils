@@ -147,15 +147,19 @@ def guessanchor(angle):
     else:
         return "north east"
 
-def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,whitefont=lambda x,xmin,xmax: x-xmin>0.8*(xmax-xmin)):
+
+    
+def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None):
+    from RooFitUtils.util import flipped
     """write a correlation matrix to a pgfplots tex file"""
-    if len(ycoords) != len(allvalues):
-        print(len(allvalues),len(ycoords))
+    if len(ycoords_orig) != len(allvalues):
         raise RuntimeError("incompatible lengths in y")
-    if len(xcoords) != len(allvalues[0]):
-        raise RuntimeError("incompatible lengths in x")    
-    xlabels = [ i.replace("_","\_") for i in xcoords ]
-    ylabels = [ i.replace("_","\_") for i in ycoords ]
+    if len(xcoords_orig) != len(allvalues[0]):
+        raise RuntimeError("incompatible lengths in x")
+    xlabels = [ i.replace("_","\_") for i in xcoords_orig ]
+    ylabels = [ i.replace("_","\_") for i in flipped(ycoords_orig,flip) ]
+    xcoords = [ i.replace("_","") for i in xcoords_orig]
+    ycoords = [ i.replace("_","") for i in flipped(ycoords_orig,flip) ]
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}[\n")
@@ -168,18 +172,14 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("\\begin{axis}[\n")
         outfile.write("    colormap={bluewhiteyellow}{color=(myyellow) color=(white) color=(myblue)},\n")
         outfile.write("    colormap={bluewhiteyellow-texthighlighting}{rgb(0pt)=(0.,0.,0.);rgb(900pt)=(0.,0.,0.);rgb(901pt)=(1.,1.,1.);rgb(1000pt)=(1.,1.,1.);},\n")
-        outfile.write("    nodes near coords style={anchor=center,font=\\footnotesize,/pgf/number format/fixed,/pgf/number format/precision=2,color of colormap=\pgfplotspointmetatransformed of bluewhiteyellow-texthighlighting},\n")
+        outfile.write("    nodes near coords style={anchor=center,font=\\footnotesize,/pgf/number format/fixed,/pgf/number format/precision=2,color of colormap=\pgfplotspointmetatransformed of bluewhiteyellow-texthighlighting")
+        if showall: outfile.write(",/pgf/number format/fixed zerofill")
+        outfile.write("},\n")
         outfile.write("    clip = false,\n")
         outfile.write("    colorbar,\n")
         outfile.write("    colormap name={bluewhiteyellow},\n")
         outfile.write("    x=3em,\n")
         outfile.write("    y=3em,\n")
-        outfile.write("    xtick=data,\n")
-        outfile.write("    ytick=data,\n")
-        outfile.write("    ymin={[normalized]0},\n")
-        outfile.write("    ymax={[normalized]"+str(len(ycoords)-1)+"},\n")
-        outfile.write("    xmin={[normalized]0},\n")
-        outfile.write("    xmax={[normalized]"+str(len(xcoords)-1)+"},\n")        
         outfile.write("    enlarge x limits={abs=1.5em},\n")
         outfile.write("    enlarge y limits={abs=1.5em},\n")
         if minval:
@@ -191,18 +191,21 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         outfile.write("    minor tick num=1,\n")
         outfile.write("    symbolic x coords={"+ concat(xcoords) + "},\n")
         outfile.write("    symbolic y coords={"+ concat(ycoords) + "},\n")
-        outfile.write("    xticklabels={"+ concat(xlabels) + "},\n") # no typo
-        outfile.write("    yticklabels={"+ concat(ylabels) + "},\n") # no typo
+        outfile.write("    xticklabels={,"+ concat(xlabels) + "},\n") 
+        outfile.write("    yticklabels={,"+ concat(ylabels) + "},\n") 
         outfile.write("    axis on top,\n")
         outfile.write("    x tick label style={scale=1.5,anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
         outfile.write("    y tick label style={scale=1.5},\n")
-        outfile.write("    colorbar style={y tick label style={scale=1.5}},\n")        
-        outfile.write("    tick style={draw=none}\n ]\n")
+        outfile.write("    colorbar style={y tick label style={scale=1.5,/pgf/number format/fixed}")
+        if axlabel: outfile.write(",ylabel={"+axlabel+"},y label style={anchor=east,yshift=-2cm,scale=2,at={(axis description cs:1,1)}}")
+        outfile.write("},\n")        
+        outfile.write("    tick style={draw=none}\n")
+        outfile.write("]\n")
         outfile.write("\\addplot[only marks,mark=square*,scatter,mark size=1.5em,scatter src=explicit,nodes near coords*] coordinates {\n")
         for x in range(0,len(xcoords)):
             for y in range(0,len(ycoords)):
                 if showall or abs(allvalues[y][x]) > 0.005:
-                    outfile.write("  ("+str(xcoords[x])+","+str(ycoords[y])+") ["+str(allvalues[y][x])+"]\n")
+                    outfile.write("  ("+str(xcoords[x])+","+str(ycoords[y])+") ["+str(allvalues[len(ycoords) - y - 1 if flip else y][x])+"]\n")
         outfile.write("};\n")
         if atlas: writeATLAS(outfile,atlas,inside=False,labels=plotlabels)                        
         outfile.write("\\end{axis}\n")
@@ -210,8 +213,8 @@ def writematrix(atlas,xcoords,ycoords,allvalues,outfilename,minval=None,maxval=N
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writecorrmatrix(atlas,parslist,allcorrs,outfilename,ymax=None):
-    writematrix(atlas,parslist,parslist,allcorrs,outfilename,ymax)
+def writecorrmatrix(atlas,parslist,allcorrs,outfilename):
+    writematrix(atlas,parslist,parslist,allcorrs,outfilename,minval=-1,maxval=1,rotatelabels=45,axlabel="$\\rho(X,Y)$",flip=True,showall=True)
 
 def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[]):
     from util import make1dscan
