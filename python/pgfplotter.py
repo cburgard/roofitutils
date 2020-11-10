@@ -79,29 +79,31 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
             for lo,hi in tup:
                 outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(scale*lo,spread*count,scale*hi,spread*count))
         if style.get("error",True):
-            cvs,lo,hi = tup
+            cv,lo,hi = tup
             if isnan(lo) or isnan(hi):
-                if isnan(lo): lo=min(cvs)
-                if isnan(hi): hi=max(cvs)
                 print("encountered nan while plotting!")
-            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format((cvs[0]-abs(hi))*scale,spread*count,(cvs[-1]+abs(lo))*scale,spread*count))
+            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(float((cv+abs(hi))*scale),float(spread*count),float((cv-abs(lo))*scale),float(spread*count)))
         if style.get("point",True):
-            try:
-                cvs = [v for v in tup]
-            except TypeError:
-                cvs = [tup]
+            if style.get("error",True):
+                cvs = [tup[0]]
+            else:
+                try:
+                    cvs = [v for v in tup]
+                except TypeError:
+                    cvs = [tup]
             for v in cvs:
                 outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(float(scale*v),float(spread*count))+ "{};\n")
         count = count+1
 
 
         
-def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
+def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2],smval=0,spread=1):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texify
-    from RooFitUtils.util import parsepois
-    poinames,poiopts = parsepois(pois)
-    spread=1
+    from RooFitUtils.util import parsepois,parsegroups
+    poinames,poiopts = parsepois(pois,options=True)
+    poinames.reverse()
+    groups = parsegroups(pois)
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
@@ -122,7 +124,7 @@ def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2]):
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)            
         count = 0
-        outfile.write("\\draw (0,-1) -- (0,"+str(spread*(len(poinames)-0.5))+");\n")
+        outfile.write("\\draw ("+str(smval)+",-1) -- ("+str(smval)+","+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:
             outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{"+texify(x))
             scale=poiopts.get(x,{}).get("scale",1.)
@@ -151,16 +153,14 @@ def guessanchor(angle):
     
 def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None):
     """write a correlation matrix to a pgfplots tex file"""
-    from RooFitUtils.util import flipped,flattened
+    from RooFitUtils.util import flipped,parsegroups,parsepois
     from RooFitUtils.io import texify
     xgroups = None
     ygroups = None
-    if type(xcoords_orig[0]) == tuple:
-        xgroups = [ (t[0],len(t[-1])) for t in xcoords_orig] 
-        xcoords_orig = list(flattened([t[-1] for t in xcoords_orig]))
-    if type(ycoords_orig[0]) == tuple:
-        ygroups = [ (t[0],len(t[-1])) for t in ycoords_orig] 
-        ycoords_orig = list(flattened([t[-1] for t in ycoords_orig]))
+    xgroups = parsegroups(xcoords_orig)
+    xcoords_orig = parsepois(xcoords_orig)
+    ygroups = parsegroups(ycoords_orig)
+    ycoords_orig = parsepois(ycoords_orig)
     xlabels = [ texify(i) for i in xcoords_orig ]
     ylabels = [ texify(i) for i in flipped(ycoords_orig,flip) ]
     xcoords = [ i.replace("_","") for i in xcoords_orig]

@@ -19,7 +19,7 @@ def getmatrix(xcoords,ycoords,allvalues):
 def getvalues(pois,allsets):
     """convert postfit values and confidence intervals to a hepdata dictionary"""
     from RooFitUtils.util import parsepois
-    poinames,poiopts = parsepois(pois)
+    poinames = parsepois(pois,options=False)
     row = ["POI"]
     for options,poiset in allsets:
         row.append(options.get("label","default"))

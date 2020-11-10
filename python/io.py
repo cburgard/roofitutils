@@ -132,6 +132,23 @@ def collectcorrelations(results,filename,parfilter):
                                 results.append( texify((par1[0])) +" "+ texify((par1[1]))+" "+rowmatch.group(3))
     return parnames[0]
 
+def readsummary(infilename):
+    import csv
+    translations = {}
+    results = {"cv":{},"total":{},"stat":{},"sys":{}}
+    with open(infilename,"rt") as infile:
+        for line in infile:
+            parts = line.split(",")
+            if len(translations) == 0:
+                for i in range(0,len(parts)):
+                    translations[parts[i].strip()] = i
+                continue
+            parname = parts[translations["POI"]]
+            results["cv"]   [parname] = (float(parts[translations["Central"]]),float(parts[translations["Tot lo"]]),float(parts[translations["Tot hi"]]))
+            results["stat"] [parname] = (float(parts[translations["Central"]]),float(parts[translations["Stat lo"]]),float(parts[translations["Stat hi"]]))
+            results["sys"]  [parname] = (float(parts[translations["Central"]]),float(parts[translations["Syst lo"]]),float(parts[translations["Syst hi"]]))                        
+    return results
+            
 def collectresults(scans,results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     import re

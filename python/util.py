@@ -401,7 +401,15 @@ def sgnstr(x):
     if x<0: return str(x)
     return "+"+str(x)
 
-def parsepois(pois):
+def parsegroups(pois):
+    if isinstance(pois,dict):
+        return None
+    if len(pois) > 0 and isinstance(pois[0],tuple):
+        return [ (t[0],len(t[-1])) for t in pois]
+    return None
+
+
+def parsepois(pois,options=False):
     if isinstance(pois, dict):
         poinames = list(pois.keys())
         poiopts = pois
@@ -409,11 +417,17 @@ def parsepois(pois):
         if isinstance(pois[0],str):
             poinames = pois
             poiopts = {}
+        elif isinstance(pois[0],tuple):
+            poinames = list(flattened([t[-1] for t in pois]))
+            poiopts = {}
         else:
             poinames = [ p[0] for p in pois ]
             poiopts = { p[0]:p[1] for p in pois }
-    return poinames,poiopts
-            
+    if options:
+        return poinames,poiopts
+    else:
+        return poinames
+
 def first_n_nonzero_digits(l, n):
     from itertools import islice
     return int(''.join(islice((i for i in str(abs(l)) if i not in {'0', '.'}), n)).ljust(n, '0'))
