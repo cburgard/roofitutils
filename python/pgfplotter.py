@@ -150,17 +150,25 @@ def guessanchor(angle):
 
     
 def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None):
-    from RooFitUtils.util import flipped
-    from RooFitUtils.io import texify
     """write a correlation matrix to a pgfplots tex file"""
-    if len(ycoords_orig) != len(allvalues):
-        raise RuntimeError("incompatible lengths in y")
-    if len(xcoords_orig) != len(allvalues[0]):
-        raise RuntimeError("incompatible lengths in x")
+    from RooFitUtils.util import flipped,flattened
+    from RooFitUtils.io import texify
+    xgroups = None
+    ygroups = None
+    if type(xcoords_orig[0]) == tuple:
+        xgroups = [ (t[0],len(t[-1])) for t in xcoords_orig] 
+        xcoords_orig = list(flattened([t[-1] for t in xcoords_orig]))
+    if type(ycoords_orig[0]) == tuple:
+        ygroups = [ (t[0],len(t[-1])) for t in ycoords_orig] 
+        ycoords_orig = list(flattened([t[-1] for t in ycoords_orig]))
     xlabels = [ texify(i) for i in xcoords_orig ]
     ylabels = [ texify(i) for i in flipped(ycoords_orig,flip) ]
     xcoords = [ i.replace("_","") for i in xcoords_orig]
     ycoords = [ i.replace("_","") for i in flipped(ycoords_orig,flip) ]
+    if len(ycoords) != len(allvalues):
+        raise RuntimeError("incompatible lengths in y")
+    if len(xcoords) != len(allvalues[0]):
+        raise RuntimeError("incompatible lengths in x")
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}[\n")
@@ -195,6 +203,9 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
         outfile.write("    xticklabels={,"+ concat(xlabels) + "},\n") 
         outfile.write("    yticklabels={,"+ concat(ylabels) + "},\n") 
         outfile.write("    axis on top,\n")
+        outfile.write("    layers/decorated plot/.define layer set={background,main,foreground}{},\n")
+        outfile.write("    clip mode=individual,\n")
+        outfile.write("    set layers=decorated plot,\n")
         outfile.write("    x tick label style={scale=1.5,anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
         outfile.write("    y tick label style={scale=1.5},\n")
         outfile.write("    colorbar style={y tick label style={scale=1.5,/pgf/number format/fixed}")
@@ -208,6 +219,31 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
                 if showall or abs(allvalues[y][x]) > 0.005:
                     outfile.write("  ("+str(xcoords[x])+","+str(ycoords[y])+") ["+str(allvalues[len(ycoords) - y - 1 if flip else y][x])+"]\n")
         outfile.write("};\n")
+        if ygroups:
+            iy = 0
+            if flip:
+                ycoord = len(ycoords)-0.5
+            else:
+                ycoord = 0.5
+            for g in ygroups:
+                if flip:
+                    step = -g[-1]
+                else:
+                    step = g[-1]                
+                if iy > 0:
+                    outfile.write("\\draw[ultra thick,dashed,on layer=foreground] (axis cs:{[normalized]"+str(len(xcoords)-0.5)+"},{[normalized]"+str(ycoord)+"}) -- (axis cs:{[normalized]-0.5},{[normalized]"+str(ycoord)+"})  -- ++(-30em,0em);\n")
+                outfile.write("\\node[on layer=foreground,xshift=-30em,anchor=north,scale=2,rotate=90] at (axis cs:{[normalized]-0.5},{[normalized]"+str(ycoord+0.5*step)+"}) {"+texify(g[0])+"};\n")                    
+                iy += 1
+                ycoord += step
+        if xgroups:
+            ix = 0
+            xcoord = -0.5
+            for g in xgroups:
+                step = g[-1]                
+                if ix > 0:
+                    outfile.write("\\draw[ultra thick,dashed,on layer=foreground] (axis cs:{[normalized]"+str(xcoord)+"},{[normalized]"+str(len(ycoords)-0.5)+"}) -- (axis cs:{[normalized]"+str(xcoord)+"},{[normalized]-0.5});\n")
+                ix += 1
+                xcoord += step                
         if atlas: writeATLAS(outfile,atlas,inside=False,labels=plotlabels)                        
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")

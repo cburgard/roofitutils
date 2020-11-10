@@ -19,6 +19,12 @@ def flipped(l,flip=True):
         return reversed(l)
     else:
         return [i for i in l]
+
+def flattened(l):
+    """flatten a list of lists to a single list"""    
+    for i in l:
+        for j in i:
+            yield j
     
 def concat(pieces,delim=" "):
     """concatenate a list of strings to a single string"""
