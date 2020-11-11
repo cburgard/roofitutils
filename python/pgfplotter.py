@@ -66,10 +66,15 @@ def concat(strlist):
         string = string +","+ strlist[x]
     return string[1:len(string)] # remove comma which is the first character
 
-def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
+def writepoiset(idx,poinames,allpois,outfile,style,poiopts,spread,printvalues):
     from math import isnan
+    from RooFitUtils.util import formatNumberPDG
+    from RooFitUtils.io import texify
     color = style.get("color","black")
     count = 0
+    shift = style.get("labelshift",str(-1.5+-3*idx)+"em")
+    if printvalues and "label" in style.keys():
+        outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*len(poinames)))+"}) {"+texify(style.get("label",""))+"};\n")
     for ipoi in poinames:
         x = ipoi
         scale = poiopts.get(ipoi,{}).get("scale",1)
@@ -93,11 +98,24 @@ def writepoiset(poinames,allpois,outfile,style,poiopts,spread):
                     cvs = [tup]
             for v in cvs:
                 outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(float(scale*v),float(spread*count))+ "{};\n")
+        if printvalues:
+            if style.get("error",True) and style.get("point",True):
+                cv,lo,hi = tup
+                outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {$" + formatNumberPDG(v) + "^{" + formatNumberPDG(hi,True) + "}_{" + formatNumberPDG(lo,True)+"}$};\n")
+            elif style.get("error",True):
+                cv,lo,hi = tup                
+                outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {${}^{" + formatNumberPDG(hi,True) + "}_{" + formatNumberPDG(lo,True)+"}$};\n")
+            elif style.get("point",True):
+                try:
+                    cv = tup[0]
+                except TypeError:
+                    cv = tup                
+                outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {" + formatNumberPDG(v) + "};\n")
         count = count+1
 
 
         
-def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2],smval=0,spread=1):
+def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2],smval=0,spread=1,printvalues=False):
     """write a POI plot to a pgfplots tex file"""
     from RooFitUtils.io import texify
     from RooFitUtils.util import parsepois,parsegroups
@@ -131,9 +149,11 @@ def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2],smval=0,
             if scale != 1.:
                 outfile.write(" ($\\times {:g}$)".format(scale))
             outfile.write("};\n")
-            count = count + 1
+            count += 1
+        count = 0
         for options,poiset in allsets:
-            writepoiset(poinames,poiset,outfile,options,poiopts,spread)
+            writepoiset(count,poinames,poiset,outfile,options,poiopts,spread,printvalues)
+            count += 1
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)

@@ -437,8 +437,10 @@ def formatNumber(x,ndigits):
     if log10(abs(x)) < -ndigits: return "0"
     return "{:f}".format(round(x,ndigits)).rstrip("0").rstrip(".")
 
-def formatNumberPDG(x):
-    if x == 0: return "0"
+def formatNumberPDG(x,forceSign=False):
+    if x == 0:
+        if forceSign: return "+0"
+        else: return "0"
     from math import floor,log10
     digits = first_n_nonzero_digits(x,3)
     scale = floor(log10(abs(x)))
@@ -448,5 +450,9 @@ def formatNumberPDG(x):
         fmt = "{:."+str(max(0,-scale))+"f}"
     else:
         fmt = "{:."+str(max(0,-scale-1))+"f}"
-    return fmt.format(x)
+    s = fmt.format(x)
+    if not forceSign or x < 0:
+        return s
+    else:
+        return "+"+s
 
