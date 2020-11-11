@@ -24,6 +24,7 @@ def getmatrix(xcoords,ycoords,allvalues,label):
 def getvalues(pois,allsets):
     """convert postfit values and confidence intervals to a hepdata dictionary"""
     from RooFitUtils.util import parsepois
+    from math import isnan    
     poinames = parsepois(pois,options=False)    
     values = {"independent_variables":[{"header":{"name":"POI"},"values":poinames}],"dependent_variables":[]}
     for x in poinames:
@@ -36,17 +37,19 @@ def getvalues(pois,allsets):
                 for lo,hi in tup:
                     variable["values"].append({"low":lo,"high":hi})
             if options.get("error",True):
-                print(tup)
                 cv,lo,hi = tup
                 if isnan(lo) or isnan(hi):
                     if isnan(lo): lo=cv
                     if isnan(hi): hi=cv
-                    variable["values"].append({"high":cv-abs(hi),"low":cv+abs(lo)})
+                variable["values"].append({"high":cv+abs(hi),"low":cv-abs(lo)})
             if options.get("point",True):
-                try:
-                    cvs = [v for v in tup]
-                except TypeError:
-                    cvs = [tup]
+                if options.get("error",True):
+                    cvs = [tup[0]]
+                else:
+                    try:
+                        cvs = [v for v in tup]
+                    except TypeError:
+                        cvs = [tup]                
                 for cv in cvs:
                     variable["values"].append({"value":cv})
             values["dependent_variables"].append(variable)

@@ -18,32 +18,45 @@ def getmatrix(xcoords,ycoords,allvalues):
 
 def getvalues(pois,allsets):
     """convert postfit values and confidence intervals to a hepdata dictionary"""
+    from math import isnan    
     from RooFitUtils.util import parsepois
     poinames = parsepois(pois,options=False)
     row = ["POI"]
     for options,poiset in allsets:
-        row.append(options.get("label","default"))
+        if options.get("point",True) and options.get("error",True):
+            row.append(options.get("label","default"))            
+            row.append(options.get("label","default")+" up")            
+            row.append(options.get("label","default")+" down")            
+        elif options.get("point",True):
+            row.append(options.get("label","default"))            
+        elif options.get("error",True):
+            row.append(options.get("label","default")+" up")            
+            row.append(options.get("label","default")+" down")                            
     tab = [row]
     for x in poinames:
         row = [x]
         for options,poiset in allsets:
             if not x in poiset.keys(): continue
             tup = poiset[x]
+            if options.get("point",True):
+                if options.get("error",True):
+                    cvs = [tup[0]]
+                else:
+                    try:
+                        cvs = [v for v in tup]
+                    except TypeError:
+                        cvs = [tup]                
+                for cv in cvs:
+                    row.append(cv)
             if options.get("interval",False):
                 row.append(",".join([str(lo)+":"+str(hi) for lo,hi in tup]))
             if options.get("error",True):
                 cv,lo,hi = tup
                 if isnan(lo) or isnan(hi):
-                    if isnan(lo): lo=cv
-                    if isnan(hi): hi=cv
-                row.append(str(cv-abs(hi))+"/"+str(cv+abs(lo)))                    
-            if options.get("point",True):
-                try:
-                    cvs = [v for v in tup]
-                except TypeError:
-                    cvs = [tup]
-                for cv in cvs:
-                    row.append(cv)
+                    if isnan(lo): lo=hi
+                    if isnan(hi): hi=lo
+                row.append("+"+str(abs(hi)))
+                row.append("-"+str(abs(lo)))
         tab.append(row)
     return tab
 
