@@ -25,6 +25,12 @@ def flattened(l):
     for i in l:
         for j in i:
             yield j
+
+def strip(s):
+    return s.strip()
+
+def striplatex(s):
+    return s.replace("\n","").replace("\\toprule","").replace("\\bottomrule","").replace("\\hline","").replace("\\textbf","").replace("\\textit","").replace("{","").replace("}","").replace("$","").strip()
     
 def concat(pieces,delim=" "):
     """concatenate a list of strings to a single string"""

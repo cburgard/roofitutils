@@ -132,10 +132,38 @@ def collectcorrelations(results,filename,parfilter):
                                 results.append( texify((par1[0])) +" "+ texify((par1[1]))+" "+rowmatch.group(3))
     return parnames[0]
 
-def readsummary(infilename):
+def readtables(infilenames):
+    from RooFitUtils.util import isstr,striplatex
+    if isstr(infilenames):
+        infilenames = [infilenames]
+    import re
+    begintable = re.compile("\\\\begin[ ]*{tabular}[ ]*{(.*)}")
+    endtable = re.compile("\\\\end[ ]*{tabular}")
+    tables = []
+    for infilename in infilenames:
+        with open(infilename,"rt") as infile:
+            intable = False
+            columns = None
+            currenttext = ""
+            for line in infile:
+                if not intable:
+                    begin =  begintable.search(line)
+                    if begin:
+                        intable = True
+                        columns = begin.group(1)
+                else:
+                    end = endtable.search(line)
+                    if end:
+                        tables.append([list(map(striplatex,row.split("&"))) for row in currenttext.split("\\\\")])
+                        intable=False
+                    else:
+                        currenttext += line
+    return tables
+
+def readsummary(infilename,form={"cv":("Central","Tot lo","Tot hi"),"stat":("Central","Stat lo","Stat hi"), "sys":("Central","Syst lo","Syst hi")}):
     import csv
     translations = {}
-    results = {"cv":{},"total":{},"stat":{},"sys":{}}
+    results = {k:{} for k in form.keys()}
     with open(infilename,"rt") as infile:
         for line in infile:
             parts = line.split(",")
@@ -144,9 +172,8 @@ def readsummary(infilename):
                     translations[parts[i].strip()] = i
                 continue
             parname = parts[translations["POI"]]
-            results["cv"]   [parname] = (float(parts[translations["Central"]]),float(parts[translations["Tot lo"]]),float(parts[translations["Tot hi"]]))
-            results["stat"] [parname] = (float(parts[translations["Central"]]),float(parts[translations["Stat lo"]]),float(parts[translations["Stat hi"]]))
-            results["sys"]  [parname] = (float(parts[translations["Central"]]),float(parts[translations["Syst lo"]]),float(parts[translations["Syst hi"]]))                        
+            for k in form.keys():
+                results[k][parname] = tuple([float(parts[translations[key]]) for key in form[k]])
     return results
             
 def collectresults(scans,results,files,label):
