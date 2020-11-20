@@ -3,6 +3,10 @@ import os
 
 latex_aliases = {}
 
+def texdict(d):
+    global latex_aliases
+    latex_aliases.update(d)
+
 def texdef(a,b):
     global latex_aliases
     latex_aliases[a] = b
@@ -240,3 +244,47 @@ def collectresults(scans,results,files,label):
                 for p in scans.keys():
                     if p in results.keys():
                         scans[p][label][results[p][label][0]]=minnll;
+
+def readcsv2dict(filename):
+    import csv
+    outdict = {}
+    with open(filename,"rt") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            outdict[row["name"].strip()] = {k.strip():v.strip() for k,v in row.items()}
+    return outdict
+
+def collecthistograms(histograms,cfg,parameters=None):
+    from RooFitUtils.util import names
+    import ROOT
+    import re
+    tfile = ROOT.TFile.Open(cfg["input"],"READ")
+    if parameters:
+        pars = parameters
+    else:
+        pars = names(tfile.GetListOfKeys())
+    pattern = re.compile(cfg.get("pattern",".*_(?P<p>[A-z0-9]*)_.*"))
+    for obj in tfile.GetListOfKeys():
+        match = pattern.match(obj.GetName())
+        if match:
+            histo = obj.ReadObj()
+            n = histo.GetXaxis().GetNbins()
+            if "p" in match.groupdict().keys():
+                p = match.group("p")
+            else:
+                p = cfg["parameter"]
+            if not p in histograms.keys():
+                histograms[p] = {}
+            if "label" in match.groupdict().keys():
+                label = match.group("label")
+                idx = cfg.get("bin",1)
+                histograms[p][label] = histo.GetBinContent(idx)
+            elif "labels" in cfg.keys():
+                for b in cfg["labels"]:
+                    idx = histo.GetXaxis().FindBin(b)
+                    histograms[p][b] = histo.GetBinContent(idx)
+            elif histo.GetXaxis().IsAlphanumeric():
+                for b in range(0,n):
+                    histograms[p][histo.GetXaxis().GetBinLabel(b+1)] = histo.GetBinContent(b+1)                
+                
+                        

@@ -5,7 +5,7 @@ thresholdStyles = ["solid","dashed","loosely dashed","dotted","loosely dotted"]
 
 
 def writehead(stream,atlas=True):
-    stream.write("\\documentclass{standalone}\n")
+    stream.write("\\documentclass[margin=1pt,varwidth=20cm]{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
     stream.write("\\usepackage{pgfplots,tikz}\n")
     stream.write("\\usetikzlibrary{calc}\n")
@@ -13,7 +13,7 @@ def writehead(stream,atlas=True):
         stream.write("\\usepackage[scaled=1]{helvet}\n")
         stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
-    stream.write("\\usetikzlibrary{shapes.misc,positioning}\n")
+    stream.write("\\usetikzlibrary{shapes.misc,positioning,patterns}\n")
     stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
     stream.write("\\pgfplotsset{compat=newest}\n")
     stream.write("\\begin{document}\n")
@@ -577,3 +577,88 @@ def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=
     outfile.write("\\end{pgfonlayer}\n")
     outfile.write("\\end{tikzpicture}\n")
     writefoot(outfile)
+
+def plotBarPanel(outfile,data,layout,showlabels):
+    """plot a single panel of a multipanel bar chart"""
+    from RooFitUtils.util import flattened,keys
+    from RooFitUtils.io import texify
+    allbins = list(keys(layout["bins"]))
+    coords = list(map(lambda x:x.replace("_",""),allbins))
+    ndata = len(keys(layout["data"]))
+    # actually make the plots
+    ymin = 0
+    ymax = 0    
+    plots = []
+    for p in keys(layout["data"]):
+        style = ""
+        if type(layout["data"]) == dict:
+            if "style" in layout["data"][p].keys():
+                style = "[" + layout["data"][p]["style"] + "]"
+        plot = ["\\addplot" + style + " coordinates {"]
+        scale = 1
+        if type(layout["data"]) == dict:
+            scale = layout["data"][p].get("scale",1)
+        for b in range(0,len(allbins)):
+            if allbins[b] in data[p]:
+                yval = data[p][allbins[b]] * scale
+                ymin = min(yval,ymin)
+                ymax = max(yval,ymax)
+                plot.append("    ("+coords[b]+","+ str(yval) +")")
+        plot.append("};")
+        if type(layout["data"]) == dict and "label" in layout["data"][p].keys():
+            plot.append("\\addlegendentry{$"+layout["data"][p]["label"]+"$};\n")
+        plots.append(plot)
+    # generate axes and everything else
+    labels = [ layout["bins"][b].get("label",texify(b)) for b in allbins ]
+    outfile.write("\\begin{axis}[\n")
+    if ndata == 1:
+        outfile.write("    ybar=0pt,\n")
+        outfile.write("    bar width=1em,\n")
+    else:
+        outfile.write("    ybar=-2pt,\n")
+        outfile.write("    bar width=3pt,\n")
+    outfile.write("    height="+layout.get("height","3cm")+",\n")    
+    outfile.write("    ymin="+str(1.1*ymin)+",ymax="+str(1.1*ymax)+",\n")
+    outfile.write("    scale only axis,\n")        
+    outfile.write("    enlarge x limits={abs=.5em},\n")    
+    outfile.write("    xminorgrids=true,minor tick num=1,minor grid style={line width=.2pt,draw=gray!50,dashed},\n")
+    outfile.write("    legend style={at={(1.0,0.5)},anchor=west,legend columns=1,draw=none,fill=none,nodes={scale=0.5}},legend cell align={left},\n")
+    if "y" in layout.keys():
+        outfile.write("    ylabel={$"+layout["y"]+"$},\n")
+    outfile.write("    symbolic x coords={" + ",".join(coords)+"},\n")
+    outfile.write("    xtick={" + ",".join(coords)+"},\n")    
+    outfile.write("    scaled ticks=false,\n")
+    outfile.write("    y label style={yshift=1.5em,at={(0,0.5)},minimum size=1em,anchor=base,font=\\footnotesize},\n")        
+    outfile.write("    y tick label style={/pgf/number format/fixed,scale=0.5},\n")    
+    outfile.write("    x tick label style={rotate=90,major tick length=0pt,minor tick length=0pt,scale=0.7},\n")
+    if showlabels:
+        outfile.write("    xticklabels={" + ",".join([ "{$"+b+"$}" if b else "" for b in labels]) + "},\n")
+    else:
+        outfile.write("    xticklabels=\empty,\n")
+    outfile.write("    x=1em,\n")
+    outfile.write("    ]\n")
+    for plot in plots:
+        outfile.write("\n".join(plot)+"\n")
+    for b,style in layout["bins"].items():
+        if "box" in style.keys():
+            outfile.write("\\draw[xshift=-.5em,"+style["box"]+"] ({axis cs:"+b+",0}|-{rel axis cs:0,0}) rectangle ++($({1em,0pt}|-{rel axis cs:0,1})+(0pt,1em)$);\n")
+    outfile.write("\\draw (axis cs:"+coords[0]+",0) ++ (-.5em,0pt) -- (axis cs:"+coords[-1]+",0) -- ++(1em,0pt);\n")
+    outfile.write("\\end{axis}\n")
+    
+def plotBars(outfilename,data,layout):
+    """plot a multipanel bar chart"""
+    with open(outfilename,"wt") as outfile:
+        writehead(outfile)
+        i = 0
+        for panel in layout.values():
+            islast = i==len(layout)-1
+            outfile.write("\\pgfplotsset{/pgfplots/ybar legend/.style={/pgfplots/legend image code/.code={\\fill[##1] (0cm,.25em) rectangle (\pgfplotbarwidth,-0.25em);}}}\n")
+            outfile.write("\\begin{tikzpicture}[]\n")
+            plotBarPanel(outfile,data,panel,islast)
+            outfile.write("\\pgfresetboundingbox\n")
+            outfile.write("\\path[use as bounding box] (rel axis cs:-0.05," + str(-2 if islast else 0.)+") rectangle (rel axis cs:1.2," + str(1.05 if i==0 else 1.0)+");\n")
+            outfile.write("\\end{tikzpicture}\n\n")
+            i += 1
+        writefoot(outfile)
+        
+    

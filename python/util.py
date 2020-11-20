@@ -26,6 +26,12 @@ def flattened(l):
         for j in i:
             yield j
 
+def keys(d):
+    if type(d) == dict:
+        return d.keys()
+    if type(d) == str:
+        return [d]
+
 def strip(s):
     return s.strip()
 
@@ -144,6 +150,9 @@ def product(pools):
     for prod in result:
         yield tuple(prod)
 
+def names(objects):
+    return [ obj.GetName() for obj in objects ]
+        
 def generateCoordsDict(scan):
     """generate a dictionary of coordinates"""
     nvar = len(scan)
