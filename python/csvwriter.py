@@ -16,6 +16,19 @@ def getmatrix(xcoords,ycoords,allvalues):
         tab.append(row)
     return tab
 
+def dict2matrix(allvalues):       
+    """convert a nested dict to a csv table"""
+    from RooFitUtils.util import flattened
+    allkeys = sorted(list(allvalues.keys()))
+    allsubkeys = sorted(list(set(flattened([d.keys() for d in allvalues.values()]))))
+    tab = [["parameter"] + allsubkeys]
+    for k1 in allkeys:
+        row = [k1]
+        for k2 in allsubkeys:
+            row.append(float(allvalues[k1].get(k2,0)))
+        tab.append(row)
+    return tab
+
 def getvalues(pois,allsets):
     """convert postfit values and confidence intervals to a hepdata dictionary"""
     from math import isnan    

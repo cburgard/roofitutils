@@ -4,8 +4,10 @@ thresholdColors = ["blue","green","yellow","orange","red"]
 thresholdStyles = ["solid","dashed","loosely dashed","dotted","loosely dotted"]
 
 
-def writehead(stream,atlas=True):
-    stream.write("\\documentclass[margin=1pt,varwidth=20cm]{standalone}\n")
+def writehead(stream,atlas=True,varwidth=None):
+    stream.write("\\documentclass[margin=1pt,")
+    if varwidth: stream.write("varwidth="+varwidth)
+    stream.write("]{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
     stream.write("\\usepackage{pgfplots,tikz}\n")
     stream.write("\\usetikzlibrary{calc}\n")
@@ -171,9 +173,9 @@ def guessanchor(angle):
 
 
     
-def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None):
+def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None,centralval=None):
     """write a correlation matrix to a pgfplots tex file"""
-    from RooFitUtils.util import flipped,parsegroups,parsepois
+    from RooFitUtils.util import flipped,parsegroups,parsepois,flattened
     from RooFitUtils.io import texify
     xgroups = None
     ygroups = None
@@ -185,6 +187,13 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
     ylabels = [ texify(i) for i in flipped(ycoords_orig,flip) ]
     xcoords = [ i.replace("_","") for i in xcoords_orig]
     ycoords = [ i.replace("_","") for i in flipped(ycoords_orig,flip) ]
+    if centralval:
+        ex = max(map(lambda x:abs(x-centralval),flattened(allvalues)))
+        minval = centralval-ex
+        maxval = centralval+ex        
+    else:
+        if not minval: minval = min(flattened(allvalues))
+        if not maxval: maxval = max(flattened(allvalues))
     if len(ycoords) != len(allvalues):
         raise RuntimeError("incompatible lengths in y")
     if len(xcoords) != len(allvalues[0]):
