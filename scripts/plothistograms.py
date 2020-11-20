@@ -28,7 +28,7 @@ def main(args):
             inputs = yaml.load(infile,Loader=yaml.FullLoader)
             for key,cfg in inputs.items():
                 collecthistograms(histograms,cfg,parnames)
-    plotBars(args.output,histograms,plot)
+    plotBars(args.output,histograms,plot,xwidth=args.width)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -38,6 +38,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot",help="yml file configuring the plot layout")    
     parser.add_argument("--parameters",help="styles of parameters")
     parser.add_argument("--categories",help="labels of categories")
+    parser.add_argument("--width",help="bar width",default="1em")    
     args = parser.parse_args()
     main(args)
     
