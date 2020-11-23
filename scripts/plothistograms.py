@@ -22,7 +22,7 @@ def main(args):
     histograms = {}    
     if args.infile.endswith(".root"):
         collecthistograms(histograms,{"input":args.infile,"labels":catnames},parnames)
-    elif  args.infile.endswith(".yml"):
+    elif args.infile.endswith(".yml"):
         import yaml
         with open(args.infile,"rt") as infile:
             inputs = yaml.load(infile,Loader=yaml.FullLoader)

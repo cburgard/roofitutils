@@ -256,35 +256,62 @@ def readcsv2dict(filename):
 
 def collecthistograms(histograms,cfg,parameters=None):
     from RooFitUtils.util import names
-    import ROOT
     import re
-    tfile = ROOT.TFile.Open(cfg["input"],"READ")
-    if parameters:
-        pars = parameters
-    else:
-        pars = names(tfile.GetListOfKeys())
-    pattern = re.compile(cfg.get("pattern",".*_(?P<p>[A-z0-9]*)_.*"))
-    for obj in tfile.GetListOfKeys():
-        match = pattern.match(obj.GetName())
-        if match:
-            histo = obj.ReadObj()
-            n = histo.GetXaxis().GetNbins()
-            if "p" in match.groupdict().keys():
-                p = match.group("p")
-            else:
-                p = cfg["parameter"]
-            if not p in histograms.keys():
-                histograms[p] = {}
-            if "label" in match.groupdict().keys():
-                label = match.group("label")
-                idx = cfg.get("bin",1)
-                histograms[p][label] = histo.GetBinContent(idx)
-            elif "labels" in cfg.keys():
-                for b in cfg["labels"]:
-                    idx = histo.GetXaxis().FindBin(b)
-                    histograms[p][b] = histo.GetBinContent(idx)
-            elif histo.GetXaxis().IsAlphanumeric():
-                for b in range(0,n):
-                    histograms[p][histo.GetXaxis().GetBinLabel(b+1)] = histo.GetBinContent(b+1)                
-                
+    infilename = cfg["input"]
+    if infilename.endswith(".root"):
+        import ROOT
+        tfile = ROOT.TFile.Open(infilename,"READ")
+        if parameters:
+            pars = parameters
+        else:
+            pars = names(tfile.GetListOfKeys())
+        pattern = re.compile(cfg.get("pattern",".*_(?P<p>[A-z0-9]*)_.*"))
+        for obj in tfile.GetListOfKeys():
+            match = pattern.match(obj.GetName())
+            if match:
+                histo = obj.ReadObj()
+                n = histo.GetXaxis().GetNbins()
+                if "p" in match.groupdict().keys():
+                    p = match.group("p")
+                else:
+                    p = cfg["parameter"]
+                if not p in histograms.keys():
+                    histograms[p] = {}
+                if "label" in match.groupdict().keys():
+                    label = match.group("label")
+                    idx = cfg.get("bin",1)
+                    histograms[p][label] = histo.GetBinContent(idx)
+                elif "labels" in cfg.keys():
+                    for b in cfg["labels"]:
+                        idx = histo.GetXaxis().FindBin(b)
+                        histograms[p][b] = histo.GetBinContent(idx)
+                elif histo.GetXaxis().IsAlphanumeric():
+                    for b in range(0,n):
+                        histograms[p][histo.GetXaxis().GetBinLabel(b+1)] = histo.GetBinContent(b+1)
+    elif infilename.endswith(".xml"):
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(infilename)
+        root = tree.getroot()
+        pattern = re.compile(cfg["pattern"])
+        subpattern = re.compile(cfg.get("subpattern","(?P<c>[+-]?[ ]*[0-9.]+)[ *]*(?P<p>[A-z][A-z0-9]+)"))
+        for node in root:
+            if node.tag == "Item":
+                text = node.attrib["Name"]
+                match = pattern.match(text)
+                if not match: continue
+                if "label" in match.groupdict().keys():
+                    b = match.group("label")
+                else:
+                    continue
+                if "expr" in match.groupdict().keys() and "p" in match.groupdict().keys():
+                    fmt = re.sub("@([0-9]+)","{:s}",match["expr"])
+                    parts = [ e.strip() for e in match["p"].split(",") ]
+                    expr = fmt.format(*parts)
+                    matches = subpattern.finditer(expr)
+                    for match in matches:
+                        p = match.group("p")
+                        if not p in histograms.keys():
+                            histograms[p] = {}                        
+                        histograms[p][b] = float(match.group("c").replace(" ",""))
+
                         

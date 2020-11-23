@@ -632,6 +632,7 @@ def plotBarPanel(outfile,data,layout,showlabels,xwidth):
         outfile.write("    bar width=3pt,\n")
     outfile.write("    height="+layout.get("height","3cm")+",\n")    
     outfile.write("    ymin="+str(1.1*ymin)+",ymax="+str(1.1*ymax)+",\n")
+    outfile.write("    xmin="+coords[0]+",xmax="+coords[-1]+",\n")    
     outfile.write("    scale only axis,axis on top,\n")        
     outfile.write("    enlarge x limits={abs=.5em},\n")    
     outfile.write("    xminorgrids=true,minor tick num=1,minor grid style={line width=.2pt,draw=gray!50,dashed},\n")
