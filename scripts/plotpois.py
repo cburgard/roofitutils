@@ -23,11 +23,10 @@ if __name__ == '__main__':
         label = inset[0]
         files = inset[1:]
         collectresults(scans,results,files,label)
-
-    print(args.pois)
+   # print results 
+ 
+  #  print(args.pois)
     poivals = { k: v for k, v in results.items() if k in args.pois}
 
-    print(poivals)
-
     with open(args.output,"w") as outfile:
-       writepois(args.atlas,args.labels[0],poivals,args.output,args.ymax)
+       writepois(args.atlas,args.pois,poivals,args.output,args.ymax)

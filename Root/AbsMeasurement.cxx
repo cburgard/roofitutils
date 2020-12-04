@@ -102,7 +102,7 @@ void RooFitUtils::AbsMeasurement::enablePruning(const std::string &poi,
 // ____________________________________________________________________________|__________
 
 void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
-     std::string infilename, std::string insnapshot, 
+     std::string infilename, RooFitResult* fitresult, 
      std::string parameters, std::string outwsname,
      std::string outsnapshot){
    TFile* file = new TFile(infilename.c_str(),"READ");
@@ -113,14 +113,17 @@ void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
       if (!keyname.Contains("ProcessID"))
       ws = (RooWorkspace*) file->Get(keyname);
      }
-   ws->loadSnapshot(insnapshot.c_str());
+   
    TString allParameters = parameters;
    allParameters.ReplaceAll(" ", "");
    TObjArray *allParametersArray = allParameters.Tokenize(",");
    unsigned int numParameters = allParametersArray->GetEntries();
    for (unsigned int itrPar = 0; itrPar < numParameters; ++itrPar) {
      TString varname = ((TObjString *)allParametersArray->At(itrPar))->GetString();
-     ws->var(varname)->setConstant(kTRUE);
+     auto fltpars = fitresult->floatParsFinal();
+     RooRealVar* par = (RooRealVar*) fltpars.find(varname);
+     ws->var(par->GetName())->setVal(par->getVal());
+     ws->var(par->GetName())->setConstant(kTRUE);
    }
    ws->saveSnapshot(outsnapshot.c_str(), parameters.c_str());
    ws->writeToFile(outwsname.c_str(),kFALSE);

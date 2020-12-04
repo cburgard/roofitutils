@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from RooFitUtils.util import makelist
+#from RooFitUtils.util import makelist
 
 def setup(args):
     # general setup and loading of modules
@@ -14,7 +14,7 @@ def setup(args):
     # setup verbosity
     ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
     if args.loglevel == "DEBUG":
-        ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(1)
+        ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(2)
     else:
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(-1)
 
@@ -28,13 +28,48 @@ def setup(args):
     ROOT.RooFitUtils.RooStarMomentMorphFix = args.fixCache
     ROOT.RooFitUtils.RooMultiPdfFix = args.fixMulti
 
-
 def buildModel(args):
     # Load the model
     import ROOT
+
+
     model = ROOT.RooFitUtils.ExtendedModel("model", args.inFileName, args.wsName,
                                            args.modelConfigName, args.dataName, args.snapshot,
-                                           args.binnedLikelihood, "pdf_")
+                                           args.binnedLikelihood, ROOT.RooArgSet(), "pdf_")
+
+    if args.penalty:
+        npens = len(args.penalty)
+        ws = model.GetWorkspace()
+        if npens > 0:
+            for ipens in range(0, npens):
+                pars = ROOT.RooArgList()
+                allpars = args.penalty[0][1].split(",")
+                for par in allpars[0:len(allpars)]:
+                    par = par.strip(" ") 
+                    par = par.strip("\"") 
+                    ws.obj(par).Print()
+                    pars.add(ws.obj(par))
+        
+                name = "penalty_"+str(ipens)
+                penaltyform = ROOT.RooFormulaVar(name, args.penalty[ipens][0], pars)
+                model.addPenalty(penaltyform)
+
+    if args.penaltyfile:
+        ws = model.GetWorkspace()
+        ipens = 0
+        for penline in open(args.penaltyfile,"r"):
+            ipens = ipens + 1
+            lineparts = penline.strip("\n").split("|")
+            lineparts = (lineparts[0], lineparts[1])
+            pars = ROOT.RooArgList()
+            allpars = lineparts[1].split(",")
+            for par in allpars[0:len(allpars)]:
+                par = par.strip(" ")
+                pars.add(ws.obj(par))
+            
+            name = "penalty_"+str(ipens)
+            penaltyform = ROOT.RooFormulaVar(name, lineparts[0], pars)
+            model.addPenalty(penaltyform)
 
     if args.fixAllNP:          model.fixNuisanceParameters()
     if args.setInitialError:   model.setInitialErrors()
@@ -42,7 +77,7 @@ def buildModel(args):
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.profile))
-
+ 
     return model
 
 def buildMinimizer(args,model):
@@ -205,8 +240,7 @@ def fit(args,model,minimizer):
                 writeResult(out,result,args.correlationMatrix)
             print("wrote output to "+args.outFileName)
         if args.writeResult:
-            outpath,outfile = os.path.split(args.outFileName.replace(".txt","")+".root")
-            minimizer.GetHesseMatrix().SaveAs(outfile+"_hesse.root")
+            outpath,outfile = os.path.split(args.outFileName.replace(".txt",""))
             result.fit.SaveAs(outfile+"_fitresult.root")
         else:
             print("no output requested")
@@ -225,6 +259,7 @@ def createScanJobs(args,arglist):
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
     import sys
     name = sys.argv[0]
+    name = "bsub "+name
     if args.refineScan:
         from RooFitUtils.io import collectresults
         prescans = {}
@@ -304,6 +339,8 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
     arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
+    arglist.append(parser.add_argument( "--penalty"       , type=str,     dest="penalty"                    , help="Penalty terms", metavar=("Penalty","vars"), default=None,nargs=2,action="append"))
+    arglist.append(parser.add_argument( "--penaltyfile"   , type=str,     dest="penaltyfile"                , help="Penalty terms", metavar=("Penalty"), default=None))
     arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar=("POI","N","min","max"), default=None,nargs=4,action="append"))
     arglist.append(parser.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))
     arglist.append(parser.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))
@@ -320,7 +357,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--folder"        , type=str,     dest="folder"                     , help="Output folder.", default="test" ))
     arglist.append(parser.add_argument( "--profile"       , type=str,     dest="profile"                    , help="Parameters to profile.", nargs="+", metavar="NP", default=[] ))
     arglist.append(parser.add_argument( "--fix"           , type=str,     dest="fixParameters"              , help="Parameters to fix.", nargs="+", metavar="NP", default=[]))
-    arglist.append(parser.add_argument( "--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combined" ))
+    arglist.append(parser.add_argument( "--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combWS" ))
     arglist.append(parser.add_argument( "--write-workspace", type=str,    dest="outWsName"                  , help="Filename of the output workspace." , default=None ))
     arglist.append(parser.add_argument( "--modelconfig"   , type=str,     dest="modelConfigName"            , help="MC to load.", default="ModelConfig" ))
     arglist.append(parser.add_argument( "--data"          , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
@@ -341,7 +378,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--multifix"      , action='store_true',    dest="fixMulti"                   , help="Fix MultiPdf level 2.", default=True ))
     arglist.append(parser.add_argument( "--no-multifix"   , action='store_false',   dest="fixMulti"                   , help="Do not fix MultiPdf level 2.", default=False ))
     arglist.append(parser.add_argument( "--precision"     , type=float,   dest="precision"                  , help="Precision for scan.", default=0.0005 ))
-    arglist.append(parser.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=0.01 ))
+    arglist.append(parser.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=0.05 ))
     arglist.append(parser.add_argument( "--eigen"         , action='store_true',   dest="eigendecomposition"         , help="Eigenvalues and vectors.", default=False ))
     arglist.append(parser.add_argument( "--offset"        , action='store_true',   dest="offsetting"                 , help="Offset likelihood.", default=True ))
     arglist.append(parser.add_argument( "--no-offset"     , action='store_false',  dest="offsetting"                 , help="Do not offset likelihood.", default=False ))
@@ -351,7 +388,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--no-reuse-nll"     , action='store_false',  dest="reuseNll"                 , help="Do not allow to reuse the nll.", default=True ))
     arglist.append(parser.add_argument( "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False ))
     arglist.append(parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2))
-    arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="DEBUG" ))
+    arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="ERROR" ))
     arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
     arglist.append(parser.add_argument( "--correlationMatrix", action='store_true',   dest="correlationMatrix",help="option to save correlation matrix", default=False ))

@@ -36,12 +36,12 @@ RooFitUtils::ExtendedModel::ExtendedModel(
 					  const std::string &ModelName, const std::string &FileName,
 					  const std::string &WsName, const std::string &ModelConfigName,
 					  const std::string &DataName, const std::string &SnapshotName,
-					  bool binnedLikelihood, const std::string &TagAsMeasurement,
+					  bool binnedLikelihood, RooArgSet *penalty, const std::string &TagAsMeasurement,
 					  bool FixCache, bool FixMulti)
 : TNamed(ModelName.c_str(), ModelName.c_str()), fFileName(FileName),
   fWsName(WsName), fModelConfigName(ModelConfigName), fDataName(DataName),
   fSnapshotName(SnapshotName), fBinnedLikelihood(binnedLikelihood),
-  fTagAsMeasurement(TagAsMeasurement) {
+  fTagAsMeasurement(TagAsMeasurement), fPenalty(penalty) {
   // Constructor
   initialise(FixCache, FixMulti);
   
@@ -222,6 +222,13 @@ void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
   fObs = (RooArgSet *)fModelConfig->GetObservables();
   if (!fObs) {
     coutE(InputArguments) << "Something went wrong when loading the observables"
+                          << std::endl;
+    throw std::runtime_error("unable to obtain list of observables");
+  }
+
+  coutP(InputArguments) << "Loading the penalty set" << std::endl;
+  if (!fPenalty) {
+    coutE(InputArguments) << "Something went wrong when loading the penalty set"
                           << std::endl;
     throw std::runtime_error("unable to obtain list of observables");
   }

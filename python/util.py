@@ -14,6 +14,30 @@ except NameError:
         """test if an object is a string"""
         return isinstance(s, str)
 
+def flipped(l,flip=True):
+    if flip:
+        return reversed(l)
+    else:
+        return [i for i in l]
+
+def flattened(l):
+    """flatten a list of lists to a single list"""    
+    for i in l:
+        for j in i:
+            yield j
+
+def keys(d):
+    if type(d) == dict:
+        return d.keys()
+    if type(d) == str:
+        return [d]
+
+def strip(s):
+    return s.strip()
+
+def striplatex(s):
+    return s.replace("\n","").replace("\\toprule","").replace("\\bottomrule","").replace("\\hline","").replace("\\textbf","").replace("\\textit","").replace("{","").replace("}","").replace("$","").strip()
+    
 def concat(pieces,delim=" "):
     """concatenate a list of strings to a single string"""
     if isstr(pieces):
@@ -126,6 +150,9 @@ def product(pools):
     for prod in result:
         yield tuple(prod)
 
+def names(objects):
+    return [ obj.GetName() for obj in objects ]
+        
 def generateCoordsDict(scan):
     """generate a dictionary of coordinates"""
     nvar = len(scan)
@@ -318,6 +345,9 @@ def getPercent(nsigma):
     from scipy.stats import norm
     return 1 - (1-norm.cdf(nsigma))*2
 
+def make1dscan(scan):
+    return {k[0]:v for k,v in scan.items()}
+
 def createAsimov(ws,mc,asmName):
     import ROOT
     allParams = ROOT.RooArgSet()
@@ -381,3 +411,63 @@ def getnofNPs(hesse,pois):
   N = hesse.GetNcols()
   npois = len(pois.strip(","))
   return N - npois
+
+def sgnstr(x):
+    if x<0: return str(x)
+    return "+"+str(x)
+
+def parsegroups(pois):
+    if isinstance(pois,dict):
+        return None
+    if len(pois) > 0 and isinstance(pois[0],tuple):
+        return [ (t[0],len(t[-1])) for t in pois]
+    return None
+
+
+def parsepois(pois,options=False):
+    if isinstance(pois, dict):
+        poinames = list(pois.keys())
+        poiopts = pois
+    else:
+        if isinstance(pois[0],str):
+            poinames = pois
+            poiopts = {}
+        elif isinstance(pois[0],tuple):
+            poinames = list(flattened([t[-1] for t in pois]))
+            poiopts = {}
+        else:
+            poinames = [ p[0] for p in pois ]
+            poiopts = { p[0]:p[1] for p in pois }
+    if options:
+        return poinames,poiopts
+    else:
+        return poinames
+
+def first_n_nonzero_digits(l, n):
+    from itertools import islice
+    return int(''.join(islice((i for i in str(abs(l)) if i not in {'0', '.'}), n)).ljust(n, '0'))
+
+def formatNumber(x,ndigits):
+    from math import log10
+    if log10(abs(x)) < -ndigits: return "0"
+    return "{:f}".format(round(x,ndigits)).rstrip("0").rstrip(".")
+
+def formatNumberPDG(x,forceSign=False):
+    if x == 0:
+        if forceSign: return "+0"
+        else: return "0"
+    from math import floor,log10
+    digits = first_n_nonzero_digits(x,3)
+    scale = floor(log10(abs(x)))
+    if digits < 354:
+        fmt =  "{:."+str(max(0,-scale+1))+"f}"
+    elif digits < 949:
+        fmt = "{:."+str(max(0,-scale))+"f}"
+    else:
+        fmt = "{:."+str(max(0,-scale-1))+"f}"
+    s = fmt.format(x)
+    if not forceSign or x < 0:
+        return s
+    else:
+        return "+"+s
+
