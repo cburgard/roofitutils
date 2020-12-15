@@ -284,15 +284,15 @@ def writecorrmatrix(atlas,parslist,allcorrs,outfilename):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,minval=-1,maxval=1,rotatelabels=45,axlabel="$\\rho(X,Y)$",flip=True,showall=True)
 
 def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[]):
-    from util import make1dscan
+    from RooFitUtils.util import make1dscan
     """write a bunch of 1d scans to a pgfplots tex file"""
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         allvals = [ v[0] for curves in allscans.values() for scan in curves.values() for v in scan.keys()]
         domain = "domain={0:f}:{1:f}".format(min(allvals),max(allvals))
-      #  outfile.write("\\begin{tikzpicture}\n")
+        outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
-        outfile.write("    ymin=0,ymax=10.\n")
+        outfile.write("    ymin=0,\n")
         if ymax:
             outfile.write("    ymax="+str(ymax)+",\n")
         outfile.write("    "+domain+",\n")

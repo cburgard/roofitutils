@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=["\\mu"])
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
-    parser.add_argument("--output",type=str,help="output file name",default="scan.tex",required=True)
+    parser.add_argument("-o","--output",type=str,help="output file name",default="scan.tex",required=True)
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
     parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False,help="flip X and Y axes")
     parser.add_argument("--smooth",action="store_true",default=False,help="apply smoothing")
