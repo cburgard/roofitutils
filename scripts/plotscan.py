@@ -65,6 +65,7 @@ if __name__ == '__main__':
 
     if len(scans) == 0 and len(results) == 0:
         print("no files found matching any of the given input paths")
+        exit(1)
 
     pois = [tuple(p.split(",")) for p in args.poi]
 
