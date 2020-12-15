@@ -452,19 +452,28 @@ def formatNumber(x,ndigits):
     if log10(abs(x)) < -ndigits: return "0"
     return "{:f}".format(round(x,ndigits)).rstrip("0").rstrip(".")
 
-def formatNumberPDG(x,forceSign=False):
+def findSignificantDigits(x):
     if x == 0:
-        if forceSign: return "+0"
-        else: return "0"
+        return 0
     from math import floor,log10
     digits = first_n_nonzero_digits(x,3)
     scale = floor(log10(abs(x)))
     if digits < 354:
-        fmt =  "{:."+str(max(0,-scale+1))+"f}"
+        return max(0,-scale+1)
     elif digits < 949:
-        fmt = "{:."+str(max(0,-scale))+"f}"
+        return max(0,-scale)
     else:
-        fmt = "{:."+str(max(0,-scale-1))+"f}"
+        return max(0,-scale-1)
+
+def formatPDG(x,xup,xdn):
+    digits = max(findSignificantDigits(abs(xup)),findSignificantDigits(abs(xdn)))
+    fmt = "{:."+str(digits)+"f}"
+    return fmt.format(x) + "^{+" + fmt.format(abs(xup)) +"}_{" + fmt.format(-abs(xdn))+"}"
+    
+    
+def formatNumberPDG(x,forceSign=False):
+    digits = findSignificantDigits(x)
+    fmt = "{:."+str(digits)+"f}"
     s = fmt.format(x)
     if not forceSign or x < 0:
         return s

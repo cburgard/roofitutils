@@ -318,7 +318,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
     """write a single 1d sncan to a pgfplots tex file"""
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
-    from RooFitUtils.util import graphrescale
+    from RooFitUtils.util import graphrescale,formatPDG
     # obtaining the - 2 log Lambda(x), where Lambda = LL(x)/LL(x0)
     nllmin = findminimum(allpoints)
     points = graphrescale(allpoints,nllmin,2)
@@ -350,7 +350,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                 #    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
                 if i == 0:
                     s = "{:s} = {:f}".format(parname,cv)
-                    outfile.write("\\addlegendentry{{${:s} = {:.5f}^{{+{:.5f}}}_{{-{:.5f}}}$}}".format(parlabel,cv,abs(up),abs(down)))
+                    outfile.write("\\addlegendentry{{${:s} = {:s}$}}".format(parlabel,formatPDG(cv,up,down)))
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
