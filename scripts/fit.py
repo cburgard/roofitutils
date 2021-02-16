@@ -359,11 +359,11 @@ def createImpactJobs(args,arglist):
     with open(pjoin(outpath,outfile),"w") as jobs:
         for par in pars:
             options["--singlepoint"]="{:s}={:f}".format(par.GetName(),par.getVal()+abs(par.getErrorHi()))
-            options["--output"]=args.outFileName+"."+par.GetName()+".up.txt"
+            options["--output"]=pjoin(outpath,"impact."+par.GetName()+".up.txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")
             options["--singlepoint"]="{:s}={:f}".format(par.GetName(),par.getVal()-abs(par.getErrorLo()))
-            options["--output"]=args.outFileName+"."+par.GetName()+".dn.txt"
+            options["--output"]=pjoin(outpath,"impact."+par.GetName()+".dn.txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")            
     print("wrote "+args.writeSubmit)
@@ -387,14 +387,13 @@ def createBreakdownJobs(args,arglist):
                     pars.append(parameter)
         groupname = "_".join([ ex.replace("_","").replace("*","") for ex in group])
         groups[groupname] = names(pars)
-
     outpath = args.writeSubmit
     mkdir(outpath)
     outfile = "jobs.txt"
     with open(pjoin(outpath,outfile),"w") as jobs:
-        for group in groups:
-            options["--fix"] = " ".join(names(pars))
-            options["--output"]=args.outFileName+"."+group+".txt"
+        for groupname,parnames in groups.items():
+            options["--fix"] = " ".join(parnames)
+            options["--output"]=pjoin(outpath,"breakdown."+groupname+".txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")
     print("wrote "+args.writeSubmit)
