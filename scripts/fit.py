@@ -74,6 +74,7 @@ def buildModel(args):
     if args.fixAllNP:          model.fixNuisanceParameters()
     if args.setInitialError:   model.setInitialErrors()
     if args.fixParameters:     model.fixParameters(",".join(args.fixParameters))
+    if args.floatParameters:   model.floatParameters(",".join(args.fixParameters))    
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.profile))
@@ -217,12 +218,12 @@ def fit(args,model,minimizer):
         with open(args.points) as infile:
             points = [ parsePoint(line) for line in infile if len(line)>0 ]
             parnames = vec(sorted(union([p.keys() for p in points])),"string")
-            coords = vec( [ vec( [ point[p] for p in parnames ] , "double") for point in points ], "vector<double>")
+            coords = vec( [ vec( [ point[str(p)] for p in parnames ] , "double") for point in points ], "vector<double>")
 
     if args.point != None:
         point = parsePoint(args.point)
         parnames = vec(sorted(point.keys()),"string")
-        coords = vec( [ vec( [ point[p] for p in parnames ] , "double") ], "vector<double>")
+        coords = vec( [ vec( [ point[str(p)] for p in parnames ] , "double") ], "vector<double>")
 
     if parnames and coords and not args.dummy:
         minimizer.scan(parnames,coords)
@@ -258,8 +259,7 @@ def createScanJobs(args,arglist):
     from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
     import sys
-    name = sys.argv[0]
-    name = "bsub "+name
+    submitCommand = args.submitCommand+" "+sys.argv[0]
     if args.refineScan:
         from RooFitUtils.io import collectresults
         prescans = {}
@@ -323,12 +323,80 @@ def createScanJobs(args,arglist):
                 options["--output"]=args.outFileName+".part"+str(idx)
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
                 if not os.path.exists(args.outFileName+".part"+str(idx)):
-                    jobs.write(name+" "+cmd+"\n")
+                    jobs.write(submitCommand+" "+cmd+"\n")
             idx = idx + 1
             with open(pointspath,"a") as coordlist:
                 point = makepoint(coord)
                 coordlist.write(point+"\n")
 
+    print("wrote "+args.writeSubmit)
+
+
+def createImpactJobs(args,arglist):
+    from os.path import join as pjoin
+    from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names
+    options = reconstructCall(args,arglist,["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
+    model = buildModel(args)    
+    import sys
+    submitCommand = args.submitCommand+" "+sys.argv[0]
+    pars = []
+    for group in args.impacts:
+        import re
+        regex = re.compile(group)
+        for par in model.GetNuisanceParameters():
+            if regex.match(par.GetName()):
+                if abs(par.getErrorHi()) > 0 and abs(par.getErrorLo()) > 0:
+                    pars.append(par)
+                else:
+                    print("warning: cannot produce impact of parameter '"+par.GetName()+"' without valid error range set!")
+    outpath = args.writeSubmit
+    mkdir(outpath)
+    outfile = "jobs.txt"
+    from os.path import join as pjoin
+
+    options["--no-findSigma"] = ""
+    
+    with open(pjoin(outpath,outfile),"w") as jobs:
+        for par in pars:
+            options["--singlepoint"]="{:s}={:f}".format(par.GetName(),par.getVal()+abs(par.getErrorHi()))
+            options["--output"]=args.outFileName+"."+par.GetName()+".up.txt"
+            cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
+            jobs.write(submitCommand+" "+cmd+"\n")
+            options["--singlepoint"]="{:s}={:f}".format(par.GetName(),par.getVal()-abs(par.getErrorLo()))
+            options["--output"]=args.outFileName+"."+par.GetName()+".dn.txt"
+            cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
+            jobs.write(submitCommand+" "+cmd+"\n")            
+    print("wrote "+args.writeSubmit)
+
+
+def createBreakdownJobs(args,arglist):
+    from os.path import join as pjoin
+    from RooFitUtils.util import names,reconstructCall,stringify,mkdir
+    options = reconstructCall(args,arglist,["breadkown","findSigma","writeSubmit","writeSubmitPoints"])
+    model = buildModel(args)
+    import sys
+    submitCommand = args.submitCommand+" "+sys.argv[0]    
+    import re
+    groups = {}
+    for group in args.breakdown:
+        pars = []
+        for ex in group:
+            regex = re.compile(ex)
+            for parameter in model.GetNuisanceParameters():
+                if regex.match(parameter.GetName()):
+                    pars.append(parameter)
+        groupname = "_".join([ ex.replace("_","").replace("*","") for ex in group])
+        groups[groupname] = names(pars)
+
+    outpath = args.writeSubmit
+    mkdir(outpath)
+    outfile = "jobs.txt"
+    with open(pjoin(outpath,outfile),"w") as jobs:
+        for group in groups:
+            options["--fix"] = " ".join(names(pars))
+            options["--output"]=args.outFileName+"."+group+".txt"
+            cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
+            jobs.write(submitCommand+" "+cmd+"\n")
     print("wrote "+args.writeSubmit)
 
 
@@ -342,6 +410,8 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--penalty"       , type=str,     dest="penalty"                    , help="Penalty terms", metavar=("Penalty","vars"), default=None,nargs=2,action="append"))
     arglist.append(parser.add_argument( "--penaltyfile"   , type=str,     dest="penaltyfile"                , help="Penalty terms", metavar=("Penalty"), default=None))
     arglist.append(parser.add_argument( "--scan"          , type=str,     dest="scan"                       , help="POI ranges to scan the Nll.", metavar=("POI","N","min","max"), default=None,nargs=4,action="append"))
+    arglist.append(parser.add_argument( "--breakdown"     , type=str,     dest="breakdown"                  , help="nuisance parameter groups to perform breakdown on.", metavar="REGEX", default=None,nargs="+",action="append"))
+    arglist.append(parser.add_argument( "--impacts"       , type=str,     dest="impacts"                    , help="nuisance parameters to calculate impacts of.", metavar="REGEX", default=None,nargs="+"))
     arglist.append(parser.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))
     arglist.append(parser.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))
     arglist.append(parser.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
@@ -357,6 +427,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--folder"        , type=str,     dest="folder"                     , help="Output folder.", default="test" ))
     arglist.append(parser.add_argument( "--profile"       , type=str,     dest="profile"                    , help="Parameters to profile.", nargs="+", metavar="NP", default=[] ))
     arglist.append(parser.add_argument( "--fix"           , type=str,     dest="fixParameters"              , help="Parameters to fix.", nargs="+", metavar="NP", default=[]))
+    arglist.append(parser.add_argument( "--float"         , type=str,     dest="floatParameters"            , help="Parameters to float.", nargs="+", metavar="NP", default=[]))
     arglist.append(parser.add_argument( "--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combWS" ))
     arglist.append(parser.add_argument( "--write-workspace", type=str,    dest="outWsName"                  , help="Filename of the output workspace." , default=None ))
     arglist.append(parser.add_argument( "--modelconfig"   , type=str,     dest="modelConfigName"            , help="MC to load.", default="ModelConfig" ))
@@ -370,6 +441,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
     arglist.append(parser.add_argument( "--mpStrategy"    , type=int,     dest="mpStrategy"                 , help="Multi-Processing strategy.", default=3 ))
     arglist.append(parser.add_argument( "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", metavar="jobs.txt" ))
+    arglist.append(parser.add_argument( "--submitCommand" , type=str,     dest="submitCommand"              , help="Submission command to be used.", default="bsub"))    
     arglist.append(parser.add_argument( "--jobSize"   , type=int,     dest="writeSubmitPoints"                , help="How many points to use per job when writing out jobs for scans.", metavar="N", default=2))
     arglist.append(parser.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True ))
     arglist.append(parser.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False ))
@@ -397,8 +469,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.writeSubmit and (args.scan or args.refineScan):
-        createScanJobs(args,arglist)
+    if args.writeSubmit:
+        if args.scan or args.refineScan:
+            createScanJobs(args,arglist)
+        if args.breakdown:
+            createBreakdownJobs(args,arglist)
+        if args.impacts:
+            createImpactJobs(args,arglist)                        
         exit(0)
 
     from sys import flags

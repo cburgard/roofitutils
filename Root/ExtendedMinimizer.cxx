@@ -430,9 +430,6 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
   fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
   newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
   fPenaltyMini = model->GetPenalty();
-  std::cout << "inside construct" << std::endl;
-  model->GetPenalty()->Print();
-  fPenaltyMini->Print();
   parseNllConfig(newargList);
   parseFitConfig(newargList);
 }
