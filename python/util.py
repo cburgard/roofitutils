@@ -43,7 +43,7 @@ def concat(pieces,delim=" "):
     if isstr(pieces):
         return pieces
     else:
-        return delim.join(pieces)
+        return delim.join([p for p in pieces if p != None and p != ""])
 
 def shellexec(command,inputs=[],verbose=False,allowErrors=True):
     """execute a command by invoking it in a shell"""
@@ -480,3 +480,5 @@ def formatNumberPDG(x,forceSign=False):
     else:
         return "+"+s
 
+
+    

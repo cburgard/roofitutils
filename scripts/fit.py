@@ -243,7 +243,7 @@ def fit(args,model,minimizer):
         if args.writeResult:
             outpath,outfile = os.path.split(args.outFileName.replace(".txt",""))
             result.fit.SaveAs(outfile+"_fitresult.root")
-        else:
+        if not args.writeResult and not args.outFileName:
             print("no output requested")
     else:
         print("received invalid result")
@@ -255,11 +255,11 @@ def fit(args,model,minimizer):
 
 def createScanJobs(args,arglist):
     from os.path import join as pjoin
-    from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir
+    from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir,concat
     from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
     options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
     import sys
-    submitCommand = args.submitCommand+" "+sys.argv[0]
+    submitCommand = concat([args.submitCommand,sys.argv[0]]," ")    
     if args.refineScan:
         from RooFitUtils.io import collectresults
         prescans = {}
@@ -334,11 +334,11 @@ def createScanJobs(args,arglist):
 
 def createImpactJobs(args,arglist):
     from os.path import join as pjoin
-    from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names
-    options = reconstructCall(args,arglist,["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
+    from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names,concat
+    options = reconstructCall(args,arglist,["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds","findSigma"])
     model = buildModel(args)    
     import sys
-    submitCommand = args.submitCommand+" "+sys.argv[0]
+    submitCommand = concat([args.submitCommand,sys.argv[0]]," ")    
     pars = []
     for group in args.impacts:
         import re
@@ -357,12 +357,15 @@ def createImpactJobs(args,arglist):
     options["--no-findSigma"] = ""
     
     with open(pjoin(outpath,outfile),"w") as jobs:
+        options["--output"]=pjoin(outpath,"impact.nominal.txt")
+        cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
+        jobs.write(submitCommand+" "+cmd+"\n")
         for par in pars:
-            options["--singlepoint"]="{:s}={:f}".format(par.GetName(),par.getVal()+abs(par.getErrorHi()))
+            options["--fix"]="{:s}={:f}".format(par.GetName(),par.getVal()+abs(par.getErrorHi()))
             options["--output"]=pjoin(outpath,"impact."+par.GetName()+".up.txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")
-            options["--singlepoint"]="{:s}={:f}".format(par.GetName(),par.getVal()-abs(par.getErrorLo()))
+            options["--fix"]="{:s}={:f}".format(par.GetName(),par.getVal()-abs(par.getErrorLo()))
             options["--output"]=pjoin(outpath,"impact."+par.GetName()+".dn.txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")            
@@ -371,11 +374,11 @@ def createImpactJobs(args,arglist):
 
 def createBreakdownJobs(args,arglist):
     from os.path import join as pjoin
-    from RooFitUtils.util import names,reconstructCall,stringify,mkdir
+    from RooFitUtils.util import names,reconstructCall,stringify,mkdir,concat
     options = reconstructCall(args,arglist,["breadkown","findSigma","writeSubmit","writeSubmitPoints"])
     model = buildModel(args)
     import sys
-    submitCommand = args.submitCommand+" "+sys.argv[0]    
+    submitCommand = concat([args.submitCommand,sys.argv[0]]," ")
     import re
     groups = {}
     for group in args.breakdown:
@@ -391,6 +394,10 @@ def createBreakdownJobs(args,arglist):
     mkdir(outpath)
     outfile = "jobs.txt"
     with open(pjoin(outpath,outfile),"w") as jobs:
+        options["--findSigma"] = ""
+        options["--output"]=pjoin(outpath,"breakdown.nominal.txt")
+        cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
+        jobs.write(submitCommand+" "+cmd+"\n")
         for groupname,parnames in groups.items():
             options["--fix"] = " ".join(parnames)
             options["--output"]=pjoin(outpath,"breakdown."+groupname+".txt")
@@ -440,7 +447,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
     arglist.append(parser.add_argument( "--mpStrategy"    , type=int,     dest="mpStrategy"                 , help="Multi-Processing strategy.", default=3 ))
     arglist.append(parser.add_argument( "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", metavar="jobs.txt" ))
-    arglist.append(parser.add_argument( "--submitCommand" , type=str,     dest="submitCommand"              , help="Submission command to be used.", default="bsub"))    
+    arglist.append(parser.add_argument( "--submitCommand" , type=str,     dest="submitCommand"              , help="Submission command to be used.", default=""))    
     arglist.append(parser.add_argument( "--jobSize"   , type=int,     dest="writeSubmitPoints"                , help="How many points to use per job when writing out jobs for scans.", metavar="N", default=2))
     arglist.append(parser.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True ))
     arglist.append(parser.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False ))
@@ -475,6 +482,9 @@ if __name__ == "__main__":
             createBreakdownJobs(args,arglist)
         if args.impacts:
             createImpactJobs(args,arglist)                        
+        exit(0)
+    if args.breakdown or args.impacts:
+        print("breakdown/impact calculation only supported in batch mode, please use --writeSubmit")
         exit(0)
 
     from sys import flags

@@ -41,34 +41,95 @@ and then install the packages by typing
     pip install --user scipy
     pip install --user scikit-image
 
-## Usage
+## Basic Usage
 
 A fitting font-end are provided in the form of a python script 
 
     scripts/fit.py
 
-which provides extensive help with the `--help` command line option. The results of likelihood scans obtained with this script can be plotted using 
+which provides extensive help with the `--help` command line option. 
+
+The results of likelihood scans obtained with this script can be plotted using 
 
     scripts/plotscan.py
 
+The results of individual fits (parameter pulls) can be with this script can be plotted using 
 
-## Pruning
+    scripts/plotpulls.py
 
-As an example, you can try the pruning code on a Higgs 5XS workspace. The directory `/afs/cern.ch/user/r/rabalasu/public/test_prune` contains the 5XS 80ifb workspace (pre-fit and post-fit) and the corresponding hesse and fitresults as root files. To test the pruning code, copy it's contents to `test`.
-The first step would be to obtain the following inputs for the pruning code, the postfit workspace, hesse matrix, and the fitresult. You can skip this step for the example as they
-are already available. 
+There resulting files are `.tex` files that encode the graphics using `TikZ` and can be rendered with `pdflatex`.
+
+    
+## Advanced Usage
+
+This section includes some examples on how this package can be used to perform some common tasks.
+
+### Liklihood scan
+
+Create job definitions with
+
+    python scripts/fit.py --input workspace.root --fit --data asimovData --scan mu 100 0 5 --writeSubmit scan
+    
+Use some batch submission of your choice to submit the jobs defined in 
+
+    scan/jobs.txt
+
+After your jobs finish, plot a simple, 1D likelihood scan with
+
+    scripts/plotscan.py -i red scans/*.txt -o my1dscan.tex --atlas Preliminary --poi mu
+
+
+### Ranking
+
+Create breakdown job definitions with
+
+    python scripts/fit.py --input workspace.root --fit --data asimovData --breakdown ATLAS_* --breakdown theo_* --breakdown gamma_* --writeSubmit breakdown
+    
+Create impact job definitions with
+
+    python scripts/fit.py --input workspace.root --fit --data asimovData --impacts ATLAS_* theo_*  gamma_* --writeSubmit impacts
+    
+Use some batch submission of your choice to submit the jobs defined in 
+
+    breakdown/jobs.txt
+    impacts/job.txt
+
+After your jobs finish, plot a full breakdown and impact plot including parameter pulls with
+
+    scripts/plotpulls.py -i red breadkown/*nominal*.txt --breakdown mu breakdown/*.tex --impacts mu impacts/*.tex
+
+### Pruning
+
+As an example, you can try the pruning code on a Higgs 5XS
+workspace. The directory
+`/afs/cern.ch/user/r/rabalasu/public/test_prune` contains the 5XS
+80ifb workspace (pre-fit and post-fit) and the corresponding hesse and
+fitresults as root files. To test the pruning code, copy it's contents
+to `test`.  The first step would be to obtain the following inputs for
+the pruning code, the postfit workspace, hesse matrix, and the
+fitresult. You can skip this step for the example as they are already
+available.
 
     python scripts/fit.py --input test/WS-Comb-5XS_80ifb.root --output test/WS-Comb-5XS.txt --workspace combWS --data combData --no-findSigma --hesse --writeResult --make-snapshots --write-workspace prune_test/WS-Comb-5XS_80ifb_postFit.root
 
- To perform the prune run the `order_NPs.py` script. Running the order_NPs script with `--writeSubmit` options creates a txt file whose lines split the rank-finding into multiple jobs.
+ To perform the prune run the `order_NPs.py` script. Running the
+ order_NPs script with `--writeSubmit` options creates a txt file
+ whose lines split the rank-finding into multiple jobs.
 
     python scripts/order_NPs.py --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --hesse test/WS-Comb-5XS_80ifb_hesse.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --writeSubmit test/joblines_5XS.txt --jobTime 10 --output test/order_NPs.txt
 
-This creates the joblines file `test/joblines_5XS.txt`. You can run these lines in parallel which will write out the nuisance parameters and their ranks.
-Once all of them have finished, you will see the ranks for the nuisance parameters witten in `test/order_NPs_*.txt`. You can then run the 
-pruning procedure with the following line,
+This creates the joblines file `test/joblines_5XS.txt`. You can run
+these lines in parallel which will write out the nuisance parameters
+and their ranks.  Once all of them have finished, you will see the
+ranks for the nuisance parameters witten in
+`test/order_NPs_*.txt`. You can then run the pruning procedure with
+the following line,
 
     python scripts/prune_NPs.py --input test/WS-Comb-5XS_80ifb_postFit.root --hesse test/WS-Comb-5XS_80ifb_hesse.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --order test/order_*.txt --output test/WS-Comb-5XS_80ifb_postFit_prune.root 2>&1 | tee test/prune_NPs_WS-Comb-5XS_80ifb.log
     
-This creates a workspace `WS-Comb-5XS_80ifb_postFit_prune.root` that contain the snapshots `prune_combData_1pct`,`prune_combData_5pct`, and `prune_combData_10pct` 
-that contains the nuisance parameters identified for their respective thresholds set to constant. The snapshot can be loaded before subsequent fits to fix the pruned nuisance parameters.
+This creates a workspace `WS-Comb-5XS_80ifb_postFit_prune.root` that
+contain the snapshots `prune_combData_1pct`,`prune_combData_5pct`, and
+`prune_combData_10pct` that contains the nuisance parameters
+identified for their respective thresholds set to constant. The
+snapshot can be loaded before subsequent fits to fix the pruned
+nuisance parameters.

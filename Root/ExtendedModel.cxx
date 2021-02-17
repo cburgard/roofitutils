@@ -367,43 +367,36 @@ void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &p
 
 void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
-	TObject* obj;
-	for(const auto&pat:parsed){
-		RooFIter itr(params->fwdIterator());
-		int found = 0;
-		while((obj = itr.next())){
-			if(RooFitUtils::matches(obj->GetName(),pat)){
-				RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
-				if(par){
-					found ++;
-
-					TString thisName(pat.c_str());
-					TString thisVal;
-					if (thisName.Contains("[")) {
-						assert(thisName.Contains("]"));
-						TObjArray *thisNameArray = thisName.Tokenize("[");
-						thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-						thisVal = ((TObjString *)thisNameArray->At(1))->GetString();
-						thisVal.ReplaceAll("]", "");
-					}
-
-					double value = par->getVal();
-					if (thisVal.IsFloat()) {
-						value = thisVal.Atof();
-						par->setVal(value);
-					}
-					coutI(ObjectHandling) << "Fixing parameter " << par->GetName()
-																<< " at value " << value << std::endl;
-					par->setConstant(1);					
-				}
-			}
-		}
-		if (found == 0) {
-			coutE(ObjectHandling) << "Parameter " << pat
-														<< " does not exist." << std::endl;
-			exit(-1);
-		}
-	}
+  TObject* obj;
+  for(const auto&s:parsed){
+    auto nameEnd = s.find_first_of("=[");
+    std::string pat(s.substr(0,nameEnd));
+    int found = 0;
+    double value = 0;
+    bool valSet = false;
+    if(s.size() != pat.size()){
+      auto valEnd = pat.find_first_not_of("0123456789.",nameEnd);
+      std::string val(s.substr(nameEnd+1,valEnd-nameEnd));
+      valSet = true;
+      value = atof(val.c_str());
+    }
+    for(auto obj:*params){
+      if(RooFitUtils::matches(obj->GetName(),pat)){
+        RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
+        if(par){
+          found ++;
+          if(valSet){
+            par->setVal(value);
+          }
+          coutI(ObjectHandling) << "Fixing parameter " << par->GetName() << " at value " << par->getVal() << std::endl;
+          par->setConstant(1);					
+        }
+      }
+    }
+    if (found == 0) {
+      throw std::runtime_error("Parameter " + pat + " does not exist.");
+    }
+  }
 }
 
 // _____________________________________________________________________________

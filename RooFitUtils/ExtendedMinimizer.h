@@ -26,10 +26,14 @@ public:
     class Scan {
     public:
       Scan(const std::vector<std::string> &parnames);
+      Scan(const std::vector<std::string> &parnames, const std::vector<std::string> &extranames);      
       void add(const std::vector<double> &parvals, int fitStatus, double nllval);
+      void add(const std::vector<double> &parvals, int fitStatus, double nllval, const std::vector<double>& extravals);      
       void printTable();
       std::vector<std::string> parNames;
       std::vector<std::vector<double>> parValues;
+      std::vector<std::string> extraParNames;      
+      std::vector<std::vector<double>> extraParValues;      
       std::vector<int> fitStatus;
       std::vector<double> nllValues;
     };
@@ -179,6 +183,7 @@ protected:
 protected:
   Result *fResult = NULL;
 
+  ExtendedModel *fModel = NULL;
   RooWorkspace *fWorkspace = NULL;
   RooAbsPdf *fPdf = NULL;
   RooAbsData *fData = NULL;

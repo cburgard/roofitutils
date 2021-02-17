@@ -39,6 +39,55 @@ union MyFloat_t {
 #include "RooStarMomentMorph.h"
 #endif
 
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,18,0)
+RooAbsCollection_IteratorHelper::RooAbsCollection_IteratorHelper(const RooAbsCollection& c, bool end) : itr(c.fwdIterator()), nextItem(end ? NULL : itr.next()) {}
+RooAbsArg* RooAbsCollection_IteratorHelper::operator++(){ nextItem = itr.next(); return nextItem; }
+bool RooAbsCollection_IteratorHelper::operator!=(const RooAbsCollection_IteratorHelper& other){ return this->nextItem != other.nextItem; }
+bool RooAbsCollection_IteratorHelper::operator!=(const RooAbsArg* other){  return this->nextItem != other; }
+RooAbsArg* RooAbsCollection_IteratorHelper::operator*(){ return nextItem; }
+RooAbsCollection_IteratorHelper begin(const RooAbsCollection& c){
+  return RooAbsCollection_IteratorHelper(c,false);
+}
+RooAbsCollection_IteratorHelper end(const RooAbsCollection& c){
+  return RooAbsCollection_IteratorHelper(c,true);
+}
+#endif
+RooLinkedList_IteratorHelper::RooLinkedList_IteratorHelper(const RooLinkedList& c, bool end) : itr(c.fwdIterator()), nextItem(end ? NULL : itr.next()) {}
+RooAbsArg* RooLinkedList_IteratorHelper::operator++(){ nextItem = itr.next(); return nextItem; }
+bool RooLinkedList_IteratorHelper::operator!=(const RooLinkedList_IteratorHelper& other){ return this->nextItem != other.nextItem; }
+bool RooLinkedList_IteratorHelper::operator!=(const RooAbsArg* other){  return this->nextItem != other; }
+RooAbsArg* RooLinkedList_IteratorHelper::operator*(){ return nextItem; }
+RooLinkedList_IteratorHelper begin(const RooLinkedList& c){
+  return RooLinkedList_IteratorHelper(c,false);
+}
+RooLinkedList_IteratorHelper end(const RooLinkedList& c){
+  return RooLinkedList_IteratorHelper(c,true);
+}
+RooFIter_IteratorHelper::RooFIter_IteratorHelper(RooFIter& it, bool end) : itr(&it), nextItem(end ? NULL : itr->next()) {}
+RooAbsArg* RooFIter_IteratorHelper::operator++(){ nextItem = itr->next(); return nextItem; }
+bool RooFIter_IteratorHelper::operator!=(const RooFIter_IteratorHelper& other){ return this->nextItem != other.nextItem; }
+bool RooFIter_IteratorHelper::operator!=(const RooAbsArg* other){  return this->nextItem != other; }
+RooAbsArg* RooFIter_IteratorHelper::operator*(){ return nextItem; }
+RooFIter_IteratorHelper begin(RooFIter& it){
+  return RooFIter_IteratorHelper(it,false);
+}
+RooFIter_IteratorHelper end(RooFIter& it){
+  return RooFIter_IteratorHelper(it,true);
+}
+TIterator_IteratorHelper::TIterator_IteratorHelper(TIterator* it, bool end) : itr(it), nextItem(end ? NULL : itr->Next()) {}
+TObject* TIterator_IteratorHelper::operator++(){ nextItem = itr->Next(); return nextItem; }
+bool TIterator_IteratorHelper::operator!=(const TIterator_IteratorHelper& other){ return this->nextItem != other.nextItem; }
+bool TIterator_IteratorHelper::operator!=(const TObject* other){  return this->nextItem != other; }
+TObject* TIterator_IteratorHelper::operator*(){ return nextItem; }
+TIterator_IteratorHelper begin(TIterator* it){
+  return TIterator_IteratorHelper(it,false);
+}
+TIterator_IteratorHelper end(TIterator* it){
+  return TIterator_IteratorHelper(it,true);
+}
+
+
 // _____________________________________________________________________________
 
 int RooFitUtils::fixRooStarMomentMorph(RooWorkspace *workspace) {

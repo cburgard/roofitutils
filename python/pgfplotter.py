@@ -440,7 +440,7 @@ def writepoints2d(args,points,outfile,style):
     for point in points:
         i = i + 1
         if red > 0 and randint(0, red) != 0: continue
-        keys = sorted(point.keys())
+        keys = sorted(list(point.keys()))
         if args.flipAxes:
             outfile.write("    ({:f},{:f})\n".format(point[keys[1]],point[keys[0]]))
         else:
@@ -521,10 +521,41 @@ def getColorDefStringLaTeX(name,color):
   color.GetRGB(r,g,b);
   return "\\definecolor{"+name+"}{rgb}{"+str(r)+","+str(g)+","+str(b)+"}"
 
+def writepull(args,results,outfile,parname,ypos,offset=True):
+    res = results[parname]
+    ires = 0
+    for style,(cv,edn,eup) in res.items():
+        ires = ires+1
+        if offset:
+            voffset = float(ires)/(len(res)+1) - 0.5
+        else:
+            voffset = 0
+        if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
+            print("unable to print parameter "+parname+", dimension too large: "+str(cv)+" +"+str(eup)+" "+str(edn))
+        else:
+            outfile.write("  \\draw[pull,"+style+"] ({:.5f},{:.2f})--({:.5f},{:.2f});".format(cv-abs(edn),ypos+voffset,cv+abs(eup),ypos+voffset))
+            outfile.write("  \\node[dot,"+style+"] at ({:.5f},{:.2f})".format(cv,ypos+voffset)+ "{};\n")
 
-def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=False):
-    from math import floor,ceil
-    writehead(outfile)
+def writeranking(args,ranking,outfile,ypos,ysize="5pt"):
+    up,dn = ranking
+    outfile.write("  \\fill[myblue]   ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(dn,ypos,ysize,0, ypos,ysize))
+    outfile.write("  \\fill[myyellow] ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(0, ypos,ysize,up,ypos,ysize))
+    outfile.write("\n")
+        
+def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False):
+    res = results[parname]
+    ires = 0
+    for style,(cv,edn,eup) in res.items():
+        ires = ires+1
+        if labels == "r":
+            hoffset = float(len(res.items())-ires)
+            outfile.write("  \\node[lbl,xshift=-"+str(hoffset)+"cm,anchor=east] at ("+str(args.range[0])+","+str(ypos)+") ")            
+        else:
+            hoffset = 2*float(ires)
+            outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(ypos)+") ")
+        outfile.write(("{{${:"+numbers+"}^{{+{:"+numbers+"}}}_{{-{:"+numbers+"}}}$}};").format(cv,abs(eup),abs(edn)))
+            
+def writepullshead(args,outfile,allpars,labels):
     xunit = 3
     yunit = .5
     outfile.write("\\begin{tikzpicture}[x="+str(xunit)+"cm,y=-"+str(yunit)+"cm,%\n")
@@ -535,50 +566,31 @@ def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=
     outfile.write("  every node/.append style={font=\\sffamily}\n")
     outfile.write("]\n")
     outfile.write("\\pgfdeclarelayer{background}\\pgfsetlayers{background,main}\n")
-    if not allpars:
-        allpars = sorted(results.keys())
     npar = len(allpars)
     for np in range(0,npar):
         text = allpars[np]
         if labels == "r":
-            outfile.write("\\node[lbl,xshift=1cm,anchor=west] at ("+str(args.range[1])+","+str(np-npar)+") ")
+            outfile.write("  \\node[lbl,xshift=1cm,anchor=west] at ("+str(args.range[1])+","+str(np-npar)+") ")
         else:
-            outfile.write("\\node[lbl,xshift=-1cm,anchor=east] at ("+str(args.range[0])+","+str(np-npar)+") ")            
+            outfile.write("  \\node[lbl,xshift=-1cm,anchor=east] at ("+str(args.range[0])+","+str(np-npar)+") ")            
         outfile.write("{")            
         if "{" in text and not "$" in text:
             outfile.write("\\ensuremath{"+text+"}")
         else:
             outfile.write(text.replace("_","\\_"))
         outfile.write("};\n")
-    for np in range(0,npar):
-        res = results[allpars[np]]
-        ires = 0
-        for style,(cv,edn,eup) in res.items():
-            ires = ires+1
-            if offset:
-                voffset = float(ires)/(len(res)+1) - 0.5
-            else:
-                voffset = 0
-            if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
-                print("unable to print parameter "+allpars[np]+", dimension too large: "+str(cv)+" +"+str(eup)+" "+str(edn))
-            else:
-                outfile.write("  \\draw["+style+"] ({:.5f},{:.2f})--({:.5f},{:.2f});".format(cv-abs(edn),np-npar+voffset,cv+abs(eup),np-npar+voffset))
-                outfile.write("  \\node["+style+"] at ({:.5f},{:.2f})".format(cv,np-npar+voffset)+ "{};\n")
-            if numbers:
-                if labels == "r":
-                    hoffset = float(len(res.items())-ires)
-                    outfile.write("\\node[lbl,xshift=-"+str(hoffset)+"cm,anchor=east] at ("+str(args.range[0])+","+str(np-npar)+") ")            
-                else:
-                    hoffset = 2*float(ires)
-                    outfile.write("\\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(np-npar)+") ")
-                outfile.write(("{{${:"+numbers+"}^{{+{:"+numbers+"}}}_{{-{:"+numbers+"}}}$}};").format(cv,abs(eup),abs(edn)))
-                    
+
+def writepullsfoot(args,outfile,allpars):
+    npar = len(allpars)
+    from math import floor,ceil
     from numpy import arange
+    outfile.write("% bottom axis\n")
     for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.25):
-        outfile.write("\\draw[black] (" +str(x)+ "," + str(-0.5+0.2) + ") -- (" +str(x)+ "," +str(-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
-    outfile.write("\\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5)+ ") node [pos=1,anchor=north east,yshift=-.5cm]{Parameter of Interest};\n")
+        outfile.write("  \\draw[black] (" +str(x)+ "," + str(-0.5+0.2) + ") -- (" +str(x)+ "," +str(-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
+    outfile.write("  \\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5)+ ") node [pos=1,anchor=north east,yshift=-.5cm]{Parameter of Interest};\n")
     for x in range(floor(args.range[0]),ceil(args.range[1])+1):
-        outfile.write("\\draw[dashed,black] (" +str(x)+ "," +str(-0.5)+ ") -- (" +str(x)+ "," +str(-0.5-npar)+ ");\n")
+        outfile.write("  \\draw[dashed,black] (" +str(x)+ "," +str(-0.5)+ ") -- (" +str(x)+ "," +str(-0.5-npar)+ ");\n")
+    outfile.write("% highlighting\n")        
     outfile.write("\\begin{pgfonlayer}{background}\n")
     outfile.write("  \\foreach \\i in ")
     if npar>3: outfile.write("{-1,-3,...,"+str(-2*((npar+1)/2))+"}")
@@ -586,7 +598,18 @@ def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=
     outfile.write("{\\fill[fill=white!90!black] let \\p1 = (current bounding box.east), \\p2 = (current bounding box.west) in (\\x1,\\i-0.5) rectangle (\\x2,\\i+0.5); }\n")
     outfile.write("\\end{pgfonlayer}\n")
     outfile.write("\\end{tikzpicture}\n")
-    writefoot(outfile)
+        
+def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=False):
+    if not allpars:
+        allpars = sorted(list(results.keys()))
+    writehead(outfile)
+    writepullshead(args,outfile,allpars,labels)
+    npar = len(allpars)
+    for np in range(0,npar):
+        writepull(args,results,outfile,allpars[np],np-npar,offset)
+        writepullnumers(args,results,outfile,allpars[np],np-npar,labels,numbers)
+    writepullsfoot(args,outfile,allpars)        
+    writefoot(outfile)   
 
 def plotBarPanel(outfile,data,layout,showlabels,xwidth):
     """plot a single panel of a multipanel bar chart"""
