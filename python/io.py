@@ -297,7 +297,7 @@ def collectimpacts(rankings,files,poiname):
     for par in allvars:
         upval = results[poiname][(par,"up")][0]
         dnval = results[poiname][(par,"dn")][0]
-        rankings[poiname][par] = (upval-nomval,nomval-dnval)
+        rankings[poiname][par] = (upval-nomval,dnval-nomval)
     return allvars
 
 def collectbreakdowns(rankings,files,poiname):
