@@ -26,6 +26,9 @@ def flattened(l):
         for j in i:
             yield j
 
+def isclose(a,b,rel_tol=1e-9,abs_tol=1e-9):
+    return abs(a-b) <= max( rel_tol * max(abs(a), abs(b)), abs_tol )
+            
 def keys(d):
     if type(d) == dict:
         return d.keys()

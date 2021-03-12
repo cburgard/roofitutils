@@ -16,7 +16,36 @@ def texify(string):
         return latex_aliases[string]
     return string.replace("_","\\_")
 
-def writeResult(out,result,writecorrmat):
+
+def writeResultJSON(out,result,writecorrmat):
+    from datetime import datetime
+    now = datetime.now() # current date and time
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    import getpass
+    import platform
+    import socket
+    userstamp = getpass.getuser() + "@" + socket.gethostname() + " " + platform.system() + " " + platform.release()
+    import json
+    from RooFitUtils.util import isclose
+    js = {"stamp":timestamp+" "+userstamp,"min":{"status":result.min.status,"minimizer":result.min.config.MinimizerType(),"strategy":result.min.strategy,"nll":result.min.nll, "parameters":{}}}
+    for p in result.parameters:
+        par={"val":p.value}
+        if isclose(abs(p.errHi),abs(p.errLo)):
+            par["err"]=p.errHi
+        else:
+            par["eUp"]=p.errHi
+            par["eDn"]=p.errLo
+        js["min"]["parameters"][p.name]=par
+    if result.fit and writecorrmat:
+        npar = len(result.parameters)
+        js["min"]["cov"] = {result.parameters[j].name:{result.parameters[i].name:result.fit.covarianceMatrix()[i][j] for i in range(0,j+1)} for j in range(0,npar)}
+    js["scans"] = {}
+    for scan in result.scans:
+        js["scans"][scan.name]=[{"nll":scan.nllValues[i],"status":scan.fitStatus[i],"parameters":{scan.parNames[j]:scan.parValues[i][j] for j in range(len(scan.parNames))}} for i in range(len(scan.nllValues))]
+    json.dump(js,out,sort_keys=True,indent=4)
+
+    
+def writeResultTxt(out,result,writecorrmat):
     if result.min.nll:
         out.write("Minimization: minNll = ")
         out.write(str(result.min.nll))
@@ -186,6 +215,11 @@ def collectresult(scans,results,filename,label):
     parpat_legacy = re.compile("[ \t]*([a-zA-Z0-9_.-]+)[ \t=]+([0-9.naife+-]+)[ \t]*\+/-[ \t]*([0-9.naife+-]+).*")
     nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife+-]+)")
     if os.path.isfile(filename):
+        if filename.endswith(".json"):
+            with open(filename,"rt") as infile:
+                import json
+                js = json.load(infile)
+                
         if filename.endswith(".root"):
             import ROOT
             infile = ROOT.TFile.Open(filename,"READ")

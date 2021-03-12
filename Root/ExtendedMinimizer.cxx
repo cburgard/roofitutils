@@ -190,17 +190,17 @@ RooFitUtils::ExtendedMinimizer::Result::Eigen::Eigen(const TVectorD &vals,
 
 // ____________________________________________________________________________|__________
 
-RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(
+RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(const std::string& n,
     const std::vector<std::string> &parnames)
-    : parNames(parnames) {
+     : name(n), parNames(parnames) {
   // nothing here
 }
 
 // ____________________________________________________________________________|__________
 
-RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(
+RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(const std::string& n,
     const std::vector<std::string> &parnames, const std::vector<std::string> &extraparnames)
-    : parNames(parnames), extraParNames(extraparnames) {
+      : name(n), parNames(parnames), extraParNames(extraparnames) {
   // nothing here
 }
 
@@ -1144,7 +1144,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
     }
   }
   bool hesse = fHesse;
-  ExtendedMinimizer::Result::Scan scan(parnames,extraparnames);
+  ExtendedMinimizer::Result::Scan scan("unnamed",parnames,extraparnames);
 
   for (const auto &point : points) {
     if (point.size() != parnames.size()) {
@@ -1296,7 +1296,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   bool hesse = fHesse;
   fHesse = false;
   int iter = 0;
-  ExtendedMinimizer::Result::Scan values({par->GetName()});
+  ExtendedMinimizer::Result::Scan values(TString::Format("findSigma_%s_%g",par->GetName(),val_guess).Data(),{par->GetName()});
   const double nllmin = result->min.nll;
   values.add({val_mle}, result->min.status, nllmin);
   for (; iter < maxiter; iter++) {
