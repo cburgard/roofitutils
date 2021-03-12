@@ -35,6 +35,7 @@ namespace RooFitUtils {
                   std::string ending = " \\\\");
 	
   bool matches(const std::string& text, const std::string& pattern);
+  std::string concat(const std::vector<std::string>& text, const std::string& joint = ",");  
 }
 
 

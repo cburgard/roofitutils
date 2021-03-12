@@ -1144,7 +1144,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
     }
   }
   bool hesse = fHesse;
-  ExtendedMinimizer::Result::Scan scan("unnamed",parnames,extraparnames);
+  ExtendedMinimizer::Result::Scan scan(RooFitUtils::concat(parnames),parnames,extraparnames);
 
   for (const auto &point : points) {
     if (point.size() != parnames.size()) {

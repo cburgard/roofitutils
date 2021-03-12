@@ -537,3 +537,13 @@ RooWorkspace* RooFitUtils::makeCleanWorkspace(RooWorkspace* oldWS, const char* n
   
   return newWS;
 }
+
+std::string RooFitUtils::concat(const std::vector<std::string>& text, const std::string& joint){
+  if(text.size()==0) return "";
+  std::string retval = text[0];
+  for(size_t i=1; i<text.size(); ++i){
+    retval += joint;
+    retval += text[i];
+  }
+  return retval;
+}

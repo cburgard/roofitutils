@@ -199,13 +199,11 @@ def fit(args,model,minimizer):
 
     parnames = None
     coords = None
-    if args.get("scan",False):
-        val = args["scan"][0]
-        parname = val[0]
-        parrange = linspace(float(val[2]),float(val[3]),int(val[1]))
-        parnames = vec([parname],"string")
-        coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
-        coordsdict = generateCoordsDict(args["scan"])
+    scan = args.get("scan",False)
+    if scan:
+        from RooFitUtils.util import isstr
+        if isstr(scan[0]): scan = [scan]
+        coordsdict = generateCoordsDict(scan)
         parnames = vec(sorted(coordsdict[0].keys()),"string")
         coords = vec([ vec([d[str(k)] for k in parnames],"double") for d in coordsdict],"vector<double>")
 
@@ -220,7 +218,7 @@ def fit(args,model,minimizer):
         parnames = vec(sorted(point.keys()),"string")
         coords = vec( [ vec( [ point[str(p)] for p in parnames ] , "double") ], "vector<double>")
 
-    if parnames and coords and not args["dummy"]:
+    if parnames and coords and not args.get("dummy",False):
         minimizer.scan(parnames,coords)
     else:
         print("no scan requested")
