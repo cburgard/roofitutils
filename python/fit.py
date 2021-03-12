@@ -7,8 +7,8 @@ def setup(args):
     loadRooFitUtils()
 
     # setup verbosity
-    ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.loglevel))
-    if args.loglevel == "DEBUG":
+    ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.get("loglevel","DEBUG")))
+    if args.get("loglevel","DEBUG") == "DEBUG":
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(2)
     else:
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(-1)
@@ -16,29 +16,29 @@ def setup(args):
     if ROOT.Math.MinimizerOptions.DefaultPrintLevel() < 0: ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.FATAL)
 
     # Configuration of minimizer
-    ROOT.Math.MinimizerOptions.SetDefaultMinimizer(args.minimizerType, args.minimizerAlgo)
-    ROOT.Math.MinimizerOptions.SetDefaultStrategy(args.defaultStrategy)
+    ROOT.Math.MinimizerOptions.SetDefaultMinimizer(args.get("minimizerType","Minuit2"), args.get("minimizerAlgo","Migrad"))
+    ROOT.Math.MinimizerOptions.SetDefaultStrategy(args.get("defaultStrategy",1))
 
     # patches for HCombRoot
-    ROOT.RooFitUtils.RooStarMomentMorphFix = args.fixCache
-    ROOT.RooFitUtils.RooMultiPdfFix = args.fixMulti
+    ROOT.RooFitUtils.RooStarMomentMorphFix = args.get("fixCache",True)
+    ROOT.RooFitUtils.RooMultiPdfFix = args.get("fixMulti",True)
 
 def buildModel(args):
     # Load the model
     import ROOT
 
 
-    model = ROOT.RooFitUtils.ExtendedModel("model", args.inFileName, args.wsName,
-                                           args.modelConfigName, args.dataName, args.snapshot,
-                                           args.binnedLikelihood, ROOT.RooArgSet(), "pdf_")
+    model = ROOT.RooFitUtils.ExtendedModel("model", args["inFileName"], args["wsName"],
+                                           args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot","nominalNuis"),
+                                           args.get("binnedLikelihood",True), ROOT.RooArgSet(), "pdf_")
 
-    if args.penalty:
+    if args.get("penalty",False):
         npens = len(args.penalty)
         ws = model.GetWorkspace()
         if npens > 0:
             for ipens in range(0, npens):
                 pars = ROOT.RooArgList()
-                allpars = args.penalty[0][1].split(",")
+                allpars = args["penalty"][0][1].split(",")
                 for par in allpars[0:len(allpars)]:
                     par = par.strip(" ") 
                     par = par.strip("\"") 
@@ -46,13 +46,13 @@ def buildModel(args):
                     pars.add(ws.obj(par))
         
                 name = "penalty_"+str(ipens)
-                penaltyform = ROOT.RooFormulaVar(name, args.penalty[ipens][0], pars)
+                penaltyform = ROOT.RooFormulaVar(name, args["penalty"][ipens][0], pars)
                 model.addPenalty(penaltyform)
 
-    if args.penaltyfile:
+    if args.get("penaltyfile",None):
         ws = model.GetWorkspace()
         ipens = 0
-        for penline in open(args.penaltyfile,"r"):
+        for penline in open(args["penaltyfile"],"r"):
             ipens = ipens + 1
             lineparts = penline.strip("\n").split("|")
             lineparts = (lineparts[0], lineparts[1])
@@ -66,13 +66,13 @@ def buildModel(args):
             penaltyform = ROOT.RooFormulaVar(name, lineparts[0], pars)
             model.addPenalty(penaltyform)
 
-    if args.fixAllNP:          model.fixNuisanceParameters()
-    if args.setInitialError:   model.setInitialErrors()
-    if args.fixParameters:     model.fixParameters(",".join(args.fixParameters))
-    if args.floatParameters:   model.floatParameters(",".join(args.fixParameters))    
+    if args.get("fixAllNP",False):          model.fixNuisanceParameters()
+    if args.get("setInitialError",False):   model.setInitialErrors()
+    if args.get("fixParameters",None):      model.fixParameters(",".join(args["fixParameters"]))
+    if args.get("floatParameters",None):    model.floatParameters(",".join(args["fixParameters"]))    
 
     model.fixParametersOfInterest()
-    model.profileParameters(",".join(args.profile))
+    model.profileParameters(",".join(args.get("profile",[])))
  
     return model
 
@@ -89,7 +89,7 @@ def buildMinimizer(args,model):
     ROOT.RooFitUtils.addArgSet(allparams, pois)
     ROOT.RooFitUtils.addArgSet(allparams, globs)
     obs = model.GetObservables()
-    if args.makeParameterSnapshots:
+    if args.get("makeParameterSnapshots",False):
        # Save the snapshots of nominal parameters
         print("Saving nominal snapshots.")
         ws.saveSnapshot("nominalGlobs", globs)
@@ -101,8 +101,8 @@ def buildMinimizer(args,model):
     # Collect POIs
     pois = model.GetParametersOfInterest()
     poiset = ROOT.RooArgSet()
-    if args.pois:
-        poinames = args.pois
+    if args.get("pois",None):
+        poinames = args["pois"]
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
@@ -114,22 +114,22 @@ def buildMinimizer(args,model):
 
     pdf = model.GetPdf()
 
-    argelems = [ROOT.RooFit.Minimizer(args.minimizerType, args.minimizerAlgo),
-                ROOT.RooFit.Strategy(args.defaultStrategy),
-                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.eps),
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.reuseMinimizer),
-                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.reuseNll),
+    argelems = [ROOT.RooFit.Minimizer(args.get("minimizerType","Minuit2"), args.get("minimizerAlgo","Migrad")),
+                ROOT.RooFit.Strategy(args.get("defaultStrategy",2)),
+                ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.get("eps",1e-3)),
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.get("reuseMinimizer",False)),
+                ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.get("reuseNll",False)),
                 ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
                 ROOT.RooFit.Constrain(nuis),
                 ROOT.RooFit.GlobalObservables(globs),
-                ROOT.RooFit.NumCPU(args.numCPU, args.mpStrategy),
-                ROOT.RooFit.Offset(args.offsetting),
-                ROOT.RooFit.Optimize(args.constOpt),
-                ROOT.RooFit.PrintLevel(args.printLevel),
-                ROOT.RooFit.Precision(args.precision),
-                ROOT.RooFit.Hesse(args.hesse),
+                ROOT.RooFit.NumCPU(args.get("numCPU",1), args.get("mpStrategy",3)),
+                ROOT.RooFit.Offset(args.get("offsetting",True)),
+                ROOT.RooFit.Optimize(args.get("constOpt",1)),
+                ROOT.RooFit.PrintLevel(args.get("printLevel",0)),
+                ROOT.RooFit.Precision(args.get("precision",1e-3)),
+                ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
-    if args.findSigma:
+    if args.get("findSigma",True):
         argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset))
 
     from RooFitUtils.util import nodel
@@ -155,8 +155,8 @@ def fit(args,model,minimizer):
 
     # Collect POIs
     pois = model.GetParametersOfInterest()
-    if args.pois:
-        poinames = args.pois
+    if args.get("pois",None):
+        poinames = args["pois"]
     else:
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
@@ -166,9 +166,9 @@ def fit(args,model,minimizer):
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
 
-    if args.fit:
+    if args.get("fit",True):
         start = time()
-        if not args.dummy:
+        if not args.get("dummy",False):
             minimizer.minimize()
 
         end = time()
@@ -176,7 +176,7 @@ def fit(args,model,minimizer):
         minNll = minimizer.GetMinNll()
         print("NLL after minimisation: "+str(minNll))
 
-        if args.makeParameterSnapshots:
+        if args.get("makeParameterSnapshots",False):
             ws = model.GetWorkspace()
             mc = model.GetModelConfig()
             allparams = ROOT.RooArgSet()
@@ -199,28 +199,28 @@ def fit(args,model,minimizer):
 
     parnames = None
     coords = None
-    if args.scan:
-        val = args.scan[0]
+    if args.get("scan",False):
+        val = args["scan"][0]
         parname = val[0]
         parrange = linspace(float(val[2]),float(val[3]),int(val[1]))
         parnames = vec([parname],"string")
         coords = vec([ vec([val],"double") for val in parrange],"vector<double>")
-        coordsdict = generateCoordsDict(args.scan)
+        coordsdict = generateCoordsDict(args["scan"])
         parnames = vec(sorted(coordsdict[0].keys()),"string")
         coords = vec([ vec([d[str(k)] for k in parnames],"double") for d in coordsdict],"vector<double>")
 
-    if args.points != None:
-        with open(args.points) as infile:
+    if args.get("points",None) != None:
+        with open(args["points"]) as infile:
             points = [ parsePoint(line) for line in infile if len(line)>0 ]
             parnames = vec(sorted(union([p.keys() for p in points])),"string")
             coords = vec( [ vec( [ point[str(p)] for p in parnames ] , "double") for point in points ], "vector<double>")
 
-    if args.point != None:
-        point = parsePoint(args.point)
+    if args.get("point",None) != None:
+        point = parsePoint(args["point"])
         parnames = vec(sorted(point.keys()),"string")
         coords = vec( [ vec( [ point[str(p)] for p in parnames ] , "double") ], "vector<double>")
 
-    if parnames and coords and not args.dummy:
+    if parnames and coords and not args["dummy"]:
         minimizer.scan(parnames,coords)
     else:
         print("no scan requested")
@@ -228,38 +228,40 @@ def fit(args,model,minimizer):
     result = minimizer.getResult()
 
     if result:
-        if args.outFileName:
+        outFileName = args.get("outFileName","output.root")
+        if outFileName:
             import os
-            outpath,outfile = os.path.split(args.outFileName)
+            outpath,outfile = os.path.split(outFileName)
             mkdir(outpath)
-            with open(args.outFileName,'w') as out:
-                writeResult(out,result,args.correlationMatrix)
-            print("wrote output to "+args.outFileName)
-        if args.writeResult:
-            outpath,outfile = os.path.split(args.outFileName.replace(".txt",""))
+            with open(outFileName,'w') as out:
+                writeResult(out,result,args.get("correlationMatrix",True))
+            print("wrote output to "+outFileName)
+        if args.get("writeResult",False):
+            outpath,outfile = os.path.split(outFileName.replace(".txt",""))
             result.fit.SaveAs(outfile+"_fitresult.root")
-        if not args.writeResult and not args.outFileName:
+        if not args.get("writeResult",False) and not outFileName:
             print("no output requested")
     else:
         print("received invalid result")
 
-    if args.outWsName:
+    if args.get("outWsName",None):
         ws = model.GetWorkspace()
-        ws.writeToFile(args.outWsName)
+        ws.writeToFile(args["outWsName"])
 
+    return result
 
 def createScanJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir,concat
     from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
-    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
+    options = reconstructCall(args["arglist"],["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
     import sys
-    submitCommand = concat([args.submitCommand,sys.argv[0]]," ")    
-    if args.refineScan:
+    submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")    
+    if args["refineScan"]:
         from RooFitUtils.io import collectresults
         prescans = {}
         preresults = {}
-        collectresults(prescans,preresults,args.refineScan,"dummy")
+        collectresults(prescans,preresults,args["refineScan"],"dummy")
         from RooFitUtils.interpolate import findcontours
         coords = []
         for parnamelist,scan in prescans.items():
@@ -271,8 +273,8 @@ def createScanJobs(args,arglist):
                     # 2 sigma (=95.44997% CL):  6.180
 #                    thresholds = [0.5*2.296,0.5*6.180]
 #                    thresholds = [0.5*2.28]
-                    if args.refineScanThresholds:
-                        thresholds = args.refineScanThresholds
+                    if args["refineScanThresholds"]:
+                        thresholds = args["refineScanThresholds"]
                     else:
                         thresholds = [0.5*2.28,0.5*5.99]
                     contours,minimum = findcontours(points,thresholds,False)
@@ -284,19 +286,19 @@ def createScanJobs(args,arglist):
                     # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
                     #distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
                 else:
-                    if args.refineScanThresholds:
-                        thresholds = args.refineScanThresholds
+                    if args["refineScanThresholds"]:
+                        thresholds = args["refineScanThresholds"]
                     else:
                         thresholds = [0.5,2]
                     for t in thresholds:
                         cv,down,up = findcrossings(points,t)
                         distributePointsAroundPoint(parnamelist,coords,down,npoints/4,0.1)
                         distributePointsAroundPoint(parnamelist,coords,up,npoints/4,0.1)
-    elif args.scan:
-        coords = generateCoordsDict(args.scan)
+    elif args["scan"]:
+        coords = generateCoordsDict(args["scan"])
     idx = 0
     import os
-    outpath = args.writeSubmit
+    outpath = args["writeSubmit"]
     mkdir(outpath)
     outfile = "jobs.txt"
 
@@ -306,36 +308,36 @@ def createScanJobs(args,arglist):
     clearfile(pointspath)
 
     idx = 0
-    if not args.outFileName:
+    if not args.get("outFileName",None):
         print("output file name mandatory for use of batch scanning!")
         exit(0)
     with open(pjoin(outpath,outfile),"w") as jobs:
         for coord in coords:
-            if  idx % args.writeSubmitPoints == 0:
+            if  idx % args["writeSubmitPoints"] == 0:
                 pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
                 clearfile(pointspath)
                 options[" --no-findSigma --points"]=pointspath
-                options["--output"]=args.outFileName+".part"+str(idx)
+                options["--output"]=args["outFileName"]+".part"+str(idx)
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-                if not os.path.exists(args.outFileName+".part"+str(idx)):
+                if not os.path.exists(args["outFileName"]+".part"+str(idx)):
                     jobs.write(submitCommand+" "+cmd+"\n")
             idx = idx + 1
             with open(pointspath,"a") as coordlist:
                 point = makepoint(coord)
                 coordlist.write(point+"\n")
 
-    print("wrote "+args.writeSubmit)
+    print("wrote "+args["writeSubmit"])
 
 
 def createImpactJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names,concat
-    options = reconstructCall(args,arglist,["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds","findSigma"])
+    options = reconstructCall(args["arglist"],["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds","findSigma"])
     model = buildModel(args)    
     import sys
-    submitCommand = concat([args.submitCommand,sys.argv[0]]," ")    
+    submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")    
     pars = []
-    for group in args.impacts:
+    for group in args["impacts"]:
         import re
         regex = re.compile(group)
         for par in model.GetNuisanceParameters():
@@ -344,7 +346,7 @@ def createImpactJobs(args,arglist):
                     pars.append(par)
                 else:
                     print("warning: cannot produce impact of parameter '"+par.GetName()+"' without valid error range set!")
-    outpath = args.writeSubmit
+    outpath = args["writeSubmit"]
     mkdir(outpath)
     outfile = "jobs.txt"
     from os.path import join as pjoin
@@ -364,19 +366,19 @@ def createImpactJobs(args,arglist):
             options["--output"]=pjoin(outpath,"impact."+par.GetName()+".dn.txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")            
-    print("wrote "+args.writeSubmit)
+    print("wrote "+args["writeSubmit"])
 
 
 def createBreakdownJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import names,reconstructCall,stringify,mkdir,concat
-    options = reconstructCall(args,arglist,["breadkown","findSigma","writeSubmit","writeSubmitPoints"])
+    options = reconstructCall(args["arglist"],["breadkown","findSigma","writeSubmit","writeSubmitPoints"])
     model = buildModel(args)
     import sys
-    submitCommand = concat([args.submitCommand,sys.argv[0]]," ")
+    submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")
     import re
     groups = {}
-    for group in args.breakdown:
+    for group in args["breakdown"]:
         pars = []
         for ex in group:
             regex = re.compile(ex)
@@ -385,7 +387,7 @@ def createBreakdownJobs(args,arglist):
                     pars.append(parameter)
         groupname = "_".join([ ex.replace("_","").replace("*","") for ex in group])
         groups[groupname] = names(pars)
-    outpath = args.writeSubmit
+    outpath = args["writeSubmit"]
     mkdir(outpath)
     outfile = "jobs.txt"
     with open(pjoin(outpath,outfile),"w") as jobs:
@@ -398,6 +400,6 @@ def createBreakdownJobs(args,arglist):
             options["--output"]=pjoin(outpath,"breakdown."+groupname+".txt")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")
-    print("wrote "+args.writeSubmit)
+    print("wrote "+args["writeSubmit"])
 
 
