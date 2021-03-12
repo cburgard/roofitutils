@@ -16,6 +16,11 @@ def texify(string):
         return latex_aliases[string]
     return string.replace("_","\\_")
 
+def dict2mat(mat):
+    pars = sorted(list(set(list(mat.keys()))))
+    m = [ [ mat[pi][pj] if pj in mat[pi].keys() else mat[pj][pi] for pi in pars] for pj in pars ]
+    from numpy import array
+    return array(m)
 
 def result2dict(result,addcorrmat=True):
     from RooFitUtils.util import isclose
