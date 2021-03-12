@@ -5,13 +5,13 @@ import sys
 def main(args):
     if args.writeSubmit:
         if args.scan or args.refineScan:
-            from RooFitUtils.fit impoft createScanJobs
+            from RooFitUtils.fit import createScanJobs
             createScanJobs(args,arglist)
         if args.breakdown:
-            from RooFitUtils.fit impoft createBreakdownJobs
+            from RooFitUtils.fit import createBreakdownJobs
             createBreakdownJobs(args,arglist)
         if args.impacts:
-            from RooFitUtils.fit impoft createImpactJobs            
+            from RooFitUtils.fit import createImpactJobs            
             createImpactJobs(args,arglist)                        
         exit(0)
     if args.breakdown or args.impacts:
