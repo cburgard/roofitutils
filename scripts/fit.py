@@ -3,26 +3,27 @@
 import sys
 
 def main(args):
-    if args.writeSubmit:
-        if args.scan or args.refineScan:
+    if args["writeSubmit"]:
+        if args["scan"] or args["refineScan"]:
             from RooFitUtils.fit import createScanJobs
             createScanJobs(args,arglist)
-        if args.breakdown:
+        if args["breakdown"]:
             from RooFitUtils.fit import createBreakdownJobs
             createBreakdownJobs(args,arglist)
-        if args.impacts:
+        if args["impacts"]:
             from RooFitUtils.fit import createImpactJobs            
             createImpactJobs(args,arglist)                        
         exit(0)
-    if args.breakdown or args.impacts:
+    if args["breakdown"] or args["impacts"]:
         print("breakdown/impact calculation only supported in batch mode, please use --writeSubmit")
         exit(0)
 
     from sys import flags
     if not flags.interactive:
-        if args.logsave:
-            log_file = open(args.outFileName+".log","w")
-            sys.stdout = log_file
+        logfile = args.get("logsave","log.txt")
+        if logfile:
+            from RooFitUtils.util import redirect_c_output
+            fd = redirect_c_output(logfile,False)
 
     from RooFitUtils.fit import setup,buildModel,buildMinimizer,fit
     setup(args)
@@ -31,10 +32,9 @@ def main(args):
 
     if not flags.interactive:
         fit(args,model,minimizer)
-
-        if args.logsave:
-            sys.stdout = sys.__stdout__
-            log_file.close()
+        if logfile:
+            from RooFitUtils.util import restore_c_output            
+            restore_c_output(fd)
     else:
         print("prepared fit:")
         print("  ExtendedModel model")
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False ))
     arglist.append(parser.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2))
     arglist.append(parser.add_argument( "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="ERROR" ))
-    arglist.append(parser.add_argument( "--logsave"       , type=bool,    dest="logsave"                    , help="saving output as log" , default=False ))
+    arglist.append(parser.add_argument( "--logsave"       , type=str,    dest="logsave"                    , help="saving output as log" , default=None ))
     arglist.append(parser.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
     arglist.append(parser.add_argument( "--correlationMatrix", action='store_true',   dest="correlationMatrix",help="option to save correlation matrix", default=False ))
     arglist.append(parser.add_argument( "--printHesse", action='store_true',   dest="printHesse",help="option to print Hesse matrix", default=False ))
@@ -111,4 +111,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args)
+    main(vars(args))

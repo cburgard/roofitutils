@@ -483,5 +483,41 @@ def formatNumberPDG(x,forceSign=False):
     else:
         return "+"+s
 
+def redirect_c_output(filename,keep_python_output=True):
+    import sys
+    import os
+    sys.stdout.flush() # <--- important when redirecting to files
 
-    
+    # Duplicate stdout (file descriptor 1)
+    # to a different file descriptor number
+    newstdout = os.dup(1)
+    newstderr = os.dup(2)    
+
+    # open the output
+    output = os.open(filename, os.O_WRONLY|os.O_CREAT)
+
+    # Duplicate the file descriptor for output
+    # and overwrite the value for stdout (file descriptor 1)
+    os.dup2(output, 1)
+    os.dup2(output, 2)    
+
+    # Close output after duplication (no longer needed)
+    os.close(output)
+
+    # Use the original stdout to still be able
+    # to print to stdout within python
+    if keep_python_output:
+        sys.stdout = os.fdopen(newstdout, 'w')
+        sys.stderr = os.fdopen(newstderr, 'w')    
+
+    return (newstdout,newstderr)
+
+def restore_c_output(tup):
+    import os
+    import sys
+    os.dup2(tup[0], 1)
+    os.dup2(tup[1], 2)
+    newstdout = os.dup(1)
+    newstderr = os.dup(2)
+    sys.stdout = os.fdopen(newstdout, 'w')
+    sys.stderr = os.fdopen(newstderr, 'w')        
