@@ -110,3 +110,42 @@ def make_parser():
         }))
     })
     return parser
+
+def diagnose_minimizations(minimizations):
+    i = 0
+    nOk = 0
+    nNegG2 = 0
+    for i in range(0,len(minimizations)):
+        minimization = minimizations[i]
+        if "NegativeG2" in minimization.keys():
+            nNegG2 += 1
+        else:
+            nOk += 1
+    if nOk == i+1:
+        print("all {:d} minimizations OK".format(nOk))
+    else:
+        print("some minimizations encountered issues ({:d}/{:d}):".format(nOk,i+1))
+        if nNegG2 > 0:
+            print("  {:d} instances of negative G2".format(nNegG2))
+    
+def diagnose_minima(minima):
+    i = 0
+    nOk = 0
+    for i in range(0,len(minima)):
+        minimum = minima[i]
+        if int(minimum["Status"]) != 0:
+            print("minimum {:d} has status {:d} ".format(i,int(minimum["Status"])))
+        else:
+            nOk += 1
+    if nOk == i+1:
+        print("all {:d} minima OK".format(nOk))
+    else:
+        print("some minima were not OK ({:d}/{:d})".format(nOk,i+1))        
+        
+
+def diagnose(messages):
+    diagnose_minima(messages["minimum"])
+    diagnose_minimizations(messages["minimization"])    
+
+    
+        

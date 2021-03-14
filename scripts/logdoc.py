@@ -26,19 +26,42 @@ def printdict(d,indent=0):
                 printdict(e,indent+1)
         else:
             print(" "*4*indent + k + " " + v)
+
+def printsummary(messages):
+    print("Summary of messages")
+    for category in messages.keys():
+        print("  {:s}: {:d}".format(category,len(messages[category])))
+
+def println():
+    print()
+        
+def printdetails(messages,printcategories):
+    # print a summary
+    printed = False
+    for category in printcategories:
+        print("the following messages were encountered in category "+category+":")
+        for message in messages[category]:
+            printed = True
+            print(category)
+            printdict(message,1)
+    return printed
             
 def main(args):
     messages = {}
     with open(args.logfile,"rt") as logfile:
         parse(messages,logfile)
-    for category in messages.keys():
-        print("{:s}: {:d}".format(category,len(messages[category])))
 
-    for category in args.printcategories:
-        print("the following messages were encountered in category "+category+":")
-        for message in messages[category]:
-            print(category)
-            printdict(message,1)
+    printsummary(messages)
+
+    println()
+    
+    if printdetails(messages,args.printcategories):
+        println()
+    
+    # diagnose messages
+    from RooFitUtils.logfile_diagnostics import diagnose
+    print("detailed diagnosis")
+    diagnose(messages)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
