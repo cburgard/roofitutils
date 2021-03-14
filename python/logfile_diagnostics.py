@@ -1,4 +1,11 @@
 class MetaParser:
+    # a MetaParser is a class intended to parse a block of logfile lines
+    # a MetaParser owns a colleciton of subparsers
+    # for every line, the MetaParser attempts to pass the line to every one of its parsers
+    # if a line is encountered that does not fit any of the parsers this MetaParser is managing, one of two things will happen
+    #   if the MetaParser has a parent parser, it will return there, leaving the line in-place
+    #   if the MetaParser does not have a parent parser, it will flag the line as "unknown" and move on
+    
     def __init__(self,parsers):
         self.parsers = parsers
         for k,v in parsers.items():
@@ -37,6 +44,14 @@ class MetaParser:
         return True
 
 class Parser:
+    # a Parser is a class intended to parse a single line of logfile code
+    # there is exactly one "trigger" regex that causes this parser to recognize and claim ownership of a line
+    # this line is then read, processed, and the information retruned
+    # if the line is not recongized, the parser will just return False
+    #
+    # a Parser can (but does not need to) have an associated MetaParser
+    # that is activated right after a line has been claimed successfully
+    
     def __init__(self,trigger_regex,metaparser=None):
         import re
         self.trigger = re.compile(trigger_regex)
@@ -67,6 +82,10 @@ class Parser:
         return keys
 
 def make_parser():
+    # this is the gory, catch-all function to create the parsing tree for all known lines in a logfile
+    # this function will never be complete and needs to be extended continuously until all possible messages in a logfile can be identified
+    # this will of course never happen, but the completeness will improve over time
+    
     NUM=r'[+-]?\d+[.]?\d*[e]?[+-]?\d*'
     TIME=r"\d+:\d+:\d+"
     parser = MetaParser({
@@ -112,6 +131,7 @@ def make_parser():
     return parser
 
 def diagnose_minimizations(minimizations):
+    # diagnose all the messages from the minimization branch for any severe issues
     i = 0
     nOk = 0
     nNegG2 = 0
@@ -129,6 +149,7 @@ def diagnose_minimizations(minimizations):
             print("  {:d} instances of negative G2".format(nNegG2))
     
 def diagnose_minima(minima):
+    # diagnose all the messages from the minima branch for any severe issues    
     i = 0
     nOk = 0
     for i in range(0,len(minima)):
@@ -144,6 +165,7 @@ def diagnose_minima(minima):
         
 
 def diagnose(messages):
+    # evaluate all known diagnostics
     diagnose_minima(messages["minimum"])
     diagnose_minimizations(messages["minimization"])    
 
