@@ -194,23 +194,77 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
 
     minimum,nllmin = minfromscans(xvals,yvals,zvals)
     if algorithm == "ROOT":
-        allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+        allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
     elif algorithm == "skimage":
-        allcontours = find_contours_skimage(xvals,yvals,grid_z,[ nllmin+v for v in values ],smooth,npoints)
+        allcontours = find_contours_skimage(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
     else:
         print("unknown contour finding algorithm '"+algorithm+"'")
 
     return allcontours,minimum
 
-def findcrossings(points,nllval):
-    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value"""
+def findintervals(points,nllval):
+    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
+    from scipy.interpolate import PchipInterpolator as interpolate
+    from math import isnan
+    xvals = [ x for x,y in points ]
+    yvals = [ y for x,y in points ]
+    xl,xr = min(xvals),max(xvals)
+    r = abs(xr - xl)
+    xll = xl - 0.1*r
+    xrr = xr + 0.1*r
+    n = 100
+    step = (xrr-xll)/n
+    interp = interpolate(xvals, yvals, extrapolate=True)
+    from scipy.optimize import ridder as solve
+    leftbound = None
+    rightbound = None
+    intervals = []
+    for i in range(1,n):
+        left  =  (xll + i    *step)
+        right =  (xll + (i-1)*step)
+        if (interp(left)-nllval)*(interp(right)-nllval) < 0:
+            xcoord = solve(lambda x : interp(x) - nllval,left,right)
+            if interp(left) < nllval:
+                rightbound = None
+                leftbound = xcoord
+            else:
+                rightbound = xcoord
+            if leftbound != None and rightbound != None:
+                intervals.append((leftbound,rightbound))
+                leftbound = None
+                rightbound=None
+    return intervals
+
+def findallminima(points,nllmin,minthreshold=0.05):
+    """find all the local minima of the nll curve that are no further than the threshold away from the global minimum"""
+    intervals = []
+    interval = []
+    for x,y in points:
+        if y<nllmin+minthreshold:
+            interval.append((x,y))
+        elif len(interval) > 0:
+            intervals.append(interval)
+            interval = []
+    minima = []
+    for interval in intervals:
+        localmin_y = inf
+        localmin_x = None
+        for x,y in interval:
+            if y<localmin_y:
+                localmin_y = y
+                localmin_x = x
+        minima.append(localmin_x)
+    return minima
+
+def findcrossings(points,nllval,minthreshold=0.05):
+    """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
     from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
     yvals = [ y for x,y in points ]
     i0 = 0
     ymin = inf
     for i in range(0,len(xvals)):
-        if yvals[i] < ymin:
+        if yvals[i] < ymin or (yvals[i] < ymin+minthreshold and abs(xvals[i]) < abs(xvals[i0])):
             ymin = yvals[i]
             i0 = i
     x0 = xvals[i0]
@@ -243,7 +297,11 @@ def findminimum(points):
     yvals = [ points[x] for x in xvals ]
     interp = interpolate(xvals, yvals, extrapolate=True)
     minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]), bounds=[[min(xvals),max(xvals)]])
-    return minimum.fun
+    miny = minimum.fun
+    for y in yvals:
+        if y<miny:
+            miny=y
+    return miny
 
 def smoothgraph(graph):
     """smooth a graph by taking the center of each edge and constructing a new graph from those"""

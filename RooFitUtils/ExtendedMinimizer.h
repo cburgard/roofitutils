@@ -26,10 +26,14 @@ public:
     class Scan {
     public:
       Scan(const std::vector<std::string> &parnames);
+      Scan(const std::vector<std::string> &parnames, const std::vector<std::string> &extranames);      
       void add(const std::vector<double> &parvals, int fitStatus, double nllval);
+      void add(const std::vector<double> &parvals, int fitStatus, double nllval, const std::vector<double>& extravals);      
       void printTable();
       std::vector<std::string> parNames;
       std::vector<std::vector<double>> parValues;
+      std::vector<std::string> extraParNames;      
+      std::vector<std::vector<double>> extraParValues;      
       std::vector<int> fitStatus;
       std::vector<double> nllValues;
     };
@@ -164,7 +168,6 @@ public:
   static RooCmdArg ReuseNLL(Bool_t flag = kTRUE) {
     return RooCmdArg("ReuseNLL", flag, 0, 0, 0, 0, 0, 0, 0);
   }
-
   template <class A> int parseFitConfig(const A &cmdList);
   template <class A> int parseNllConfig(const A &cmdList);
 
@@ -189,6 +192,7 @@ protected:
 protected:
   Result *fResult = NULL;
 
+  ExtendedModel *fModel = NULL;
   RooWorkspace *fWorkspace = NULL;
   RooAbsPdf *fPdf = NULL;
   RooAbsData *fData = NULL;
@@ -221,6 +225,8 @@ protected:
   Double_t fEps;
   Double_t fNsigma;
   Double_t fPrecision;
+  const RooArgSet *fPenaltyMini  = NULL;
+  const RooArgSet *fPoiSet  = NULL;
   const RooArgSet *fMinosSet = NULL;
   const RooArgSet *fCondSet  = NULL;
   const RooArgSet *fScanSet  = NULL;

@@ -13,14 +13,15 @@ def runPruning(args):
   else: 
    pois = args.pois
 
-  fitresult, chesse = retriveObj(args.fitResult),  retriveObj(args.hesse)
+#  fitresult = retriveObj(args.fitResult)
+  file0 = ROOT.TFile.Open(args.fitResult[0][0])
+  fitresult = file0.Get(args.fitResult[0][1])
 
-  if not chesse.GetNcols() > 0:
-    chesse = fitresult.covarianceMatrix().Invert()
+  chesse = fitresult.covarianceMatrix().Invert()
 
   dim = chesse.GetNcols()
   
-  pcts = {1,5,10}
+  pcts = {1}
   pctstrings = {}
   if args.pct: percentages.append(args.pct)
   else: 
@@ -42,10 +43,14 @@ def runPruning(args):
    NPs = ""
    for x in pruneNPs[str(pct)] : NPs = NPs + x + ","
    NPs = NPs[0:len(NPs)-1]
-   snapname = "prune_combData_"+str(pct)+"pct"
+   if len(args.snapname):
+     snapname = args.snapname 
+   else:
+     snapname = "prune_"+str(pct)+"pct"
+
    print("INFO: making pruned snapshot: "+snapname)
-   if count == 0: msrmnt.MakeConstSnapshot(args.inws, "minimumNuis", NPs, args.outws, snapname)
-   else : msrmnt.MakeConstSnapshot(args.outws, "minimumNuis", NPs, args.outws, snapname)
+   if count == 0: msrmnt.MakeConstSnapshot(args.inws, fitresult, NPs, args.outws, snapname)
+   else : msrmnt.MakeConstSnapshot(args.outws, fitresult, NPs, args.outws, snapname)
    count = count + 1
   print("INFO: saved pruned snapshots in "+ args.outws)
 
@@ -56,9 +61,9 @@ if __name__ == "__main__":
    arglist.append(parser.add_argument( "--input"         , type=str,  dest="inws"        ,  help="input workspace name.", required=True, default=None))
    arglist.append(parser.add_argument( "--outputWS"      , type=str,  dest="outws"       , help="output workspace name.", default=None))
    arglist.append(parser.add_argument( "--pois"          , type=str,  dest="pois"        , help="POIs to measure.", default=""))
+   arglist.append(parser.add_argument( "--snapshot"      , type=str,  dest="snapname"    , help="name of the pruned snapshot", default=""))
    arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"    , help="NPs for prune check", default=".*"))
-   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , help="path to fit result"))
-   arglist.append(parser.add_argument( "--hesse"         , type=str,  dest="hesse"       , help="path to hesse"))
+   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , action='append',nargs="+", help="path to fit result"))
    arglist.append(parser.add_argument( "--percentages"   , type=str,  dest="pct"         , help="percentage change in poi variances"))
    arglist.append(parser.add_argument( "--order"         ,action='append',nargs="+"      , dest="orderfiles", help="files with the NPs and their ranks"))
    arglist.append(parser.add_argument( "--logsave"       , action='store_true',  dest="logsave" , help="save a log"))

@@ -1,16 +1,18 @@
 #include <limits>
 #include <math.h>
 #include <cmath>
-
+#include <fstream>  
 #include "RooFitUtils/ExtendedMinimizer.h"
 #include "Math/Minimizer.h"
 
+#include <iostream>
 #include "TFile.h"
 #include "TMath.h"
 #include "TMatrixDSymEigen.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
+#include "RooAddition.h"
 #include "RooMinimizer.h"
 #include "RooNLLVar.h"
 #include "RooRealVar.h"
@@ -333,12 +335,36 @@ RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(
 
 // ____________________________________________________________________________|__________
 
+RooFitUtils::ExtendedMinimizer::Result::Scan::Scan(
+    const std::vector<std::string> &parnames, const std::vector<std::string> &extraparnames)
+    : parNames(parnames), extraParNames(extraparnames) {
+  // nothing here
+}
+
+// ____________________________________________________________________________|__________
+
 void RooFitUtils::ExtendedMinimizer::Result::Scan::add(const std::vector<double> &parvals, int fitstatus, double nllval) {
   // add a new entry to a scan
   if (parvals.size() != this->parNames.size()) {
     throw std::runtime_error("cannot add parameter list with wrong length!");
   }
   this->parValues.push_back(parvals);
+  this->fitStatus.push_back(fitstatus);
+  this->nllValues.push_back(nllval);
+}
+
+// ____________________________________________________________________________|__________
+
+void RooFitUtils::ExtendedMinimizer::Result::Scan::add(const std::vector<double> &parvals, int fitstatus, double nllval, const std::vector<double>& extravals) {
+  // add a new entry to a scan
+  if (parvals.size() != this->parNames.size()) {
+    throw std::runtime_error("cannot add parameter list with wrong length!");
+  }
+  if (extravals.size() != this->extraParNames.size()) {
+    throw std::runtime_error("cannot add extra parameter list with wrong length!");
+  }
+  this->parValues.push_back(parvals);
+  this->extraParValues.push_back(extravals);  
   this->fitStatus.push_back(fitstatus);
   this->nllValues.push_back(nllval);
 }
@@ -352,11 +378,17 @@ void RooFitUtils::ExtendedMinimizer::Result::Scan::printTable() {
   for (size_t i = 0; i < this->parNames.size(); ++i) {
     std::cout << parNames[i] << "\t";
   }
+  for (size_t i = 0; i < this->extraParNames.size(); ++i) {
+    std::cout << extraParNames[i] << "\t";
+  }  
   std::cout << "nll" << std::endl;
   for (size_t j = 0; j < this->nllValues.size(); ++j) {
     for (size_t i = 0; i < this->parNames.size(); ++i) {
       std::cout << parValues[j][i] << "\t";
     }
+    for (size_t i = 0; i < this->extraParNames.size(); ++i) {
+      std::cout << extraParValues[j][i] << "\t";
+    }    
     std::cout << nllValues[j] << std::endl;
   }
   std::cout.precision(prec);
@@ -557,14 +589,15 @@ namespace {
 RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, RooFitUtils::ExtendedModel* model,
                                                   const RooLinkedList &argList)
 	: ExtendedMinimizer(minimizerName,
-											model->GetPdf(),
-											model->GetData(),
-											model->GetWorkspace()) {
+                            model->GetPdf(),
+                            model->GetData(),
+                            model->GetWorkspace()){
+  fModel = model;
   // Constructor
-	RooLinkedList newargList(argList);
-	fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-	newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
-
+  RooLinkedList newargList(argList);
+  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+  newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  fPenaltyMini = model->GetPenalty();
   parseNllConfig(newargList);
   parseFitConfig(newargList);
 }
@@ -573,14 +606,19 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
 
 RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, RooFitUtils::ExtendedModel* model)
 	: ExtendedMinimizer(minimizerName,
-											model->GetPdf(),
-											model->GetData(),
-											model->GetWorkspace()) {
+                            model->GetPdf(),
+                            model->GetData(),
+                            model->GetWorkspace()){
+  fModel = model;
   // Constructor
-	RooLinkedList argList;
-	fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-	argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  RooLinkedList argList;
+  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+  argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
   parseNllConfig(argList);
+  fPenaltyMini = model->GetPenalty();
+  model->GetPenalty()->Print();
+  std::cout << "inside construct" << std::endl;
+  fPenaltyMini->Print("v");
 }
 
 
@@ -692,6 +730,21 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     double nllval = 0.;
     try {
       fNll = fPdf->createNLL(*fData, fNllCmdList);
+      //here goes the penalty 
+      if (fPenaltyMini){
+        int ipen = 0;	
+        std::string s("fNLL");
+        RooArgSet fnset = RooArgSet();
+        for (auto pen:*fPenaltyMini){
+          s = s +"+"+pen->GetName();
+          fnset.add(*pen);
+        }
+        fnset.add(*fNll);    
+        // std::cout << s << std::endl;
+        RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
+        fNll = nllpen;
+      }
+      
       nllval = fNll->getVal();
     } catch (std::exception& ex){
       throw ex;
@@ -783,11 +836,6 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
   } else {
     coutE(ObjectHandling) << "cannot change Nll config with preexisting Nll!" << std::endl;
   }
-//  fNllCmdList.Print("v");
-//  for(int i=0; i<fNllCmdList.GetSize(); ++i){
-//    RooCmdArg* arg = (RooCmdArg*)(fNllCmdList.At(i));
-//    std::cout << TString::Format("%s %s: %d %d %f %f %s %s",arg->GetName(),arg->opcode(),arg->getInt(0),arg->getInt(1),arg->getDouble(0),arg->getDouble(1),arg->getString(0),arg->getString(1)) << std::endl;
-//  }
   return fNllCmdList.GetSize();
 }
 
@@ -1137,8 +1185,8 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
 
 
   RooArgSet *vars = fNll->getVariables();
-  for (RooLinkedListIter it = vars->iterator();
-       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+  for (auto arg:*vars){
+    RooRealVar* v = dynamic_cast<RooRealVar*>(arg);
     if(!::find(r->parameters,v->GetName()) && !v->isConstant()){
       Result::Parameter poi(v->GetName(), v->getVal(), v->getErrorHi(),
                             v->getErrorLo());
@@ -1149,10 +1197,10 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   if (fCondSet) {
     coutP(ObjectHandling) << "Editing conditional set" << std::endl;
     RooArgSet *attachedSet = fNll->getVariables();
-    for (RooLinkedListIter it = fCondSet->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
-      if (RooRealVar *var =
-              dynamic_cast<RooRealVar *>(attachedSet->find(v->GetName()))) {
+    for (auto arg:*fCondSet){
+      RooRealVar* v = dynamic_cast<RooRealVar *>(arg);
+      RooRealVar *var = dynamic_cast<RooRealVar *>(attachedSet->find(v->GetName()));
+      if(var){
         var->setVal(v->getVal());
         var->setConstant(v->isConstant());
       }
@@ -1233,24 +1281,45 @@ void RooFitUtils::ExtendedMinimizer::scan(
     }
     params.push_back(v);
   }
+  std::vector<RooRealVar *> extraparams;
+  std::vector<std::string> extraparnames;  
+  if(fModel){
+    for (auto par : *fModel->GetParametersOfInterest()) {
+      RooRealVar *v = dynamic_cast<RooRealVar *>(attachedSet->find(par->GetName()));
+      if (!v) {
+        throw std::runtime_error(
+                                 TString::Format("unknown parameter name: %s", par->GetName()).Data());
+      }
+      if(std::find(params.begin(),params.end(),v) != params.end()) continue;
+      extraparams.push_back(v);
+      extraparnames.push_back(v->GetName());      
+    }
+  }
   bool hesse = fHesse;
-  ExtendedMinimizer::Result::Scan scan(parnames);
+  ExtendedMinimizer::Result::Scan scan(parnames,extraparnames);
+
   for (const auto &point : points) {
     if (point.size() != parnames.size()) {
       throw std::runtime_error("inconsistent vector lengths in scan!");
     }
+    auto pntstr = new TString("");
     for (size_t i = 0; i < params.size(); ++i) {
       params[i]->setVal(point[i]);
       params[i]->setConstant(true);
     }
     fHesse = false;
+    auto valstr = new TString("");
     auto min = this->robustMinimize();
     if (min.ok()) {
       std::vector<double> vals(params.size());
       for (size_t i = 0; i < params.size(); ++i) {
         vals[i] = params[i]->getVal();
       }
-      scan.add(vals, min.status, min.nll);
+      std::vector<double> extravals(extraparams.size());
+      for (size_t i = 0; i < extraparams.size(); ++i) {
+        extravals[i] = extraparams[i]->getVal();
+      }
+      scan.add(vals, min.status, min.nll, extravals);
     }
   }
   if (scan.nllValues.size() > 0)
@@ -1405,9 +1474,8 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
       sigma_guess *=
           10.0; // protect against tmu<=0, and also don't move too far
     double corr = damping_factor * (val_pre - val_mle - nsigma * sigma_guess);
-    for (ExtendedMinimizer::ValueMap::iterator iguess = guess_to_corr.begin();
-         iguess != guess_to_corr.end(); ++iguess) {
-      if (fabs(iguess->first - val_pre) < direction * val_pre * 0.02) {
+    for (auto iguess:guess_to_corr){
+      if (fabs(iguess.first - val_pre) < direction * val_pre * 0.02) {
         damping_factor *= 0.8;
         coutW(ObjectHandling)
             << "ExtendedMinimizer::findSigma(" << fName
@@ -1547,12 +1615,11 @@ RooFitUtils::ExtendedMinimizer::prepareProfile(
   double xlo = std::numeric_limits<double>::infinity();
   double xhi = -std::numeric_limits<double>::infinity();
 
-  for (ExtendedMinimizer::ValueMap::iterator it_poi = map_poi2nll.begin();
-       it_poi != map_poi2nll.end(); ++it_poi) {
-    double nll = it_poi->second;
+  for (auto it_poi:map_poi2nll){
+    double nll = it_poi.second;
     if (nll == nll && fabs(nll) < pow(10, 20)) {
-      x.push_back(it_poi->first);
-      y.push_back(it_poi->second);
+      x.push_back(it_poi.first);
+      y.push_back(it_poi.second);
     }
   }
 

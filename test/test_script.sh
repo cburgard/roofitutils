@@ -1,5 +1,5 @@
 # fit likelihood and obtain correlation matrix at minimum of likelihood (observed and expected)
-#python ../scripts/fit.py --input test_workspace.root --workspace Test --data obsData --output test_results/fit_obsData.txt --findSigma --hesse
+python ../scripts/fit.py --input test_workspace.root --workspace Test --data obsData --output test_results/fit_obsData.txt --findSigma --hesse --writeResult 
 #python ../scripts/fit.py --input test_workspace.root --workspace Test --data asimovData --output test_results/fit_asimovData.txt --findSigma --hesse
 
 # perform one dimension likelihood scans (observed and expected)

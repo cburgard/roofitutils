@@ -36,12 +36,12 @@ RooFitUtils::ExtendedModel::ExtendedModel(
 					  const std::string &ModelName, const std::string &FileName,
 					  const std::string &WsName, const std::string &ModelConfigName,
 					  const std::string &DataName, const std::string &SnapshotName,
-					  bool binnedLikelihood, const std::string &TagAsMeasurement,
+					  bool binnedLikelihood, RooArgSet *penalty, const std::string &TagAsMeasurement,
 					  bool FixCache, bool FixMulti)
 : TNamed(ModelName.c_str(), ModelName.c_str()), fFileName(FileName),
   fWsName(WsName), fModelConfigName(ModelConfigName), fDataName(DataName),
   fSnapshotName(SnapshotName), fBinnedLikelihood(binnedLikelihood),
-  fTagAsMeasurement(TagAsMeasurement) {
+  fTagAsMeasurement(TagAsMeasurement), fPenalty(penalty) {
   // Constructor
   initialise(FixCache, FixMulti);
   
@@ -226,6 +226,13 @@ void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
     throw std::runtime_error("unable to obtain list of observables");
   }
 
+  coutP(InputArguments) << "Loading the penalty set" << std::endl;
+  if (!fPenalty) {
+    coutE(InputArguments) << "Something went wrong when loading the penalty set"
+                          << std::endl;
+    throw std::runtime_error("unable to obtain list of observables");
+  }
+
   if (fSnapshotName != "") {
     coutP(InputArguments) << "Loading snapshots" << std::endl;
     std::vector<std::string> parsedSnapshots = parseString(fSnapshotName, ",");
@@ -360,43 +367,36 @@ void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &p
 
 void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
-	TObject* obj;
-	for(const auto&pat:parsed){
-		RooFIter itr(params->fwdIterator());
-		int found = 0;
-		while((obj = itr.next())){
-			if(RooFitUtils::matches(obj->GetName(),pat)){
-				RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
-				if(par){
-					found ++;
-
-					TString thisName(pat.c_str());
-					TString thisVal;
-					if (thisName.Contains("[")) {
-						assert(thisName.Contains("]"));
-						TObjArray *thisNameArray = thisName.Tokenize("[");
-						thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-						thisVal = ((TObjString *)thisNameArray->At(1))->GetString();
-						thisVal.ReplaceAll("]", "");
-					}
-
-					double value = par->getVal();
-					if (thisVal.IsFloat()) {
-						value = thisVal.Atof();
-						par->setVal(value);
-					}
-					coutI(ObjectHandling) << "Fixing parameter " << par->GetName()
-																<< " at value " << value << std::endl;
-					par->setConstant(1);					
-				}
-			}
-		}
-		if (found == 0) {
-			coutE(ObjectHandling) << "Parameter " << pat
-														<< " does not exist." << std::endl;
-			exit(-1);
-		}
-	}
+  TObject* obj;
+  for(const auto&s:parsed){
+    auto nameEnd = s.find_first_of("=[");
+    std::string pat(s.substr(0,nameEnd));
+    int found = 0;
+    double value = 0;
+    bool valSet = false;
+    if(s.size() != pat.size()){
+      auto valEnd = pat.find_first_not_of("0123456789.",nameEnd);
+      std::string val(s.substr(nameEnd+1,valEnd-nameEnd));
+      valSet = true;
+      value = atof(val.c_str());
+    }
+    for(auto obj:*params){
+      if(RooFitUtils::matches(obj->GetName(),pat)){
+        RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
+        if(par){
+          found ++;
+          if(valSet){
+            par->setVal(value);
+          }
+          coutI(ObjectHandling) << "Fixing parameter " << par->GetName() << " at value " << par->getVal() << std::endl;
+          par->setConstant(1);					
+        }
+      }
+    }
+    if (found == 0) {
+      throw std::runtime_error("Parameter " + pat + " does not exist.");
+    }
+  }
 }
 
 // _____________________________________________________________________________

@@ -13,6 +13,7 @@
 
 #include "RooAbsData.h"
 #include "RooAbsPdf.h"
+#include "RooFormulaVar.h"
 #include "RooArgSet.h"
 #include "RooMsgService.h"
 #include "RooWorkspace.h"
@@ -29,7 +30,7 @@ public:
   ExtendedModel(const std::string &ModelName, const std::string &FileName,
                 const std::string &WsName, const std::string &ModelConfigName,
                 const std::string &DataName, const std::string &SnapshotName,
-                bool binnedLikelihood = true,
+                bool binnedLikelihood = true, RooArgSet* penalty = NULL,
                 const std::string &TagAsMeasurement = "pdf_",
                 bool FixCache = true, bool FixMulti = true);
   virtual ~ExtendedModel();
@@ -42,6 +43,12 @@ public:
   RooArgSet *GetParametersOfInterest() { return fPOIs; }
   RooArgSet *GetParameterSet() { return &fAllParams; }
   RooArgSet *GetObservables() { return fObs; }
+  RooArgSet *GetPenalty() { return fPenalty; }
+  void addPenalty(RooFormulaVar *x) {   
+	x->Print();
+	fPenalty->add(*x);
+	fPenalty->Print();
+  }
 
   void fixNuisanceParameters();
   void fixParametersOfInterest();
@@ -93,7 +100,9 @@ private:
   RooArgSet *fGlobs;
   RooArgSet *fPOIs;
   RooArgSet *fObs;
-	RooArgSet fAllParams;
+  RooArgSet *fPenalty;
+  RooArgSet fAllParams;
+ 
 
   // _____________________________________________________________________________
 protected:
