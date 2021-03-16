@@ -57,13 +57,15 @@ public:
       double nll;
       int ndim;
       ROOT::Fit::FitConfig config;
+      TMatrixDSym *hesse;
+      TMatrixDSym *cov;      
+      int covqual;
     };
     std::vector<Scan> scans;
     std::vector<Parameter> parameters;
     Eigen *eigen;
     Minimization min;
     RooFitResult *fit;
-    TMatrixDSym *hesse;
   };
 
   // Constructor and destructor
@@ -126,6 +128,9 @@ public:
                                                   double hi, int nbins);
   // ____________________________________________________________________________|__________
 public:
+  static RooCmdArg Minimize(Bool_t flag = kTRUE) {
+    return RooCmdArg("Minimize", flag, 0, 0, 0, 0, 0, 0, 0);
+  }  
   static RooCmdArg Eigen(Bool_t flag = kTRUE) {
     return RooCmdArg("Eigen", flag, 0, 0, 0, 0, 0, 0, 0);
   }
@@ -134,6 +139,9 @@ public:
   }
   static RooCmdArg MaxCalls(Int_t maxcalls) {
     return RooCmdArg("MaxCalls", maxcalls, 0, 0, 0, 0, 0, 0, 0);
+  }
+  static RooCmdArg MaxIterations(Int_t maxiterations) {
+    return RooCmdArg("MaxIterations", maxiterations, 0, 0, 0, 0, 0, 0, 0);
   }
   static RooCmdArg Eps(double eps) {
     return RooCmdArg("Eps", 0, 0, eps, 0, 0, 0, 0, 0);
@@ -164,6 +172,7 @@ public:
 protected:
   void initialize();
   Result *run();
+  int runHesse(Result::Minimization& mini);  
   void setup();
   Result::Eigen *eigenAnalysis(const TMatrixDSym &hesse);
   void findSigma(Result *result, const RooAbsCollection &pois);
@@ -198,6 +207,7 @@ protected:
   Int_t fPrintLevel;
   Int_t fDefaultStrategy;
   Int_t fHesse;
+  Int_t fMinimize;
   Int_t fMinos;
   Int_t fScan;
   Int_t fNumee;
@@ -206,7 +216,8 @@ protected:
   Int_t fEigen;
   Int_t fReuseMinimizer;
   Int_t fReuseNLL;
-  Int_t fMaxIterations;
+  Int_t fMaxCalls;
+  Int_t fMaxIterations;  
   Double_t fEps;
   Double_t fNsigma;
   Double_t fPrecision;
