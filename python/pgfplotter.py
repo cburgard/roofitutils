@@ -553,8 +553,11 @@ def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False)
         else:
             hoffset = 2*float(ires)
             outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(ypos)+") ")
-        outfile.write(("{{${:"+numbers+"}^{{+{:"+numbers+"}}}_{{-{:"+numbers+"}}}$}};").format(cv,abs(eup),abs(edn)))
-            
+        if numbers:
+            outfile.write(("{{${:}^{{+{:}}}_{{-{:}}}$}};").format(cv,abs(eup),abs(edn)))
+        else:
+            outfile.write(" {};")
+
 def writepullshead(args,outfile,allpars,labels):
     xunit = 3
     yunit = .5
@@ -588,7 +591,7 @@ def writepullsfoot(args,outfile,allpars):
     for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.25):
         outfile.write("  \\draw[black] (" +str(x)+ "," + str(-0.5+0.2) + ") -- (" +str(x)+ "," +str(-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
     outfile.write("  \\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5)+ ") node [pos=1,anchor=north east,yshift=-.5cm]{Parameter of Interest};\n")
-    for x in range(floor(args.range[0]),ceil(args.range[1])+1):
+    for x in range(int(floor(args.range[0])),int(ceil(args.range[1]+1))):
         outfile.write("  \\draw[dashed,black] (" +str(x)+ "," +str(-0.5)+ ") -- (" +str(x)+ "," +str(-0.5-npar)+ ");\n")
     outfile.write("% highlighting\n")        
     outfile.write("\\begin{pgfonlayer}{background}\n")
