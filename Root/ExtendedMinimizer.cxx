@@ -3,6 +3,8 @@
 #include <cmath>
 #include <fstream>  
 #include "RooFitUtils/ExtendedMinimizer.h"
+#include "Math/Minimizer.h"
+
 #include <iostream>
 #include "TFile.h"
 #include "TMath.h"
@@ -25,6 +27,9 @@
 
 ClassImp(RooFitUtils::ExtendedMinimizer)
 
+#include "TMinuitMinimizer.h"
+#include "Minuit2/Minuit2Minimizer.h"
+#include "TMinuit.h"
 
 namespace {
   //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar.
@@ -56,6 +61,64 @@ namespace {
   // template class RooMinimizerRob<RooMinimizerfitterFcn, &RooMinimizer::fitterFcn>;
 
 }
+
+
+namespace {
+  //somewhat complex but apparently standard conform hack to access Fitter functions.
+  template <typename RooFitterTag>
+  struct RooFitterHackResult {
+    typedef typename RooFitterTag::type type;
+    static type ptr;
+  };
+
+  template <typename RooFitterTag>
+  typename RooFitterHackResult<RooFitterTag>::type RooFitterHackResult<RooFitterTag>::ptr;
+
+  template<typename RooFitterTag, typename RooFitterTag::type p>
+  struct RooFitterRob : RooFitterHackResult<RooFitterTag> {
+    struct RooFitterFiller {
+      RooFitterFiller() {RooFitterHackResult<RooFitterTag>::ptr = p;}
+    };
+    static RooFitterFiller RooFitterfiller_obj;
+  };
+
+  template<typename RooFitterTag, typename RooFitterTag::type p>
+  typename RooFitterRob<RooFitterTag, p>::RooFitterFiller RooFitterRob<RooFitterTag, p>::RooFitterfiller_obj;
+
+  //now expose some members of RooFitter that we need to access
+  struct RooFitterInit { typedef bool(ROOT::Fit::Fitter::*type)(); };
+  template class RooFitterRob<RooFitterInit, &ROOT::Fit::Fitter::DoInitMinimizer>;
+}
+
+
+namespace {
+  //somewhat complex but apparently standard conform hack to access MinuitMinimizer functions.
+  template <typename RooMinuitMiniTag>
+  struct RooMinuitMiniHackResult {
+    typedef typename RooMinuitMiniTag::type type;
+    static type ptr;
+  };
+
+  template <typename RooMinuitMiniTag>
+  typename RooMinuitMiniHackResult<RooMinuitMiniTag>::type RooMinuitMiniHackResult<RooMinuitMiniTag>::ptr;
+
+  template<typename RooMinuitMiniTag, typename RooMinuitMiniTag::type p>
+  struct RooMinuitMiniRob : RooMinuitMiniHackResult<RooMinuitMiniTag> {
+    struct RooMinuitMiniFiller {
+      RooMinuitMiniFiller() {RooMinuitMiniHackResult<RooMinuitMiniTag>::ptr = p;}
+    };
+    static RooMinuitMiniFiller RooMinuitMinifiller_obj;
+  };
+
+  template<typename RooMinuitMiniTag, typename RooMinuitMiniTag::type p>
+  typename RooMinuitMiniRob<RooMinuitMiniTag, p>::RooMinuitMiniFiller RooMinuitMiniRob<RooMinuitMiniTag, p>::RooMinuitMinifiller_obj;
+
+  //now expose some members of RooMinuitMini that we need to access
+  struct RooMinuitMiniMinuit { typedef TMinuit*(TMinuitMinimizer::*type); };
+  template class RooMinuitMiniRob<RooMinuitMiniMinuit, &TMinuitMinimizer::fMinuit>;
+}
+
+
 
 
 namespace {
@@ -91,8 +154,6 @@ namespace {
   public:
     RooMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
   };
-
-
 }
 
 namespace {
@@ -138,23 +199,99 @@ namespace {
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
   RooMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
-    // return (minimizer->*RooMinimizerHackResult<RooMinimizerfitterFcn>::ptr)();
     return ((::RooMinimizerHack*) minimizer)->getFitterFcn();
   }
-
+  bool init(ROOT::Fit::Fitter* fitter){
+    return (fitter->*RooFitterHackResult<RooFitterInit>::ptr)();    
+  }
+  TMinuit* getMinuit(ROOT::Math::Minimizer* mini){
+    TMinuitMinimizer* minuit = dynamic_cast<TMinuitMinimizer*>(mini);
+    if(minuit){
+      return (minuit->*RooMinuitMiniHackResult<RooMinuitMiniMinuit>::ptr);
+    }
+    return NULL;
+  }
+    template<class State> TMatrixDSym getHessian(const State& fState, int fDim) {
+      // get value of Hessian matrix
+      TMatrixDSym hess(fDim);
+      // this is the second derivative matrices
+      auto hessian = fState.Hessian();
+      if (!fState.HasCovariance())
+        throw std::runtime_error("no hessian available, minimization failed");
+      for (unsigned int i = 0; i < fDim; ++i) {
+        if (fState.Parameter(i).IsFixed() || fState.Parameter(i).IsConst()) {
+          for (unsigned int j = 0; j < fDim; ++j) {
+            hess[i][j] = 0;
+          }
+        } else {
+          unsigned int l = fState.IntOfExt(i);
+          for (unsigned int j = 0; j < fDim; ++j) {
+            // could probably speed up this loop (if needed)
+            if (fState.Parameter(j).IsFixed() || fState.Parameter(j).IsConst())
+              hess[i][j] = 0;
+            else {
+              // need to transform from external to internal indices)
+              // for taking care of the removed fixed row/columns in the Minuit2 representation
+              unsigned int m = fState.IntOfExt(j);
+              hess[i][j] = hessian(l, m);
+            }
+          }
+        }
+      }
+      return hess;
+    }
 }
+ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
+    int ndim = mini.ndim;
+      std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
+      int hesseStatus = 0;
+      auto* fitter = fMinimizer->fitter();        
+      auto* minimizer = fitter->GetMinimizer();        
+      if(minimizer){
+        // the simple case - just run hesse after minimization
+        hesseStatus = fMinimizer->hesse();
+      } else {
+        // the more complicated case - not at minimum, need to do some gynmastics to get access to hesse matrix
+        auto* fcn = fitterFcn(fMinimizer);
+        fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
+        fitter->SetFCN(*fcn);
+        fitter->EvalFCN();          
+        init(fitter);
+        minimizer = fitter->GetMinimizer();
+        minimizer->Hesse();
+      }
+      mini.covqual = minimizer->CovMatrixStatus();
+      std::cout<<"Hesse finished with status "<< hesseStatus<< " (covqual=" << mini.covqual << ")" << std::endl;
+      double det;
+      TMinuit* minuit = getMinuit(minimizer);
+      ROOT::Minuit2::Minuit2Minimizer* minuit2 = dynamic_cast<ROOT::Minuit2::Minuit2Minimizer*>(minimizer);
+      if(minuit){
+        mini.cov = new TMatrixDSym(ndim);
+        minuit->mnemat(mini.cov->GetMatrixArray(),ndim);
+        mini.hesse = new TMatrixDSym(mini.cov->Invert(&det));
+      } else if(minuit2){
+        mini.hesse = new TMatrixDSym(getHessian(minuit2->State(),ndim));
+        mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));        
+      } else {
+        mini.hesse = new TMatrixDSym(ndim);
+        minimizer->GetHessianMatrix(mini.hesse->GetMatrixArray());
+        mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));
+      }
+      return hesseStatus;
+  }
+  
 
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Result()
-: eigen(NULL), fit(NULL), hesse(NULL) {
+  : eigen(NULL), fit(NULL) {
   // nothing here
 }
 
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization()
-  : status(-1), strategy(-1), nll(nan), ndim(0) {
+  : status(-1), strategy(-1), nll(nan), ndim(0), hesse(NULL), cov(NULL), covqual(0) {
   // nothing here
 }
 
@@ -281,8 +418,8 @@ RooFitResult *RooFitUtils::ExtendedMinimizer::GetFitResult() {
 
 TMatrixDSym RooFitUtils::ExtendedMinimizer::GetHesseMatrix() {
   // obtain the hesse matrix from the minimizer
-  if (this->fResult && this->fResult->hesse)
-    return *(this->fResult->hesse);
+  if (this->fResult && this->fResult->min.hesse)
+    return *(this->fResult->min.hesse);
   return TMatrixDSym();
 }
 
@@ -508,9 +645,9 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
     : TNamed(minimizerName, minimizerName),
       fWorkspace(workspace), fPdf(pdf), fData(data),
       fOffset(0), fOptConst(2), fVerbose(0), fSave(0), fTimer(1),
-      fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinos(0), fScan(0),
+      fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinimize(1), fMinos(0), fScan(0),
       fNumee(5), fDoEEWall(1), fRetry(0), fEigen(0), fReuseMinimizer(0),
-      fReuseNLL(0), fMaxIterations(10000), fEps(1.0), fNsigma(1), // 1sigma 1dof
+      fReuseNLL(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), fNsigma(1), // 1sigma 1dof
       fPrecision(0.005),
       fMinimizerType("Minuit2"), fMinimizerAlgo("Migrad") {
   // Constructor
@@ -721,12 +858,14 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineInt("plevel", "PrintLevel", 0, fPrintLevel);
   pc.defineInt("strat", "Strategy", 0, fDefaultStrategy);
   pc.defineInt("hesse", "Hesse", 0, fHesse);
+  pc.defineInt("minimize", "Minimize", 0, fMinimize);  
   pc.defineInt("minos", "Minos", 0, fMinos);
   pc.defineInt("scan", "Scan", 0, fScan);
   pc.defineInt("numee", "PrintEvalErrors", 0, fNumee);
   pc.defineInt("doEEWall", "EvalErrorWall", 0, fDoEEWall);
   pc.defineInt("retry", "NumRetryFit", 0, fRetry);
-  pc.defineInt("maxcalls", "MaxCalls", 0, fMaxIterations);
+  pc.defineInt("maxcalls", "MaxCalls", 0, fMaxCalls);
+  pc.defineInt("maxiterations", "MaxIterations", 0, fMaxIterations);
   pc.defineInt("eigen", "Eigen", 0, fEigen);
   pc.defineInt("reminim", "ReuseMinimizer", 0, fReuseMinimizer);
   pc.defineInt("renll", "ReuseNLL", 0, fReuseNLL);
@@ -754,12 +893,14 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fPrintLevel = pc.getInt("plevel");
   fDefaultStrategy = pc.getInt("strat");
   fHesse = pc.getInt("hesse");
+  fMinimize = pc.getInt("minimize");  
   fMinos = pc.getInt("minos");
   fScan = pc.getInt("scan");
   fNumee = pc.getInt("numee");
   fDoEEWall = pc.getInt("doEEWall");
   fRetry = pc.getInt("retry");
-  fMaxIterations = pc.getInt("maxcalls");
+  fMaxCalls = pc.getInt("maxcalls");
+  fMaxIterations = pc.getInt("maxiterations");  
   fEigen = pc.getInt("eigen");
   fReuseMinimizer = pc.getInt("reminim");
   fReuseNLL = pc.getInt("renll");
@@ -814,129 +955,139 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     int ndim = ::countFloatParams(args);
     delete args;
 
-	    fMinimizer->setMaxFunctionCalls(fMaxIterations);
-//	    fMinimizer->setMaxIterations(fMaxIterations);
-	    fMinimizer->setPrintLevel(fPrintLevel);
-	    fMinimizer->optimizeConst(fOptConst);
-	    fMinimizer->setMinimizerType(fMinimizerType.c_str());
-	    fMinimizer->setEvalErrorWall(fDoEEWall);
-	    fMinimizer->setOffsetting(fOffset);
-	    fMinimizer->setPrintEvalErrors(fNumee);
-	    fMinimizer->setVerbose(fVerbose);
-	    fMinimizer->setProfile(fTimer);
-	    fMinimizer->setStrategy(fDefaultStrategy);
-	    fMinimizer->setEps(fEps);
+    fMinimizer->setMaxFunctionCalls(fMaxCalls);
+    fMinimizer->setMaxIterations(fMaxIterations);
+    fMinimizer->setPrintLevel(fPrintLevel);
+    fMinimizer->optimizeConst(fOptConst);
+    fMinimizer->setMinimizerType(fMinimizerType.c_str());
+    fMinimizer->setEvalErrorWall(fDoEEWall);
+    fMinimizer->setOffsetting(fOffset);
+    fMinimizer->setPrintEvalErrors(fNumee);
+    fMinimizer->setVerbose(fVerbose);
+    fMinimizer->setProfile(fTimer);
+    fMinimizer->setStrategy(fDefaultStrategy);
+    fMinimizer->setEps(fEps);
 
-	    //fNll->printTree(std::cout);
-	    while (true) {
-	      fMinimizer->setStrategy(strategy);
+    //fNll->printTree(std::cout);
+    bool ok = false;    
+    while (!ok) {
+      fMinimizer->setStrategy(strategy);
+      if(fMinimize){
+        // the following line is nothing but
+        // int ndim = fMinimizer->getNPar();
+        if(ndim > 0){
+          std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                    << "): starting minimization with strategy "
+                    << strategy << std::endl;
+          status = fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+        } else {
+          std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                    << "): skipping minimization, no free parameters given!" << std::endl;
+          ok = true;
+          status = 0;
+        }
 
-	      // the following line is nothing but
-	      // int ndim = fMinimizer->getNPar();
-	      if(ndim > 0){
-		std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-			  << "): starting minimization with strategy "
-			  << strategy << std::endl;
-		status = fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
-	      } else {
-		std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-			  << "): skipping minimization, no free parameters given!" << std::endl;
-		status = 0;
-	      }
+        if(status == 0 || status == 1){
+          std::cout
+            << "ExtendedMinimizer::robustMinimize(" << fName
+            << ") fit succeeded with status " << status << std::endl;
+          ok = true;
+        }
+      } else {
+          std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                    << "): skipping minimization" << std::endl;
+          status = 0;
+          ok = true;
+      }
+      
+      const double nllval = fNll->getVal();
+      if (!ok || std::isnan(nllval) || std::isinf(nllval)){
+        if(strategy < 2 && retry > 0) {
+          strategy++;
+          std::cout
+            << "ExtendedMinimizer::robustMinimize(" << fName
+            << ") fit failed with status " << status
+            << ". Retrying with strategy " << strategy << std::endl;
+          retry--;
+        } else {
+          std::cout
+            << "ExtendedMinimizer::robustMinimize(" << fName
+            << ") fit failed with status " << status << ", giving up." << std::endl;
+          break;
+        }
+      } else {
+        break;
+      }
+    }
 
-	      if(status == 0 || status == 1){
-		std::cout
-		  << "ExtendedMinimizer::robustMinimize(" << fName
-		  << ") fit succeeded with status " << status << std::endl;
+    Result::Minimization mini;
+    mini.status = status;
+    mini.strategy = strategy;
+    mini.ndim = ndim;
+    mini.config = fMinimizer->fitter()->Config();
+    if (ok && fHesse) {
+      runHesse(mini);
+    }
+    
+    //    if(ndim != ::countFloatParams(fMinimizer)){
+    //      //      throw std::runtime_error(TString::Format("dimensionality inconsistency detected between minimizer (ndim=%d) and Nll (ndim=%d)!",::countFloatParams(fMinimizer),ndim).Data());
+    //    }
 
-		if (fHesse) {
-		  std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
-		  fMinimizer->hesse();
-		  std::cout<<"Done!"<<std::endl;
-		}
-	      }
+    if (!mini.ok()) {
+      coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+                            << ") fit failed with status " << status << std::endl;
+    } else {
+      coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+                            << ") fit completed with status " << status
+                            << std::endl;
+    }
 
-	      const double nllval = fNll->getVal();
-	      if (std::isnan(nllval) || std::isinf(nllval) || (status != 0 && status != 1)){
-		if(strategy < 2 && retry > 0) {
-		  strategy++;
-		  std::cout
-		    << "ExtendedMinimizer::robustMinimize(" << fName
-		    << ") fit failed with status " << status
-		    << ". Retrying with strategy " << strategy << std::endl;
-		  retry--;
-		} else {
-		  std::cout
-		    << "ExtendedMinimizer::robustMinimize(" << fName
-		    << ") fit failed with status " << status << ", giving up." << std::endl;
-		  break;
-		}
-	      } else {
-		 break;
-	      }
-	    }
+    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+                          << "): Evaluating Nll" << std::endl;
+    mini.nll = fNll->getVal();
 
-	    Result::Minimization mini;
-	    mini.status = status;
-	    mini.strategy = strategy;
-	    mini.ndim = ndim;
-	    mini.config = fMinimizer->fitter()->Config();
+    return mini;
 
-	    if (!mini.ok()) {
-	      coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-				    << ") fit failed with status " << status << std::endl;
-	    } else {
-	      coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-				    << ") fit completed with status " << status
-				    << std::endl;
-	    }
+  } catch (std::string& s){
+    throw std::runtime_error(s);
+  }
 
-	    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-				  << "): Evaluating Nll" << std::endl;
-	    mini.nll = fNll->getVal();
+}
 
-	    return mini;
+// ____________________________________________________________________________|__________
 
-	  } catch (std::string& s){
-	    throw std::runtime_error(s);
-	  }
+void RooFitUtils::ExtendedMinimizer::initialize() {
+  // apply all pre-minimization settings
+  if (fCondSet) {
+    setVals(*fNll->getVariables(), fCondSet, true);
+  }
+}
 
-	}
+// ____________________________________________________________________________|__________
 
-	// ____________________________________________________________________________|__________
+int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
+  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
+  parseFitConfig(cmdList);
 
-	void RooFitUtils::ExtendedMinimizer::initialize() {
-	  // apply all pre-minimization settings
-	  if (fCondSet) {
-	    setVals(*fNll->getVariables(), fCondSet, true);
-	  }
-	}
+  return minimize();
+}
 
-	// ____________________________________________________________________________|__________
+// ____________________________________________________________________________|__________
 
-	int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
-	  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-	  parseFitConfig(cmdList);
+int RooFitUtils::ExtendedMinimizer::minimize() {
+  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
+  initialize();
 
-	  return minimize();
-	}
+  setup();
 
-	// ____________________________________________________________________________|__________
+  this->fResult = run();
 
-	int RooFitUtils::ExtendedMinimizer::minimize() {
-	  // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
-          initialize();
+  return this->fResult->min.status;
+}
 
-          setup();
-
-          this->fResult = run();
-
-          return this->fResult->min.status;
-	}
-
-	namespace {
-	  TMatrixDSym reduce(const TMatrixDSym& mat){
-	    std::vector<int> keepRows;
+namespace {
+  TMatrixDSym reduce(const TMatrixDSym& mat){
+    std::vector<int> keepRows;
     for(int i=0; i<mat.GetNcols(); ++i){
       if(mat(i,i) != 0) keepRows.push_back(i);
     }
@@ -972,44 +1123,46 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
 
-  // Evaluate errors with Hesse
-  if (r->min.ndim>1 && fHesse && myresult) {
-    const int covqual = myresult->covQual();
+  if(!r->min.hesse){
+    // if we don't have a hesse matrix yet, evaluate errors with Hesse
+    r->min.covqual = myresult->covQual();
     //if (covqual != -1) {
-      /*coutP(ObjectHandling)*/ std::cout << "ExtendedMinimizer::minimize(" << fName
-                            << "): Covariance quality is " << covqual
-                            << ". " << std::endl;
-      //fMinimizer->hesse(); //don't run hesse here, fNll->getVal() seems to slightly mess with the Nll
-    //}
-
+    /*coutP(ObjectHandling)*/ std::cout << "ExtendedMinimizer::minimize(" << fName
+                                        << "): Covariance quality is " << r->min.covqual
+                                        << ". " << std::endl;
+    
     // Obtain Hessian matrix either from patched Minuit or after inversion
     // TMatrixDSym G = Minuit2::MnHesse::lastHessian();
     Double_t determ = 0;
     std::cout << "ExtendedMinimizer::minimize(" << fName
               << "): attempting to invert covariance matrix... "
               << std::endl;
-    TMatrixDSym origG(::reduce(myresult->covarianceMatrix()));
-
-    if(origG.GetNcols() != r->min.ndim){
-      throw std::runtime_error("inconsistency detected: correlation matrix size inconsistent with float parameters!");
-    }
-
-    TMatrixDSym G = origG.Invert(&determ);
-    if (determ == 0 || std::isnan(determ)) {
-      //coutE(ObjectHandling)
-       std::cout   << "ExtendedMinimizer::minimize(" << fName
-          << "): covariance matrix is singular! " << std::endl;
-    } else {
-      r->hesse = new TMatrixDSym(G);
-      // Eigenvalue and eigenvector analysis
-      if (fEigen) {
-        coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
-                              << "): starting eigen analysis... " << std::endl;
-        r->eigen = eigenAnalysis(G);
+    if (r->min.covqual != 0 && r->min.ndim>1 && myresult) {
+      TMatrixDSym origG(::reduce(myresult->covarianceMatrix()));
+      
+      if(origG.GetNcols() != r->min.ndim){
+        throw std::runtime_error(TString::Format("inconsistency detected: correlation matrix size %d inconsistent with number float parameters %d!",origG.GetNcols(),r->min.ndim).Data());
+      }
+      
+      TMatrixDSym G = origG.Invert(&determ);
+      if (determ == 0 || std::isnan(determ)) {
+        //coutE(ObjectHandling)
+        std::cout   << "ExtendedMinimizer::minimize(" << fName
+                    << "): covariance matrix is singular! " << std::endl;
+      } else {
+        r->min.hesse = new TMatrixDSym(G);
+        // Eigenvalue and eigenvector analysis
       }
     }
   }
 
+  if(r->min.hesse && fEigen) {
+    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+                          << "): starting eigen analysis... " << std::endl;
+    r->eigen = eigenAnalysis(*(r->min.hesse));
+  }
+    
+  
   if (r->min.status >= 0) {
     // Evaluate errors with Minos
     if (fMinos) {
@@ -1072,7 +1225,6 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
 			delete fMinimizer;
     fMinimizer = NULL;
   }
-
 
   return r;
 }

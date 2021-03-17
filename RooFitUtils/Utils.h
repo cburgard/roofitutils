@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "TTime.h"
+#include "TMatrixDSym.h"
 
 class RooProdPdf;
 class RooWorkspace;
@@ -36,6 +37,7 @@ namespace RooFitUtils {
 	
   bool matches(const std::string& text, const std::string& pattern);
   std::string concat(const std::vector<std::string>& text, const std::string& joint = ",");  
+  TMatrixDSym convertToCorrelationMatrix(const TMatrixDSym& covmat);
 }
 
 

@@ -65,11 +65,12 @@ if __name__ == '__main__':
         files = inset[1:]
         parset = parset.union(set(collectbreakdowns(rankings,files,poiname)))        
 
-    allpars = filterparameters(sortparameters(parset,rankings),args.blacklist)
+    filtallpars = filterparameters(parset,args.blacklist)
+    allpars = sortparameters(filtallpars,rankings)
     npar = len(allpars)
         
     with open(args.output,"wt") as outfile:
-        from RooFitUtils.pgfplotter import writehead,writefoot,writepullshead,writepullsfoot,writepull,writeranking
+        from RooFitUtils.pgfplotter import writehead,writefoot,writepullshead,writepullsfoot,writepull,writepullnumbers,writeranking
         writehead(outfile,args.atlas)
         writepullshead(args,outfile,allpars,args.labels)
         for np in range(0,npar):
@@ -79,6 +80,6 @@ if __name__ == '__main__':
                     writeranking(args,rankings[poiname][npname],outfile,np-npar)
             if allpars[np] in pullresults.keys():
                 writepull(args,pullresults,outfile,allpars[np],np-npar,True)
-                writepullnumers(args,pullresults,outfile,allpars[np],np-npar,args.labels,nargs.numbers)                
+                writepullnumbers(args,pullresults,outfile,allpars[np],np-npar,args.labels,args.numbers)
         writepullsfoot(args,outfile,allpars)        
         writefoot(outfile)
