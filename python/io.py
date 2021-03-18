@@ -16,7 +16,46 @@ def texify(string):
         return latex_aliases[string]
     return string.replace("_","\\_")
 
-def writeResult(out,result,writecorrmat):
+def dict2mat(mat):
+    pars = sorted(list(set(list(mat.keys()))))
+    m = [ [ mat[pi][pj] if pj in mat[pi].keys() else mat[pj][pi] for pi in pars] for pj in pars ]
+    from numpy import array
+    return array(m)
+
+def result2dict(result,addcorrmat=True):
+    from RooFitUtils.util import isclose
+    d = {"min":{"status":result.min.status,"minimizer":result.min.config.MinimizerType(),"strategy":result.min.strategy,"nll":result.min.nll, "parameters":{}}}
+    for p in result.parameters:
+        par={"val":p.value}
+        if isclose(abs(p.errHi),abs(p.errLo)):
+            par["err"]=p.errHi
+        else:
+            par["eUp"]=p.errHi
+            par["eDn"]=p.errLo
+        d["min"]["parameters"][p.name]=par
+    if result.fit and addcorrmat:
+        npar = len(result.parameters)
+        d["min"]["cov"] = {result.parameters[j].name:{result.parameters[i].name:result.fit.covarianceMatrix()[i][j] for i in range(0,j+1)} for j in range(0,npar)}
+    d["scans"] = {}
+    for scan in result.scans:
+        d["scans"][scan.name]=[{"nll":scan.nllValues[i],"status":scan.fitStatus[i],"parameters":{scan.parNames[j]:scan.parValues[i][j] for j in range(len(scan.parNames))}} for i in range(len(scan.nllValues))]
+    return d
+        
+def writeResultJSON(out,result,writecorrmat):
+    js = result2dict(result,writecorrmat)
+    from datetime import datetime
+    now = datetime.now() # current date and time
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    import getpass
+    import platform
+    import socket
+    userstamp = getpass.getuser() + "@" + socket.gethostname() + " " + platform.system() + " " + platform.release()
+    import json
+    js["stamp"] = timestamp+" "+userstamp
+    json.dump(js,out,sort_keys=True,indent=4)
+
+    
+def writeResultTxt(out,result,writecorrmat):
     if result.min.nll:
         out.write("Minimization: minNll = ")
         out.write(str(result.min.nll))
@@ -61,7 +100,7 @@ def collectpoints(points,files,label):
 def reduceparams(allpars,parfilter):
     import re
     skimpars = ""
-    parpat = re.compile("^"+parfilter)
+    parpat = re.compile(r"^"+parfilter)
     for x in allpars:
         if x.startswith(parfilter):
             skimpars += " "+ texify(x)
@@ -103,7 +142,7 @@ def getCorrelation(infilename,frname=None,parameters=None):
 
 def collectcorrelations(results,filename,parfilter):
     import re
-    ncorrpat = re.compile("Correlations[ ](\w+)")
+    ncorrpat = re.compile(r"Correlations[ ](\w+)")
     import glob
     ncorr = 0
     parnames = []
@@ -124,10 +163,8 @@ def collectcorrelations(results,filename,parfilter):
                         parnames.append(redpars)
                     else:
                         for x in allpars: parnames.append(texify(x))
-                    pattern = ""
-                    for x in range(0, ncorr):
-                        pattern += "([-]*\d+.\d+)[ ]"
-                    rowpat = re.compile("([a-zA-Z0-9_.]+)[ ]([a-zA-Z0-9_.]+)[ ]"+"([-]*\d+.\d+)")
+                    pattern = "".join([r"([-]*\d+.\d+)[ ]"]*ncorr)
+                    rowpat = re.compile(r"([a-zA-Z0-9_.]+)[ ]([a-zA-Z0-9_.]+)[ ]([-]*\d+.\d+)")
                     for lineno in range(lineno,len(lines)):
                         rowmatch = rowpat.match(lines[lineno])
                         if rowmatch:
@@ -141,8 +178,8 @@ def readtables(infilenames):
     if isstr(infilenames):
         infilenames = [infilenames]
     import re
-    begintable = re.compile("\\\\begin[ ]*{tabular}[ ]*{(.*)}")
-    endtable = re.compile("\\\\end[ ]*{tabular}")
+    begintable = re.compile(r"\\\\begin[ ]*{tabular}[ ]*{(.*)}")
+    endtable = re.compile(r"\\\\end[ ]*{tabular}")
     tables = []
     for infilename in infilenames:
         with open(infilename,"rt") as infile:
@@ -182,10 +219,15 @@ def readsummary(infilename,form={"cv":("Central","Tot lo","Tot hi"),"stat":("Cen
 
 def collectresult(scans,results,filename,label):
     import re
-    parpat = re.compile("([a-zA-Z0-9_.-]+)[ ]*=[ ]*([0-9.naife+-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife+-]+)[ ]*")
-    parpat_legacy = re.compile("[ \t]*([a-zA-Z0-9_.-]+)[ \t=]+([0-9.naife+-]+)[ \t]*\+/-[ \t]*([0-9.naife+-]+).*")
-    nllpat = re.compile("Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife+-]+)")
+    parpat = re.compile(r"([a-zA-Z0-9_.-]+)[ ]*=[ ]*([0-9.naife+-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife+-]+)[ ]*")
+    parpat_legacy = re.compile(r"[ \t]*([a-zA-Z0-9_.-]+)[ \t=]+([0-9.naife+-]+)[ \t]*\+/-[ \t]*([0-9.naife+-]+).*")
+    nllpat = re.compile(r"Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife+-]+)")
     if os.path.isfile(filename):
+        if filename.endswith(".json"):
+            with open(filename,"rt") as infile:
+                import json
+                js = json.load(infile)
+                
         if filename.endswith(".root"):
             import ROOT
             infile = ROOT.TFile.Open(filename,"READ")
@@ -271,7 +313,7 @@ def collectfilenames(files):
 def collectimpacts(rankings,files,poiname):
     filenames = collectfilenames(files)
     import re
-    fpat = re.compile("[^.]*\.([^/^.]*)\.([^.]*)\.txt")
+    fpat = re.compile(r"[^.]*\.([^/^.]*)\.([^.]*)\.txt")
     from os.path import basename
     results = {}
     scan = {}
@@ -303,7 +345,7 @@ def collectimpacts(rankings,files,poiname):
 def collectbreakdowns(rankings,files,poiname):
     filenames = collectfilenames(files)
     import re
-    fpat = re.compile("breakdown\.([^/^.]*)\.txt")
+    fpat = re.compile(r"breakdown\.([^/^.]*)\.txt")
     from os.path import basename
     results = {}
     scan = {}
@@ -355,7 +397,7 @@ def collecthistograms(histograms,cfg,parameters=None):
             pars = parameters
         else:
             pars = names(tfile.GetListOfKeys())
-        pattern = re.compile(cfg.get("pattern",".*_(?P<p>[A-z0-9]*)_.*"))
+        pattern = re.compile(cfg.get("pattern",r".*_(?P<p>[A-z0-9]*)_.*"))
         for obj in tfile.GetListOfKeys():
             match = pattern.match(obj.GetName())
             if match:
@@ -383,7 +425,7 @@ def collecthistograms(histograms,cfg,parameters=None):
         tree = ET.parse(infilename)
         root = tree.getroot()
         pattern = re.compile(cfg["pattern"])
-        subpattern = re.compile(cfg.get("subpattern","(?P<c>[+-]?[ ]*[0-9.]+)[ *]*(?P<p>[A-z][A-z0-9]+)"))
+        subpattern = re.compile(cfg.get("subpattern",r"(?P<c>[+-]?[ ]*[0-9.]+)[ *]*(?P<p>[A-z][A-z0-9]+)"))
         for node in root:
             if node.tag == "Item":
                 text = node.attrib["Name"]

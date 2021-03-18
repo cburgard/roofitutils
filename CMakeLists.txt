@@ -106,7 +106,7 @@ ELSE()
   # link everything together at the end
   target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
 
-  file(GLOB pyfiles "python/*")
+  file(GLOB pyfiles "python/*.py")
   execute_process(
     COMMAND mkdir ${CMAKE_CURRENT_BINARY_DIR}/RooFitUtils
     )

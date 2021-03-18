@@ -26,6 +26,9 @@ def flattened(l):
         for j in i:
             yield j
 
+def isclose(a,b,rel_tol=1e-9,abs_tol=1e-9):
+    return abs(a-b) <= max( rel_tol * max(abs(a), abs(b)), abs_tol )
+            
 def keys(d):
     if type(d) == dict:
         return d.keys()
@@ -480,5 +483,41 @@ def formatNumberPDG(x,forceSign=False):
     else:
         return "+"+s
 
+def redirect_c_output(filename,keep_python_output=True):
+    import sys
+    import os
+    sys.stdout.flush() # <--- important when redirecting to files
 
-    
+    # Duplicate stdout (file descriptor 1)
+    # to a different file descriptor number
+    newstdout = os.dup(1)
+    newstderr = os.dup(2)    
+
+    # open the output
+    output = os.open(filename, os.O_WRONLY|os.O_CREAT)
+
+    # Duplicate the file descriptor for output
+    # and overwrite the value for stdout (file descriptor 1)
+    os.dup2(output, 1)
+    os.dup2(output, 2)    
+
+    # Close output after duplication (no longer needed)
+    os.close(output)
+
+    # Use the original stdout to still be able
+    # to print to stdout within python
+    if keep_python_output:
+        sys.stdout = os.fdopen(newstdout, 'w')
+        sys.stderr = os.fdopen(newstderr, 'w')    
+
+    return (newstdout,newstderr)
+
+def restore_c_output(tup):
+    import os
+    import sys
+    os.dup2(tup[0], 1)
+    os.dup2(tup[1], 2)
+    newstdout = os.dup(1)
+    newstderr = os.dup(2)
+    sys.stdout = os.fdopen(newstdout, 'w')
+    sys.stderr = os.fdopen(newstderr, 'w')        
