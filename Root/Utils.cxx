@@ -547,3 +547,18 @@ std::string RooFitUtils::concat(const std::vector<std::string>& text, const std:
   }
   return retval;
 }
+TMatrixDSym RooFitUtils::convertToCorrelationMatrix(const TMatrixDSym& _VM){
+  // stolen from RooFitResult
+  TMatrixDSym _CM(_VM);
+  for (Int_t i=0 ; i<_CM.GetNrows() ; i++) {
+    for (Int_t j=0 ; j<_CM.GetNcols() ; j++) {
+      if (i!=j) {
+        (_CM)(i,j) = (_CM)(i,j) / sqrt(_CM(i,i)*_CM(j,j)) ;
+      }
+    }
+  }
+  for (Int_t i=0 ; i<_CM.GetNrows() ; i++) {
+    (_CM)(i,i) = 1.0 ;
+  }
+  return _CM;
+}
