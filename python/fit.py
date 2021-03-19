@@ -1,3 +1,5 @@
+verbosity = {"DEBUG":4,"INFO":3,"WARNING":2,"ERROR":1}
+
 def setup(args):
     # general setup and loading of modules
     import ROOT
@@ -9,6 +11,8 @@ def setup(args):
     # setup verbosity
     ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.get("loglevel","DEBUG")))
     if args.get("loglevel","DEBUG") == "DEBUG":
+        ROOT.gErrorIgnoreLevel = 0
+        ROOT.Minuit2.MnPrint.ClearFilter()
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(2)
     else:
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(-1)
@@ -42,7 +46,6 @@ def buildModel(args):
                 for par in allpars[0:len(allpars)]:
                     par = par.strip(" ") 
                     par = par.strip("\"") 
-                    ws.obj(par).Print()
                     pars.add(ws.obj(par))
         
                 name = "penalty_"+str(ipens)
@@ -69,7 +72,8 @@ def buildModel(args):
     if args.get("fixAllNP",False):          model.fixNuisanceParameters()
     if args.get("setInitialError",False):   model.setInitialErrors()
     if args.get("fixParameters",None):      model.fixParameters(",".join(args["fixParameters"]))
-    if args.get("floatParameters",None):    model.floatParameters(",".join(args["fixParameters"]))    
+    if args.get("floatParameters",None):    model.floatParameters(",".join(args["floatParameters"]))
+    if args.get("randomizeParameters",None):model.randomizeParameters(",".join(args["randomizeParameters"]))        
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.get("profile",[])))
@@ -111,7 +115,6 @@ def buildMinimizer(args,model):
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         p.setConstant(False)
         poiset.add(p)
-
     pdf = model.GetPdf()
 
     argelems = [ROOT.RooFit.Minimizer(args.get("minimizerType","Minuit2"), args.get("minimizerAlgo","Migrad")),
@@ -119,13 +122,14 @@ def buildMinimizer(args,model):
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.get("eps",1e-3)),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.get("reuseMinimizer",False)),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.get("reuseNll",False)),
-                ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),
+                ROOT.RooFitUtils.ExtendedMinimizer.MaxIterations(5000*pdf.getVariables().getSize()),
+                ROOT.RooFitUtils.ExtendedMinimizer.Verbose(verbosity[args.get("loglevel","DEBUG")]),
                 ROOT.RooFit.Constrain(nuis),
                 ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.get("numCPU",1), args.get("mpStrategy",3)),
                 ROOT.RooFit.Offset(args.get("offsetting",True)),
                 ROOT.RooFit.Optimize(args.get("constOpt",1)),
-                ROOT.RooFit.PrintLevel(args.get("printLevel",0)),
+                ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
                 ROOT.RooFit.Precision(args.get("precision",1e-3)),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]

@@ -71,6 +71,7 @@ public:
     Eigen *eigen;
     Minimization min;
     RooFitResult *fit;
+    operator bool() { return this->min.ok(); }
   };
 
   // Constructor and destructor
@@ -104,7 +105,7 @@ public:
   inline int getPrintLevel() { return this->fPrintLevel; }
 
   // Steering
-  int minimize(const RooCmdArg &arg1, const RooCmdArg &arg2 = RooCmdArg::none(),
+  Result minimize(const RooCmdArg &arg1, const RooCmdArg &arg2 = RooCmdArg::none(),
                const RooCmdArg &arg3 = RooCmdArg::none(),
                const RooCmdArg &arg4 = RooCmdArg::none(),
                const RooCmdArg &arg5 = RooCmdArg::none(),
@@ -115,8 +116,8 @@ public:
                const RooCmdArg &arg10 = RooCmdArg::none(),
                const RooCmdArg &arg11 = RooCmdArg::none(),
                const RooCmdArg &arg12 = RooCmdArg::none());
-  int minimize(const RooLinkedList &cmdList);
-  int minimize();
+  Result minimize(const RooLinkedList &cmdList);
+  Result minimize();
 
   void findSigma(const std::vector<std::string> &pars);
   void findSigma();
@@ -142,6 +143,9 @@ public:
   static RooCmdArg NumRetryFit(Int_t retry) {
     return RooCmdArg("NumRetryFit", retry, 0, 0, 0, 0, 0, 0, 0);
   }
+  static RooCmdArg Verbose(Int_t verbose) {
+    return RooCmdArg("verbose", verbose, 0, 0, 0, 0, 0, 0, 0);
+  }  
   static RooCmdArg MaxCalls(Int_t maxcalls) {
     return RooCmdArg("MaxCalls", maxcalls, 0, 0, 0, 0, 0, 0, 0);
   }

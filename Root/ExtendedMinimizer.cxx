@@ -211,75 +211,87 @@ namespace {
     }
     return NULL;
   }
-    template<class State> TMatrixDSym getHessian(const State& fState, int fDim) {
-      // get value of Hessian matrix
-      TMatrixDSym hess(fDim);
-      // this is the second derivative matrices
-      auto hessian = fState.Hessian();
-      if (!fState.HasCovariance())
-        throw std::runtime_error("no hessian available, minimization failed");
-      for (unsigned int i = 0; i < fDim; ++i) {
-        if (fState.Parameter(i).IsFixed() || fState.Parameter(i).IsConst()) {
-          for (unsigned int j = 0; j < fDim; ++j) {
+  template<class State> TMatrixDSym getHessian(const State& fState, int fDim) {
+    // get value of Hessian matrix
+    TMatrixDSym hess(fDim);
+    // this is the second derivative matrices
+    auto hessian = fState.Hessian();
+    if (!fState.HasCovariance())
+      throw std::runtime_error("no hessian available, minimization failed");
+    for (unsigned int i = 0; i < fDim; ++i) {
+      if (fState.Parameter(i).IsFixed() || fState.Parameter(i).IsConst()) {
+        for (unsigned int j = 0; j < fDim; ++j) {
+          hess[i][j] = 0;
+        }
+      } else {
+        unsigned int l = fState.IntOfExt(i);
+        for (unsigned int j = 0; j < fDim; ++j) {
+          // could probably speed up this loop (if needed)
+          if (fState.Parameter(j).IsFixed() || fState.Parameter(j).IsConst())
             hess[i][j] = 0;
-          }
-        } else {
-          unsigned int l = fState.IntOfExt(i);
-          for (unsigned int j = 0; j < fDim; ++j) {
-            // could probably speed up this loop (if needed)
-            if (fState.Parameter(j).IsFixed() || fState.Parameter(j).IsConst())
-              hess[i][j] = 0;
-            else {
-              // need to transform from external to internal indices)
-              // for taking care of the removed fixed row/columns in the Minuit2 representation
-              unsigned int m = fState.IntOfExt(j);
-              hess[i][j] = hessian(l, m);
-            }
+          else {
+            // need to transform from external to internal indices)
+            // for taking care of the removed fixed row/columns in the Minuit2 representation
+            unsigned int m = fState.IntOfExt(j);
+            hess[i][j] = hessian(l, m);
           }
         }
       }
-      return hess;
     }
+    return hess;
+  }
 }
- int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
-    int ndim = mini.ndim;
-      std::cout<<"Now running Hesse (this might take a while) ... "<<std::endl;
-      int hesseStatus = 0;
-      auto* fitter = fMinimizer->fitter();        
-      auto* minimizer = fitter->GetMinimizer();        
-      if(minimizer){
-        // the simple case - just run hesse after minimization
-        hesseStatus = fMinimizer->hesse();
-      } else {
-        // the more complicated case - not at minimum, need to do some gynmastics to get access to hesse matrix
-        auto* fcn = fitterFcn(fMinimizer);
-        fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
-        fitter->SetFCN(*fcn);
-        fitter->EvalFCN();          
-        init(fitter);
-        minimizer = fitter->GetMinimizer();
-        minimizer->Hesse();
-      }
-      mini.covqual = minimizer->CovMatrixStatus();
-      std::cout<<"Hesse finished with status "<< hesseStatus<< " (covqual=" << mini.covqual << ")" << std::endl;
-      double det;
-      TMinuit* minuit = getMinuit(minimizer);
-      ROOT::Minuit2::Minuit2Minimizer* minuit2 = dynamic_cast<ROOT::Minuit2::Minuit2Minimizer*>(minimizer);
-      if(minuit){
-        mini.cov = new TMatrixDSym(ndim);
-        minuit->mnemat(mini.cov->GetMatrixArray(),ndim);
-        mini.hesse = new TMatrixDSym(mini.cov->Invert(&det));
-      } else if(minuit2){
-        mini.hesse = new TMatrixDSym(getHessian(minuit2->State(),ndim));
-        mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));        
-      } else {
-        mini.hesse = new TMatrixDSym(ndim);
-        minimizer->GetHessianMatrix(mini.hesse->GetMatrixArray());
-        mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));
-      }
-      return hesseStatus;
+
+int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
+  // run the HESSE algorithm
+  int ndim = mini.ndim;
+  int hesseStatus = 0;
+  auto* fitter = fMinimizer->fitter();        
+  auto* minimizer = fitter->GetMinimizer();
+  if(minimizer){
+    // the simple case - just run hesse after minimization
+    std::cout << "ExtendedMinimizer::runHesse(" << fName  << ") running after minimization (this might take a while) ... "<<std::endl;
+    hesseStatus = fMinimizer->hesse();
+  } else {
+    // the more complicated case - not at minimum, need to do some gynmastics to get access to hesse matrix
+    std::cout << "ExtendedMinimizer::runHesse(" << fName << ") running standalone (this might take a while) ... "<<std::endl;        
+    auto* fcn = fitterFcn(fMinimizer);
+    fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
+    fitter->SetFCN(*fcn);
+    fitter->EvalFCN();          
+    init(fitter);
+    minimizer = fitter->GetMinimizer();
+    minimizer->Hesse();
+  }
+  mini.covqual = minimizer->CovMatrixStatus();
+  std::cout << "ExtendedMinimizer::runHesse(" << fName << ") finished with status "<< hesseStatus<< " (covqual=" << mini.covqual << ")" << std::endl;
+  double det;
+  TMinuit* minuit = getMinuit(minimizer);
+  ROOT::Minuit2::Minuit2Minimizer* minuit2 = dynamic_cast<ROOT::Minuit2::Minuit2Minimizer*>(minimizer);
+  if(minuit){
+    mini.cov = new TMatrixDSym(ndim);
+    minuit->mnemat(mini.cov->GetMatrixArray(),ndim);
+    mini.hesse = new TMatrixDSym(mini.cov->Invert(&det));
+  } else if(minuit2){
+    mini.hesse = new TMatrixDSym(getHessian(minuit2->State(),ndim));
+    mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));        
+  } else {
+    mini.hesse = new TMatrixDSym(ndim);
+    minimizer->GetHessianMatrix(mini.hesse->GetMatrixArray());
+    mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));
+  }
+  if(!(det > 0)){
+    std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix found invalid (D=" << det << "), deleting" << std::endl;
+    delete mini.hesse;
+    delete mini.cov;
+    mini.hesse = NULL;
+    mini.cov = NULL;
+    hesseStatus = -1;
   }
   
+  return hesseStatus;
+}
+
 
 // ____________________________________________________________________________|__________
 
@@ -616,9 +628,6 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
   argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
   parseNllConfig(argList);
   fPenaltyMini = model->GetPenalty();
-  model->GetPenalty()->Print();
-  std::cout << "inside construct" << std::endl;
-  fPenaltyMini->Print("v");
 }
 
 
@@ -676,7 +685,7 @@ RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer() {
 
 // ____________________________________________________________________________|__________
 
-int RooFitUtils::ExtendedMinimizer::minimize(
+RooFitUtils::ExtendedMinimizer::Result RooFitUtils::ExtendedMinimizer::minimize(
     const RooCmdArg &arg1, const RooCmdArg &arg2, const RooCmdArg &arg3,
     const RooCmdArg &arg4, const RooCmdArg &arg5, const RooCmdArg &arg6,
     const RooCmdArg &arg7, const RooCmdArg &arg8, const RooCmdArg &arg9,
@@ -685,9 +694,9 @@ int RooFitUtils::ExtendedMinimizer::minimize(
   // extended from RooAbsPdf::fitTo()
   RooLinkedList *l = makeList(false, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
                               arg9, arg10, arg11, arg12);
-  int status = minimize(*l);
+  auto result = minimize(*l);
   delete l;
-  return status;
+  return result;
 }
 
 // ____________________________________________________________________________|__________
@@ -710,10 +719,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     fNll = NULL;
   }
   int ndim = 0;
-
-//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-//    fWorkspace->Print();
-//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
 
   if(!fNll){
     coutI(InputArguments) << "Creating new Nll" << std::endl;
@@ -740,7 +745,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
           fnset.add(*pen);
         }
         fnset.add(*fNll);    
-        // std::cout << s << std::endl;
         RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
         fNll = nllpen;
       }
@@ -794,10 +798,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     fMinimizer=NULL;
   }
 
-  //    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-  //    fWorkspace->Print();
-  //    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-
   if (!fMinimizer) {
     coutI(InputArguments) << "Creating new Minimizer" << std::endl;
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer(fMinimizerType.c_str(),
@@ -817,10 +817,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     }
     coutI(InputArguments) << "Using existing Minimizer" << std::endl;
   }
-//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-//    fWorkspace->Print();
-//    std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-
 }
 
 // ____________________________________________________________________________|__________
@@ -1065,7 +1061,7 @@ void RooFitUtils::ExtendedMinimizer::initialize() {
 
 // ____________________________________________________________________________|__________
 
-int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
+RooFitUtils::ExtendedMinimizer::Result RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
   // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
   parseFitConfig(cmdList);
 
@@ -1074,7 +1070,7 @@ int RooFitUtils::ExtendedMinimizer::minimize(const RooLinkedList &cmdList) {
 
 // ____________________________________________________________________________|__________
 
-int RooFitUtils::ExtendedMinimizer::minimize() {
+RooFitUtils::ExtendedMinimizer::Result RooFitUtils::ExtendedMinimizer::minimize() {
   // Minimize function  adopted, simplified and extended from RooAbsPdf::fitTo()
   initialize();
 
@@ -1082,7 +1078,7 @@ int RooFitUtils::ExtendedMinimizer::minimize() {
 
   this->fResult = run();
 
-  return this->fResult->min.status;
+  return *this->fResult;
 }
 
 namespace {
@@ -1138,7 +1134,8 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
               << "): attempting to invert covariance matrix... "
               << std::endl;
     if (r->min.covqual != 0 && r->min.ndim>1 && myresult) {
-      TMatrixDSym origG(::reduce(myresult->covarianceMatrix()));
+      const TMatrixDSym origCov = myresult->covarianceMatrix();
+      TMatrixDSym origG(::reduce(origCov));
       
       if(origG.GetNcols() != r->min.ndim){
         throw std::runtime_error(TString::Format("inconsistency detected: correlation matrix size %d inconsistent with number float parameters %d!",origG.GetNcols(),r->min.ndim).Data());
@@ -1372,16 +1369,19 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
                              "minimization detected, geneating new minimum "
                           << std::endl;
     r->min = robustMinimize();
+    if(!r->min.ok()){
+      throw std::runtime_error("unable to findSigma without minimum!");
+    }
   }
 
-  for (RooLinkedListIter it = scanSet.iterator();
-       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+  for (const auto& it:scanSet){
+    RooRealVar *v = dynamic_cast<RooRealVar *>(it);
     if (!v) {
       throw std::runtime_error("invalid variable!");
     }
     coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(): starting scan of "
                           << v->GetName() << std::endl;
-
+    
     RooArgSet vars(*fPdf->getVariables());
     RooStats::RemoveConstantParameters(&vars);
     vars.add(*v, kTRUE);
@@ -1393,6 +1393,7 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
     double nsigma = fabs(fNsigma);
     Double_t val = v->getVal();
     Double_t err = fNsigma * v->getError();
+    if(err < 1e-9) err = 0.1*val;
     int maxitr = 25;
 
     setVals(vars, snap, false);
@@ -1400,7 +1401,7 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
     setVals(vars, snap, false);
     Double_t slo = findSigma(r, val - err, val, v, -nsigma, maxitr);
     setVals(vars, snap, false);
-
+    
     Result::Parameter poi(v->GetName(), val, shi, slo);
     r->parameters.push_back(poi);
 
