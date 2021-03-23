@@ -1,6 +1,15 @@
 # this is the implementation of the ATLAS statistics challenges
 #
-# First, check out and compile RooFitUtils
+# Start by setting up your environment, for example using
+#
+#     setupATLAS
+#     lsetup "root 6.22.06-x86_64-centos7-gcc8-opt"
+#     lsetup cmake
+#     python3 -m venv myenv
+#     source myenv/bin/activate
+#     python -m pip install pytest
+#
+# Next, check out and compile RooFitUtils
 #
 #     git clone ssh://git@gitlab.cern.ch:7999/cburgard/RooFitUtils.git
 #     mkdir build
@@ -38,7 +47,7 @@ def test_simplehf_poiscan(filename,workspacename,scanpars):
 def test_simplehf_covmat(filename,workspacename):
     from RooFitUtils.io import dict2mat
 #    constpars = ["gamma_stat_CR_bin_0","gamma_stat_SR_bin_0","gamma_stat_SR_bin_1","gamma_stat_SR_bin_10","gamma_stat_SR_bin_2","gamma_stat_SR_bin_3","gamma_stat_SR_bin_4","gamma_stat_SR_bin_5","gamma_stat_SR_bin_6","gamma_stat_SR_bin_7","gamma_stat_SR_bin_8","gamma_stat_SR_bin_9"]
-    return dict2mat(runfit(filename,workspacename,{"hesse":False,"findSigma":False,#"fixParameters":constpars
+    return dict2mat(runfit(filename,workspacename,{"hesse":True,"findSigma":False,#"fixParameters":constpars
                                                    })["min"]["cov"])
 
 def test_eft_poivals(filename,workspacename):

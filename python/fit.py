@@ -12,7 +12,10 @@ def setup(args):
     ROOT.RooFitUtils.Log.SetReportingLevel(ROOT.RooFitUtils.Log.FromString(args.get("loglevel","DEBUG")))
     if args.get("loglevel","DEBUG") == "DEBUG":
         ROOT.gErrorIgnoreLevel = 0
-        ROOT.Minuit2.MnPrint.ClearFilter()
+        try:
+            ROOT.Minuit2.MnPrint.ClearFilter()
+        except AttributeError:
+            pass
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(2)
     else:
         ROOT.Math.MinimizerOptions.SetDefaultPrintLevel(-1)
