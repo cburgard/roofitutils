@@ -243,7 +243,7 @@ namespace {
 }
 
 // some toggles
-#define USE_ROOFITRESULT_NLL
+// #define USE_ROOFITRESULT_NLL
 
 int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
   // run the HESSE algorithm
@@ -1000,8 +1000,9 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
       }
 
       #ifdef USE_ROOFITRESULT_NLL
-      auto result = RooFitResult::lastMinuitFit();
+      auto result = RooFitResult::lastMinuitFit(fWorkspace->allVars());
       const double nllval = result ? result->minNll() : nan;
+      if(result) delete result;
       #else
       const double nllval = fNll->getVal();
       #endif
