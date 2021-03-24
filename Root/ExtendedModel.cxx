@@ -227,13 +227,6 @@ void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
     throw std::runtime_error("unable to obtain list of observables");
   }
 
-  coutP(InputArguments) << "Loading the penalty set" << std::endl;
-  if (!fPenalty) {
-    coutE(InputArguments) << "Something went wrong when loading the penalty set"
-                          << std::endl;
-    throw std::runtime_error("unable to obtain list of observables");
-  }
-
   if (fSnapshotName != "") {
     coutP(InputArguments) << "Loading snapshots" << std::endl;
     std::vector<std::string> parsedSnapshots = parseString(fSnapshotName, ",");
@@ -380,6 +373,7 @@ void RooFitUtils::ExtendedModel::randomizeParameters(const std::vector<std::stri
 
 void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
+  if(!params || params->getSize() == 0) return;
   TObject* obj;
   for(const auto&s:parsed){
     auto nameEnd = s.find_first_of("=[");
@@ -407,7 +401,7 @@ void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &p
       }
     }
     if (found == 0) {
-      throw std::runtime_error("Parameter " + pat + " does not exist.");
+      throw std::runtime_error("Parameter '" + pat + "' does not exist.");
     }
   }
 }
@@ -416,26 +410,24 @@ void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &p
 
 void RooFitUtils::ExtendedModel::floatParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
-	TObject* obj;
-	for(const auto&pat:parsed){
-		RooFIter itr(params->fwdIterator());
-		int found = 0;
-		while((obj = itr.next())){
-			if(RooFitUtils::matches(obj->GetName(),pat)){
-				RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
-				if(par){
-					found ++;
-					coutI(ObjectHandling) << "Floating parameter " << par->GetName() << std::endl;
-					par->setConstant(0);
-				}
-			}
-		}
-		if (found == 0) {
-			coutE(ObjectHandling) << "Parameter " << pat
-														<< " does not exist." << std::endl;
-			exit(-1);
-		}
-	}
+  if(!params || params->getSize() == 0) return;  
+  TObject* obj;
+  for(const auto&pat:parsed){
+    int found = 0;
+    for(auto obj:*params){
+      if(RooFitUtils::matches(obj->GetName(),pat)){
+        RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
+        if(par){
+          found ++;
+          coutI(ObjectHandling) << "Floating parameter " << par->GetName() << std::endl;
+          par->setConstant(0);
+        }
+      }
+    }
+    if (found == 0) {
+      throw std::runtime_error("Parameter '" + pat + "' does not exist.");
+    }
+  }
 }
 
 // _____________________________________________________________________________

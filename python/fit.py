@@ -37,8 +37,11 @@ def buildModel(args):
 
     model = ROOT.RooFitUtils.ExtendedModel("model", args["inFileName"], args["wsName"],
                                            args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot","nominalNuis"),
-                                           args.get("binnedLikelihood",True), ROOT.RooArgSet(), "pdf_")
+                                           args.get("binnedLikelihood",True))
 
+    pois = args.get("poi",None)
+    if pois: model.GetModelConfig().SetParametersOfInterest(",".join(pois))
+    
     if args.get("penalty",False):
         npens = len(args.penalty)
         ws = model.GetWorkspace()
@@ -125,7 +128,8 @@ def buildMinimizer(args,model):
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.get("eps",1e-3)),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.get("reuseMinimizer",False)),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.get("reuseNll",False)),
-                ROOT.RooFitUtils.ExtendedMinimizer.MaxIterations(5000*pdf.getVariables().getSize()),
+                ROOT.RooFitUtils.ExtendedMinimizer.MaxIterations(50*pdf.getVariables().getSize()),
+                ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),                
                 ROOT.RooFitUtils.ExtendedMinimizer.Verbose(verbosity[args.get("loglevel","DEBUG")]),
                 ROOT.RooFit.Constrain(nuis),
                 ROOT.RooFit.GlobalObservables(globs),
@@ -151,8 +155,7 @@ def buildMinimizer(args,model):
 
 def fit(args,model,minimizer):
     from time import time
-    from RooFitUtils.util import parsePoint,makelist,timestamp,linspace,vec,mkdir,union
-    from RooFitUtils.util import generateCoordsDict
+    from RooFitUtils.util import parsePoint,makelist,timestamp,linspace,vec,mkdir,union,names
     from RooFitUtils.io import writeResultJSON as writeResult
     import ROOT
     opt = ROOT.Math.MinimizerOptions.Default("Minuit2")
@@ -165,7 +168,7 @@ def fit(args,model,minimizer):
     if args.get("pois",None):
         poinames = args["pois"]
     else:
-        poinames = [ p.GetName() for p in makelist(pois) ]
+        poinames = names(pois)
     for poi in poinames:
         p = model.configureParameter(poi)
 
@@ -210,6 +213,7 @@ def fit(args,model,minimizer):
     if scan:
         from RooFitUtils.util import isstr
         if isstr(scan[0]): scan = [scan]
+        from RooFitUtils.util import generateCoordsDict
         coordsdict = generateCoordsDict(scan)
         parnames = vec(sorted(coordsdict[0].keys()),"string")
         coords = vec([ vec([d[str(k)] for k in parnames],"double") for d in coordsdict],"vector<double>")

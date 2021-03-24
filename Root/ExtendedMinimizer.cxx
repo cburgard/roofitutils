@@ -247,6 +247,7 @@ namespace {
 
 int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
   // run the HESSE algorithm
+  this->SetNllDirty();
   int ndim = mini.ndim;
   int hesseStatus = 0;
   auto* fitter = fMinimizer->fitter();        
@@ -970,6 +971,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     //fNll->printTree(std::cout);
     bool ok = false;    
     while (!ok) {
+      this->SetNllDirty();      
       fMinimizer->setStrategy(strategy);
       if(fMinimize){
         // the following line is nothing but
@@ -1000,10 +1002,11 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
       }
 
       #ifdef USE_ROOFITRESULT_NLL
-      auto result = RooFitResult::lastMinuitFit(fWorkspace->allVars());
+      auto* result = fMinimizer->save("tmp","tmp");      
       const double nllval = result ? result->minNll() : nan;
       if(result) delete result;
       #else
+      this->SetNllDirty();
       const double nllval = fNll->getVal();
       #endif
       if (!ok || std::isnan(nllval) || std::isinf(nllval)){
@@ -1117,6 +1120,18 @@ namespace {
 
 // ____________________________________________________________________________|__________
 
+void RooFitUtils::ExtendedMinimizer::SetNllDirty(){
+  // set the value of the Nll to "dirty" and thus enforce the recalculation on next evaluation
+  if(fNll){
+    RooArgSet params(*fNll->getParameters((RooArgSet*)0));
+    for(auto p:params){
+      p->setValueDirty();
+    }
+  }
+}
+
+// ____________________________________________________________________________|__________
+
 RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   // run the actual minimization
   Result *r = new Result();
@@ -1169,7 +1184,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   }
     
   
-  if (r->min.status >= 0) {
+  if (r->min.ok()) {
     // Evaluate errors with Minos
     if (fMinos) {
       coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName

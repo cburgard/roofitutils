@@ -227,8 +227,18 @@ def collectresult(scans,results,filename,label):
             with open(filename,"rt") as infile:
                 import json
                 js = json.load(infile)
-                
-        if filename.endswith(".root"):
+                for name,scan in js["scans"].items():
+                    key = tuple(name.split(","))
+                    scans[key] = {label:{}}
+                    for point in scan:
+                        pvals = tuple(point["parameters"].values())
+                        nll = point["nll"]
+                        scans[key][label][pvals] = nll
+                for pname,result in js["min"]["parameters"].items():
+                    if not pname in results.keys():
+                        results[pname] = {}
+                    results[pname][label] = result                    
+        elif filename.endswith(".root"):
             import ROOT
             infile = ROOT.TFile.Open(filename,"READ")
             for key in infile.GetListOfKeys():
@@ -295,7 +305,6 @@ def collectresult(scans,results,filename,label):
                         else:
                             print("unable to parse line '"+line.strip()+"' in file '"+filename+"', "+str(err))
                         continue
-
             for p in scans.keys():
                 if p in results.keys():
                     scans[p][label][results[p][label][0]]=minnll;

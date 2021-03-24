@@ -37,21 +37,19 @@ def runfit(filename,workspacename,moreargs={}):
     d = result2dict(result)
     return d
 
-def test_simplehf_poivals(filename,workspacename):
-    return runfit(filename,workspacename,{"hesse":False})["min"]["parameters"]
+def test_simplehf_poivals(filename,workspacename,dataname):
+    return runfit(filename,workspacename,{"hesse":False,"dataName":dataname})["min"]["parameters"]
 
-def test_simplehf_poiscan(filename,workspacename,scanpars):
-    result = runfit(filename,workspacename,{"scan":scanpars,"hesse":False})["scans"]["mu"]
+def test_hww_poivals(filename,workspacename,dataname):
+    return runfit(filename,workspacename,{"hesse":False,"dataName":dataname,"poi":["mu_ggF","mu_VBF"]})["min"]["parameters"]
+
+def test_simplehf_poiscan(filename,workspacename,dataname,scanpars):
+    result = runfit(filename,workspacename,{"scan":scanpars,"hesse":False,"dataName":dataname})["scans"]["mu"]
     return [ point["nll"] for point in result ]
 
-def test_simplehf_covmat(filename,workspacename):
+def test_simplehf_covmat(filename,workspacename,dataname):
     from RooFitUtils.io import dict2mat
-#    constpars = ["gamma_stat_CR_bin_0","gamma_stat_SR_bin_0","gamma_stat_SR_bin_1","gamma_stat_SR_bin_10","gamma_stat_SR_bin_2","gamma_stat_SR_bin_3","gamma_stat_SR_bin_4","gamma_stat_SR_bin_5","gamma_stat_SR_bin_6","gamma_stat_SR_bin_7","gamma_stat_SR_bin_8","gamma_stat_SR_bin_9"]
-    return dict2mat(runfit(filename,workspacename,{"hesse":True,"findSigma":False,#"fixParameters":constpars
-                                                   })["min"]["cov"])
-
-def test_eft_poivals(filename,workspacename):
-    return runfit(filename,workspacename)["min"]["parameters"]
+    return dict2mat(runfit(filename,workspacename,{"hesse":True,"findSigma":False,"dataName":dataname})["min"]["cov"])
 
 # this helper function is only for debugging
 if __name__ == "__main__":

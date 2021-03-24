@@ -447,18 +447,21 @@ def parsepois(pois,options=False):
         return poinames
 
 def first_n_nonzero_digits(l, n):
+    from math import isnan
+    if isnan(l): return 0
     from itertools import islice
     return int(''.join(islice((i for i in str(abs(l)) if i not in {'0', '.'}), n)).ljust(n, '0'))
 
 def formatNumber(x,ndigits):
-    from math import log10
+    from math import log10,isnan
+    if isnan(x): return "NaN"
     if log10(abs(x)) < -ndigits: return "0"
     return "{:f}".format(round(x,ndigits)).rstrip("0").rstrip(".")
 
 def findSignificantDigits(x):
-    if x == 0:
-        return 0
-    from math import floor,log10
+    if x == 0: return 0
+    from math import floor,log10,isnan
+    if isnan(x): return "NaN"
     digits = first_n_nonzero_digits(x,3)
     scale = floor(log10(abs(x)))
     if digits < 354:
@@ -469,7 +472,13 @@ def findSignificantDigits(x):
         return max(0,-scale-1)
 
 def formatPDG(x,xup,xdn):
-    digits = max(findSignificantDigits(abs(xup)),findSignificantDigits(abs(xdn)))
+    from math import isnan
+    if isnan(x): return "NaN"
+    elif isnan(xup) and isnan(xdn): return str(x)
+    elif isnan(xup): digits = findSignificantDigits(abs(xdn))
+    elif isnan(xdn): digits = findSignificantDigits(abs(xup))
+    else:
+        digits = max(findSignificantDigits(abs(xup)),findSignificantDigits(abs(xdn)))
     fmt = "{:."+str(digits)+"f}"
     return fmt.format(x) + "^{+" + fmt.format(abs(xup)) +"}_{" + fmt.format(-abs(xdn))+"}"
     

@@ -90,6 +90,7 @@ public:
   void SetData(RooAbsData *Data) { fData = Data; }
   RooAbsData *GetData() { return fData; }
 
+  void SetNllDirty();
   RooAbsReal *GetNll() {
     if (!fNll)
       this->setup();
