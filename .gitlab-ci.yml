@@ -27,7 +27,7 @@ variables:
     - cvmfs
 
 .asg_base: &asg_base
-  image: atlas/analysisbase:21.2.49
+  image: atlas/analysisbase:21.2.120
   before_script:
     - source /home/atlas/release_setup.sh
 

@@ -153,7 +153,7 @@ def product(pools):
         yield tuple(prod)
 
 def names(objects):
-    return [ obj.GetName() for obj in objects ]
+    return [ obj.GetName() for obj in makelist(objects) ]
         
 def generateCoordsDict(scan):
     """generate a dictionary of coordinates"""
