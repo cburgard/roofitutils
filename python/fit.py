@@ -109,7 +109,6 @@ def buildMinimizer(args,model):
 
 
     # Collect POIs
-    pois = model.GetParametersOfInterest()
     poiset = ROOT.RooArgSet()
     if args.get("pois",None):
         poinames = args["pois"]
@@ -196,7 +195,6 @@ def fit(args,model,minimizer):
             allparams.add(nuis)
             globs = model.GetGlobalObservables()
             allparams.add(globs)
-            pois = model.GetParametersOfInterest()
             allparams.add(pois)
             obs = model.GetObservables()
             # Save the snapshots of nominal parameters
@@ -251,7 +249,7 @@ def fit(args,model,minimizer):
             outpath,outfile = os.path.split(outFileName.replace(".txt",""))
             result.fit.SaveAs(outfile+"_fitresult.root")
         if args.get("printResult",True):
-            for poi in pois:
+            for poi in makelist(pois):
                 p = result.fit.floatParsFinal().find(poi)
                 if p:
                     print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
