@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with input information",required=True)
     parser.add_argument('--mergeinput',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with input information")
     parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
+    parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points on 1d curve")
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=["\\mu"])
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
@@ -75,7 +76,7 @@ if __name__ == '__main__':
 
     with open(args.output,"w") as outfile:
         if len(scans1d) > 0:
-            writescans1d(args.atlas,args.labels[0],scans1d,args.output,getPercentages(args,1),args.ymax)
+            writescans1d(args.atlas,args.labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax)
         elif len(scans2d) > 0:
             writescans2d(args,scans2d,points,args.npoints,getPercentages(args,2))
         elif len(scans2d_merge) > 0 and mergeinp != "" :
