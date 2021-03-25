@@ -1,4 +1,3 @@
-
 _nodel = []
 def nodel(something):
     """mark an object as undeletable for the garbage collector"""
@@ -479,13 +478,13 @@ def formatPDG(x,xup,xdn):
     elif isnan(xdn): digits = findSignificantDigits(abs(xup))
     else:
         digits = max(findSignificantDigits(abs(xup)),findSignificantDigits(abs(xdn)))
-    fmt = "{:."+str(digits)+"f}"
+    fmt = "{:."+str(int(digits))+"f}"
     return fmt.format(x) + "^{+" + fmt.format(abs(xup)) +"}_{" + fmt.format(-abs(xdn))+"}"
     
     
 def formatNumberPDG(x,forceSign=False):
     digits = findSignificantDigits(x)
-    fmt = "{:."+str(digits)+"f}"
+    fmt = "{:."+str(int(digits))+"f}"
     s = fmt.format(x)
     if not forceSign or x < 0:
         return s
