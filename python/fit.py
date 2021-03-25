@@ -140,8 +140,10 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.Precision(args.get("precision",1e-3)),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
-    if args.get("findSigma",True):
+    if args.get("findSigma",False):
         argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset))
+    elif args.get("minos",True):
+        argelems.append(ROOT.RooFit.Minos(poiset))        
 
     from RooFitUtils.util import nodel
     nodel(poiset)
@@ -248,6 +250,11 @@ def fit(args,model,minimizer):
         if args.get("writeResult",False):
             outpath,outfile = os.path.split(outFileName.replace(".txt",""))
             result.fit.SaveAs(outfile+"_fitresult.root")
+        if args.get("printResult",True):
+            for poi in pois:
+                p = result.fit.floatParsFinal().find(poi)
+                if p:
+                    print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
         if not args.get("writeResult",False) and not outFileName:
             print("no output requested")
     else:
@@ -381,7 +388,7 @@ def createImpactJobs(args,arglist):
 def createBreakdownJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import names,reconstructCall,stringify,mkdir,concat
-    options = reconstructCall(args["arglist"],["breadkown","findSigma","writeSubmit","writeSubmitPoints"])
+    options = reconstructCall(args["arglist"],["breakdown","findSigma","writeSubmit","writeSubmitPoints"])
     model = buildModel(args)
     import sys
     submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")

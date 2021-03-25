@@ -8,6 +8,7 @@
 #include <iostream>
 #include "TFile.h"
 #include "TMath.h"
+#include "TRandom.h"
 #include "TMatrixDSymEigen.h"
 
 #include "RooCmdConfig.h"
@@ -243,7 +244,7 @@ namespace {
 }
 
 // some toggles
-// #define USE_ROOFITRESULT_NLL
+#define USE_ROOFITRESULT_NLL
 
 int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
   // run the HESSE algorithm
@@ -834,7 +835,7 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
 			 "GlobalObservables,GlobalObservablesTag,"
 			 "OffsetLikelihood",true);
   } else {
-    coutE(ObjectHandling) << "cannot change Nll config with preexisting Nll!" << std::endl;
+    std::cout << "cannot change Nll config with preexisting Nll!" << std::endl;
   }
   return fNllCmdList.GetSize();
 }
@@ -968,6 +969,8 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setStrategy(fDefaultStrategy);
     fMinimizer->setEps(fEps);
 
+    double nllval = 0.;
+    
     //fNll->printTree(std::cout);
     bool ok = false;    
     while (!ok) {
@@ -1003,11 +1006,11 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
       #ifdef USE_ROOFITRESULT_NLL
       auto* result = fMinimizer->save("tmp","tmp");      
-      const double nllval = result ? result->minNll() : nan;
+      nllval = result ? result->minNll() : nan;
       if(result) delete result;
       #else
       this->SetNllDirty();
-      const double nllval = fNll->getVal();
+      nllval = fNll->getVal();
       #endif
       if (!ok || std::isnan(nllval) || std::isinf(nllval)){
         if(strategy < 2 && retry > 0) {
@@ -1042,17 +1045,11 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     //    }
 
     if (!mini.ok()) {
-      coutE(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
+      std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                             << ") fit failed with status " << status << std::endl;
     } else {
-      coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                            << ") fit completed with status " << status
-                            << std::endl;
+      mini.nll = nllval;
     }
-
-    coutP(ObjectHandling) << "ExtendedMinimizer::robustMinimize(" << fName
-                          << "): Evaluating Nll" << std::endl;
-    mini.nll = fNll->getVal();
 
     return mini;
 
@@ -1147,7 +1144,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     // if we don't have a hesse matrix yet, evaluate errors with Hesse
     r->min.covqual = myresult->covQual();
     //if (covqual != -1) {
-    /*coutP(ObjectHandling)*/ std::cout << "ExtendedMinimizer::minimize(" << fName
+    /*std::cout*/ std::cout << "ExtendedMinimizer::minimize(" << fName
                                         << "): Covariance quality is " << r->min.covqual
                                         << ". " << std::endl;
     
@@ -1167,7 +1164,6 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
       
       TMatrixDSym G = origG.Invert(&determ);
       if (determ == 0 || std::isnan(determ)) {
-        //coutE(ObjectHandling)
         std::cout   << "ExtendedMinimizer::minimize(" << fName
                     << "): covariance matrix is singular! " << std::endl;
       } else {
@@ -1178,7 +1174,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   }
 
   if(r->min.hesse && fEigen) {
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+    std::cout << "ExtendedMinimizer::minimize(" << fName
                           << "): starting eigen analysis... " << std::endl;
     r->eigen = eigenAnalysis(*(r->min.hesse));
   }
@@ -1187,7 +1183,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   if (r->min.ok()) {
     // Evaluate errors with Minos
     if (fMinos) {
-      coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+      std::cout << "ExtendedMinimizer::minimize(" << fName
                             << "): Running Minos" << std::endl;
       if (fMinosSet) {
         fMinimizer->minos(*fMinosSet);
@@ -1199,7 +1195,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
 
 
   if (fScan) {
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+    std::cout << "ExtendedMinimizer::minimize(" << fName
                           << "): Running Scan" << std::endl;
     findSigma(r, *fScanSet);
   }
@@ -1216,7 +1212,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   }
 
   if (fCondSet) {
-    coutP(ObjectHandling) << "Editing conditional set" << std::endl;
+    std::cout << "Editing conditional set" << std::endl;
     RooArgSet *attachedSet = fNll->getVariables();
     for (auto arg:*fCondSet){
       RooRealVar* v = dynamic_cast<RooRealVar *>(arg);
@@ -1233,7 +1229,7 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
     std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
                              GetName(), fData->GetName());
-    coutP(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName
+    std::cout << "ExtendedMinimizer::minimize(" << fName
                           << ") saving results as " << name << std::endl;
     r->fit = fMinimizer->save(name.c_str(), title.c_str());
 
@@ -1329,7 +1325,6 @@ void RooFitUtils::ExtendedMinimizer::scan(
       params[i]->setConstant(true);
     }
     fHesse = false;
-    auto valstr = new TString("");
     auto min = this->robustMinimize();
     if (min.ok()) {
       std::vector<double> vals(params.size());
@@ -1389,7 +1384,7 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
     Result *r, const RooAbsCollection &scanSet) {
   // run an iterative algorithm to find the 1-sigma-band
   if (!r->min.ok()) {
-    coutW(ObjectHandling) << "ExtendedMinimizer::findSigma(): no previous "
+    std::cout << "ExtendedMinimizer::findSigma(): no previous "
                              "minimization detected, geneating new minimum "
                           << std::endl;
     r->min = robustMinimize();
@@ -1403,7 +1398,7 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
     if (!v) {
       throw std::runtime_error("invalid variable!");
     }
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(): starting scan of "
+    std::cout << "ExtendedMinimizer::findSigma(): starting scan of "
                           << v->GetName() << std::endl;
     
     RooArgSet vars(*fPdf->getVariables());
@@ -1429,8 +1424,8 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
     Result::Parameter poi(v->GetName(), val, shi, slo);
     r->parameters.push_back(poi);
 
-    v->setAsymError(std::isnan(slo) ? 1.0 : slo, std::isnan(shi) ? -1.0 : shi);
-    coutI(ObjectHandling) << "ExtendedMinimizer::minimize(" << fName << ") "
+    v->setAsymError(std::isnan(slo) ? val+err : slo, std::isnan(shi) ? val-err : shi);
+    std::cout << "ExtendedMinimizer::minimize(" << fName << ") "
                           << std::endl;
     delete snap;
   }
@@ -1457,12 +1452,14 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   const double fitTol = fEps;
   bool isConst(par->isConstant());
 
+  TRandom rnd;
+  
   double val_guess = useLimits(par, guessval);
   int direction = nsigma >= 0.0 ? +1 : -1;
   int nDamping = 1;
   double damping_factor = 1.0;
   ExtendedMinimizer::ValueMap guess_to_corr;
-  double tmu = TMath::QuietNaN();
+  double tmu = inf;
 
   if (precision <= 0.0) {
     // RooFit default tolerance is 1.0.
@@ -1472,98 +1469,103 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
 
   bool hesse = fHesse;
   fHesse = false;
-  int iter = 0;
   ExtendedMinimizer::Result::Scan values(TString::Format("findSigma_%s_%g",par->GetName(),val_guess).Data(),{par->GetName()});
   const double nllmin = result->min.nll;
   values.add({val_mle}, result->min.status, nllmin);
-  for (; iter < maxiter; iter++) {
-    coutI(ObjectHandling)
+  int iter = 0;
+  while(iter < maxiter){
+    iter++;
+    std::cout
         << "ExtendedMinimizer::findSigma(" << fName << ") "
         << Form("Parameter %s %+gsigma iteration %d: start %g (MLE%+g)",
                 par->GetName(), nsigma, iter + 1, val_guess,
                 val_guess - val_mle)
         << std::endl;
+    double lastval = par->getVal();
     double val_pre = val_guess;
     par->setVal(val_pre);
     par->setConstant(true);
     Result::Minimization mini = robustMinimize();
+
     double nll = mini.nll;
-    double poival = par->getVal();
-    values.add({poival}, mini.status, nll);
+    double tmu_new = 2.0 * (nll - nllmin);
+    if(!mini.ok()){
+      //      || (fabs(tmu_new - 1) > fabs(tmu - 1)+0.1)){
+      val_guess = rnd.Gaus(lastval,0.1*useLimits(par, guessval));
+      std::cout << "ExtendedMinimizer::findSigma(" << fName <<") failed to converge at " << par->getVal() << ", tmu = " << tmu << " => " << tmu_new << ", backtracking to " << val_guess << std::endl;
+      continue;
+    } else {
+      tmu = tmu_new;
+      values.add({val_pre}, mini.status, nll);
+      double sigma_guess = fabs(val_guess - val_mle);
+      if (tmu > 0.01)   sigma_guess /= sqrt(tmu);
+      else              sigma_guess *=      10.0; // protect against tmu<=0, and also don't move too far
 
-    tmu = 2.0 * (nll - nllmin);
-    double sigma_guess = fabs(val_guess - val_mle);
-    if (tmu > 0.01)
-      sigma_guess /= sqrt(tmu);
-    else
-      sigma_guess *=
-          10.0; // protect against tmu<=0, and also don't move too far
-    double corr = damping_factor * (val_pre - val_mle - nsigma * sigma_guess);
-    for (auto iguess:guess_to_corr){
-      if (fabs(iguess.first - val_pre) < direction * val_pre * 0.02) {
-        damping_factor *= 0.8;
-        coutW(ObjectHandling)
-            << "ExtendedMinimizer::findSigma(" << fName
-            << ") Changing damping factor to " << damping_factor << std::endl;
-        if (nDamping++ > 10) {
-          nDamping = 1;
-          damping_factor = 1.0;
+      double corr = damping_factor * (val_pre - val_mle - nsigma * sigma_guess);
+      for (auto iguess:guess_to_corr){
+        if (fabs(iguess.first - val_pre) < direction * val_pre * 0.02) {
+          damping_factor *= 0.8;
+          std::cout
+              << "ExtendedMinimizer::findSigma(" << fName
+              << ") Changing damping factor to " << damping_factor << std::endl;
+          if (nDamping++ > 10) {
+            nDamping = 1;
+            damping_factor = 1.0;
+          }
+          corr *= damping_factor;
+          break;
         }
-        corr *= damping_factor;
-        break;
       }
+      // subtract off the difference in the new and damped correction
+      val_guess -= corr;
+      guess_to_corr[val_pre] = corr;
+      val_guess = useLimits(par, val_guess);
+      double relprecision = precision * fabs(val_guess - val_mle);
+      double delta = val_guess - val_pre;
+  
+      std::cout << "ExtendedMinimizer::findSigma(" << fName << ") "
+                            << Form("%s %.3f (MLE%+.3f) -> %.3f (MLE%+.3f), "
+                                    "change %+.3f, precision %.3f, -2lnL %.4f, "
+                                    "sigma(guess) %.3f",
+                                    par->GetName(), val_pre, val_pre - val_mle,
+                                    val_guess, val_guess - val_mle, delta,
+                                    relprecision, tmu, sigma_guess)
+                            << std::endl;
+  
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") NLL:                 " << nll << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") delta(NLL):          " << nll - nllmin
+                            << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") nsigma*sigma(pre):   "
+                            << fabs(val_pre - val_mle) << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") sigma(guess):        " << sigma_guess
+                            << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") par(guess):          " << val_guess + corr
+                            << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") best-fit val:        " << val_mle << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") tmu:                 " << tmu << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") Precision:           "
+                            << direction * val_guess * precision << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") Correction:          " << -corr << std::endl;
+      std::cout << "ExtendedMinimizer::findSigma(" << fName
+                            << ") nsigma*sigma(guess): "
+                            << fabs(val_guess - val_mle) << std::endl;
+      if (fabs(delta) <= relprecision)
+        break;
     }
-    // subtract off the difference in the new and damped correction
-    val_guess -= corr;
-    guess_to_corr[val_pre] = corr;
-    val_guess = useLimits(par, val_guess);
-    double relprecision = precision * fabs(val_guess - val_mle);
-    double delta = val_guess - val_pre;
-
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName << ") "
-                          << Form("%s %.3f (MLE%+.3f) -> %.3f (MLE%+.3f), "
-                                  "change %+.3f, precision %.3f, -2lnL %.4f, "
-                                  "sigma(guess) %.3f",
-                                  par->GetName(), val_pre, val_pre - val_mle,
-                                  val_guess, val_guess - val_mle, delta,
-                                  relprecision, tmu, sigma_guess)
-                          << std::endl;
-
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") NLL:                 " << nll << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") delta(NLL):          " << nll - nllmin
-                          << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") nsigma*sigma(pre):   "
-                          << fabs(val_pre - val_mle) << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") sigma(guess):        " << sigma_guess
-                          << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") par(guess):          " << val_guess + corr
-                          << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") best-fit val:        " << val_mle << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") tmu:                 " << tmu << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") Precision:           "
-                          << direction * val_guess * precision << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") Correction:          " << -corr << std::endl;
-    coutI(ObjectHandling) << "ExtendedMinimizer::findSigma(" << fName
-                          << ") nsigma*sigma(guess): "
-                          << fabs(val_guess - val_mle) << std::endl;
-
-    if (fabs(delta) <= relprecision)
-      break;
   }
   bool ok = (!(iter >= maxiter));
   fHesse = hesse;
 
   par->setConstant(isConst);
-
   if (!ok) {
     std::cerr << "findSigma failed after " << iter << " iterations"
               << std::endl;
@@ -1573,7 +1575,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   result->scans.push_back(values);
 
   double err = val_guess - val_mle;
-  coutI(ObjectHandling)
+  std::cout
       << "ExtendedMinimizer::findSigma(" << fName << ") "
       << Form("%s %+gsigma = %.3f at -2lnL = %.4f after %d iterations",
               par->GetName(), nsigma, err, tmu, iter + 1)
