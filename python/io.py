@@ -22,23 +22,27 @@ def dict2mat(mat):
     from numpy import array
     return array(m)
 
+def mat2dict(parameters,mat):
+    return {parameters[j].name:{parameters[i].name:mat[i][j] for i in range(0,j+1)} for j in range(0,len(parameters))}
+
 def result2dict(result,addcorrmat=True):
     from RooFitUtils.util import isclose
-    d = {"min":{"status":result.min.status,"minimizer":result.min.config.MinimizerType(),"strategy":result.min.strategy,"nll":result.min.nll, "parameters":{}}}
+    mini_info = {"type":result.min.config.MinimizerType(),"strategy":result.min.strategy,"status":result.min.status}
+    d = {"MLE":{"minimizer":mini_info,"nll":result.min.nll, "parameters":[]}}
     for p in result.parameters:
-        par={"val":p.value}
+        par={"name":p.name,"val":p.value}
         if isclose(abs(p.errHi),abs(p.errLo)):
             par["err"]=p.errHi
         else:
             par["eUp"]=p.errHi
             par["eDn"]=p.errLo
-        d["min"]["parameters"][p.name]=par
+        d["MLE"]["parameters"].append(par)
     if result.fit and addcorrmat:
         npar = len(result.parameters)
-        d["min"]["cov"] = {result.parameters[j].name:{result.parameters[i].name:result.fit.covarianceMatrix()[i][j] for i in range(0,j+1)} for j in range(0,npar)}
-    d["scans"] = {}
+        d["MLE"]["cov"] = { "parameter_names":[ p.name for p in result.parameters ],"matrix":[ [ result.fit.covarianceMatrix()[i][j] for j in range(0,npar) ] for i in range(0,npar) ] }
+    d["scans"] = []
     for scan in result.scans:
-        d["scans"][scan.name]=[{"nll":scan.nllValues[i],"status":scan.fitStatus[i],"parameters":{scan.parNames[j]:scan.parValues[i][j] for j in range(len(scan.parNames))}} for i in range(len(scan.nllValues))]
+        d["scans"].append({"label":scan.name,"points":[{"nll":scan.nllValues[i],"minimizer":{"status":scan.fitStatus[i]},"parameters":[{"name":scan.parNames[j],"val":scan.parValues[i][j]} for j in range(len(scan.parNames))]} for i in range(len(scan.nllValues))]})
     return d
         
 def writeResultJSON(out,result,writecorrmat):
@@ -227,17 +231,18 @@ def collectresult(scans,results,filename,label):
             with open(filename,"rt") as infile:
                 import json
                 js = json.load(infile)
-                for name,scan in js["scans"].items():
-                    key = tuple(name.split(","))
+                for scan in js["scans"]:
+                    key = tuple(scan["label"].split(","))
                     scans[key] = {label:{}}
-                    for point in scan:
-                        pvals = tuple(point["parameters"].values())
+                    for point in scan["points"]:
+                        pvals = tuple([ p["val"] for p in point["parameters"]])
                         nll = point["nll"]
                         scans[key][label][pvals] = nll
-                for pname,result in js["min"]["parameters"].items():
+                for par in js["MLE"]["parameters"]:
+                    pname = par["name"]
                     if not pname in results.keys():
                         results[pname] = {}
-                    results[pname][label] = result                    
+                    results[pname][label] = par                    
         elif filename.endswith(".root"):
             import ROOT
             infile = ROOT.TFile.Open(filename,"READ")
