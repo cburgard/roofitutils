@@ -245,6 +245,7 @@ namespace {
 
 // some toggles
 #define USE_ROOFITRESULT_NLL
+#define FINDSIGMA_NO_CONSTOPT    
 
 int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Result::Minimization& mini){
   // run the HESSE algorithm
@@ -301,14 +302,13 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
 // ____________________________________________________________________________|__________
 
 RooFitUtils::ExtendedMinimizer::Result::Result()
-  : eigen(NULL), fit(NULL) {
+  : eigen(NULL) {
   // nothing here
 }
 
 // ____________________________________________________________________________|__________
 
-RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization()
-  : status(-1), strategy(-1), nll(nan), ndim(0), hesse(NULL), cov(NULL), covqual(0) {
+RooFitUtils::ExtendedMinimizer::Result::Minimization::Minimization(){
   // nothing here
 }
 
@@ -321,7 +321,11 @@ bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok(int status) {
 
 // ____________________________________________________________________________|__________
 
-bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok() {
+
+
+// ____________________________________________________________________________|__________
+
+bool RooFitUtils::ExtendedMinimizer::Result::Minimization::ok() const {
   // return status of minization
   return ExtendedMinimizer::Result::Minimization::ok(this->status);
 }
@@ -427,7 +431,7 @@ RooFitUtils::ExtendedMinimizer::getResult(bool make) {
 RooFitResult *RooFitUtils::ExtendedMinimizer::GetFitResult() {
   // obtain the fit result from the minimizer
   if (this->fResult)
-    return this->fResult->fit;
+    return this->fResult->min.fit;
   return NULL;
 }
 
@@ -659,10 +663,9 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
     : TNamed(minimizerName, minimizerName),
       fWorkspace(workspace), fPdf(pdf), fData(data),
       fOffset(0), fOptConst(2), fVerbose(0), fSave(0), fTimer(1),
-      fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinimize(1), fMinos(0), fScan(0),
+      fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinimize(1), fMinos(0),
       fNumee(5), fDoEEWall(1), fRetry(0), fEigen(0), fReuseMinimizer(0),
-      fReuseNLL(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), fNsigma(1), // 1sigma 1dof
-      fPrecision(0.005),
+      fReuseNLL(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), // 1sigma 1dof
       fMinimizerType("Minuit2"), fMinimizerAlgo("Migrad") {
   // Constructor
 
@@ -861,7 +864,6 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineInt("hesse", "Hesse", 0, fHesse);
   pc.defineInt("minimize", "Minimize", 0, fMinimize);  
   pc.defineInt("minos", "Minos", 0, fMinos);
-  pc.defineInt("scan", "Scan", 0, fScan);
   pc.defineInt("numee", "PrintEvalErrors", 0, fNumee);
   pc.defineInt("doEEWall", "EvalErrorWall", 0, fDoEEWall);
   pc.defineInt("retry", "NumRetryFit", 0, fRetry);
@@ -871,21 +873,32 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineInt("reminim", "ReuseMinimizer", 0, fReuseMinimizer);
   pc.defineInt("renll", "ReuseNLL", 0, fReuseNLL);
   pc.defineDouble("eps", "Eps", 0, fEps);
-  pc.defineDouble("nsigma", "NSigma", 0, fNsigma);
-  pc.defineDouble("precision", "Precision", 0, fPrecision);
   pc.defineString("mintype", "Minimizer", 0, fMinimizerType.c_str());
   pc.defineString("minalg", "Minimizer", 1, fMinimizerAlgo.c_str());
   pc.defineObject("minosSet", "Minos", 0, 0);
   pc.defineObject("condSet", "Cond", 0, 0);
-  pc.defineObject("scanSet", "Scan", 0, 0);
   pc.defineSet("cPars", "Constrain", 0, 0);
-  pc.defineMutex("Scan", "Minos");
+
+  pc.defineInt("findSigma", "FindSigma", 0, fFindSigma);
+  pc.defineInt("findSigmaIter", "FindSigma", 1, fFindSigmaIter);    
+  pc.defineDouble("findSigmaN", "FindSigma", 0, fFindSigmaN);
+  pc.defineDouble("findSigmaPrecision", "FindSigma", 1, fFindSigmaPrecision);  
+  pc.defineObject("findSigmaSet", "FindSigma", 0, 0);
+  
+  pc.defineMutex("FindSigma", "Minos");
 
   pc.process(fFitCmdList);
   if (!pc.ok(kTRUE)) {
     throw std::runtime_error("unable to parse cmd list!");
   }
 
+  fFindSigma = pc.getInt("findSigma");
+  fFindSigmaN = fabs(pc.getDouble("findSigmaN"));
+  fFindSigmaIter = pc.getInt("findSigmaIter");
+  fFindSigmaSet = static_cast<RooArgSet *>(pc.getObject("findSigmaSet"));
+  fFindSigmaPrecision = pc.getDouble("findSigmaPrecision");
+  
+  
   fOptConst = pc.getInt("optConst");
   fOffset = pc.getInt("doOffset");
   fVerbose = pc.getInt("verbose");
@@ -896,7 +909,6 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fHesse = pc.getInt("hesse");
   fMinimize = pc.getInt("minimize");  
   fMinos = pc.getInt("minos");
-  fScan = pc.getInt("scan");
   fNumee = pc.getInt("numee");
   fDoEEWall = pc.getInt("doEEWall");
   fRetry = pc.getInt("retry");
@@ -906,11 +918,8 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fReuseMinimizer = pc.getInt("reminim");
   fReuseNLL = pc.getInt("renll");
   fEps = pc.getDouble("eps");
-  fNsigma = pc.getDouble("nsigma");
-  fPrecision = pc.getDouble("precision");
   fMinosSet = static_cast<RooArgSet *>(pc.getObject("minosSet"));
   fCondSet = static_cast<RooArgSet *>(pc.getObject("condSet"));
-  fScanSet = static_cast<RooArgSet *>(pc.getObject("scanSet"));
   fMinimizerType = std::string(pc.getString("mintype", "Minuit2"));
   fMinimizerAlgo = std::string(pc.getString("minalg", "Migrad"));
 
@@ -970,10 +979,13 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setEps(fEps);
 
     double nllval = 0.;
+    RooFitResult* fitres = 0;
     
     //fNll->printTree(std::cout);
     bool ok = false;    
     while (!ok) {
+      if(fitres) delete fitres;
+      fitres = 0;
       this->SetNllDirty();      
       fMinimizer->setStrategy(strategy);
       if(fMinimize){
@@ -984,34 +996,40 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
                     << "): starting minimization with strategy "
                     << strategy << std::endl;
           status = fMinimizer->minimize(fMinimizerType.c_str(), fMinimizerAlgo.c_str());
+          if(status==0 || status==1) ok=true;
         } else {
           std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                     << "): skipping minimization, no free parameters given!" << std::endl;
           ok = true;
           status = 0;
         }
-
-        if(status == 0 || status == 1){
-          std::cout
-            << "ExtendedMinimizer::robustMinimize(" << fName
-            << ") fit succeeded with status " << status << std::endl;
-          ok = true;
-        }
       } else {
-          std::cout << "ExtendedMinimizer::robustMinimize(" << fName
-                    << "): skipping minimization" << std::endl;
-          status = 0;
-          ok = true;
-      }
+        std::cout << "ExtendedMinimizer::robustMinimize(" << fName
+                  << "): skipping minimization" << std::endl;
+        ok = true;
+        status = 0;
+      }      
 
-      #ifdef USE_ROOFITRESULT_NLL
-      auto* result = fMinimizer->save("tmp","tmp");      
-      nllval = result ? result->minNll() : nan;
-      if(result) delete result;
-      #else
-      this->SetNllDirty();
-      nllval = fNll->getVal();
-      #endif
+      if(ok){
+        std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
+        std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
+                                 GetName(), fData->GetName());
+        fitres = fMinimizer->save(name.c_str(), title.c_str());
+        
+#ifdef USE_ROOFITRESULT_NLL
+        nllval = fitres ? fitres->minNll() : nan;
+#else
+        this->SetNllDirty();
+        nllval = fNll->getVal();
+#endif
+        std::cout
+          << "ExtendedMinimizer::robustMinimize(" << fName
+          << ") fit succeeded with status " << status << ", NLL=" << nllval;
+        if(fNll->isOffsetting()) std::cout << " (offset=" << fNll->offset() << ")";
+        std::cout << std::endl;
+      }
+      
+      
       if (!ok || std::isnan(nllval) || std::isinf(nllval)){
         if(strategy < 2 && retry > 0) {
           strategy++;
@@ -1030,12 +1048,15 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         break;
       }
     }
-
+    
     Result::Minimization mini;
     mini.status = status;
     mini.strategy = strategy;
     mini.ndim = ndim;
+    mini.constOpt = fOptConst;
     mini.config = fMinimizer->fitter()->Config();
+    mini.fit = fitres;
+    
     if (ok && fHesse) {
       runHesse(mini);
     }
@@ -1049,6 +1070,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
                             << ") fit failed with status " << status << std::endl;
     } else {
       mini.nll = nllval;
+      mini.nllOffset = fNll->offset();
     }
 
     return mini;
@@ -1134,15 +1156,13 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
-  RooFitResult* myresult = fMinimizer->save("tmp","tmp");
-
-  if(r->min.ndim > 0 && r->min.ndim != myresult->floatParsFinal().getSize()){
+  if(r->min.ndim > 0 && r->min.ndim != r->min.fit->floatParsFinal().getSize()){
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
 
   if(!r->min.hesse){
     // if we don't have a hesse matrix yet, evaluate errors with Hesse
-    r->min.covqual = myresult->covQual();
+    r->min.covqual = r->min.fit->covQual();
     //if (covqual != -1) {
     /*std::cout*/ std::cout << "ExtendedMinimizer::minimize(" << fName
                                         << "): Covariance quality is " << r->min.covqual
@@ -1154,8 +1174,8 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
     std::cout << "ExtendedMinimizer::minimize(" << fName
               << "): attempting to invert covariance matrix... "
               << std::endl;
-    if (r->min.covqual != 0 && r->min.ndim>1 && myresult) {
-      const TMatrixDSym origCov = myresult->covarianceMatrix();
+    if (r->min.covqual != 0 && r->min.ndim>1 && r->min.fit) {
+      const TMatrixDSym origCov = r->min.fit->covarianceMatrix();
       TMatrixDSym origG(::reduce(origCov));
       
       if(origG.GetNcols() != r->min.ndim){
@@ -1194,20 +1214,20 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   }
 
 
-  if (fScan) {
+  if (fFindSigma) {
     std::cout << "ExtendedMinimizer::minimize(" << fName
-                          << "): Running Scan" << std::endl;
-    findSigma(r, *fScanSet);
+                          << "): Running findSigma" << std::endl;
+    findSigma(r);
   }
 
 
   RooArgSet *vars = fNll->getVariables();
   for (auto arg:*vars){
     RooRealVar* v = dynamic_cast<RooRealVar*>(arg);
-    if(!::find(r->parameters,v->GetName()) && !v->isConstant()){
+    if(!::find(r->min.parameters,v->GetName()) && !v->isConstant()){
       Result::Parameter poi(v->GetName(), v->getVal(), v->getErrorHi(),
                             v->getErrorLo());
-      r->parameters.push_back(poi);
+      r->min.parameters.push_back(poi);
     }
   }
 
@@ -1223,23 +1243,14 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
       }
     }
   }
-
   // Return fit result
-  if (r->min.ndim > 0 && fSave) {
-    std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
-    std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
-                             GetName(), fData->GetName());
-    std::cout << "ExtendedMinimizer::minimize(" << fName
-                          << ") saving results as " << name << std::endl;
-    r->fit = fMinimizer->save(name.c_str(), title.c_str());
-
-    if(r->fit->correlationMatrix().GetNcols() < r->fit->floatParsFinal().getSize()) throw std::runtime_error(TString::Format("fit result size %d is inconsistent with correlation matrix size %d!",r->fit->floatParsFinal().getSize(),r->fit->correlationMatrix().GetNcols()).Data());
+  if (r->min.ndim > 0) {
+    if(r->min.fit->correlationMatrix().GetNcols() < r->min.fit->floatParsFinal().getSize()) throw std::runtime_error(TString::Format("fit result size %d is inconsistent with correlation matrix size %d!",r->min.fit->floatParsFinal().getSize(),r->min.fit->correlationMatrix().GetNcols()).Data());
   }
-  delete myresult;
-
+  
   if(!fReuseMinimizer) {
-		if(fMinimizer)
-			delete fMinimizer;
+    if(fMinimizer)
+      delete fMinimizer;
     fMinimizer = NULL;
   }
 
@@ -1347,15 +1358,23 @@ void RooFitUtils::ExtendedMinimizer::scan(
 
 void RooFitUtils::ExtendedMinimizer::findSigma() {
   // run an iterative algorithm to find the 1-sigma-band
+  if (!fNll) this->setup();
+  findSigma(this->getResult(true));
+}
+
+// ____________________________________________________________________________|__________
+
+void RooFitUtils::ExtendedMinimizer::findSigma(ExtendedMinimizer::Result* r) {
+  // run an iterative algorithm to find the 1-sigma-band
   if (!fNll) {
     throw std::runtime_error("invalid Nll!");
   }
-  if (!fScanSet || fScanSet->getSize() == 0) {
+  if (!fFindSigmaSet || fFindSigmaSet->getSize() == 0) {
     RooArgSet *attachedSet = fNll->getVariables();
     RooStats::RemoveConstantParameters(attachedSet);
-    findSigma(this->getResult(true), *attachedSet);
+    findSigma(r, *attachedSet);
   } else {
-    findSigma(this->getResult(true), *fScanSet);
+    findSigma(r, *fFindSigmaSet);
   }
 }
 
@@ -1380,19 +1399,32 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
 
 // ____________________________________________________________________________|__________
 
-void RooFitUtils::ExtendedMinimizer::findSigma(
-    Result *r, const RooAbsCollection &scanSet) {
+void RooFitUtils::ExtendedMinimizer::findSigma(Result *r, const RooAbsCollection &scanSet) {
   // run an iterative algorithm to find the 1-sigma-band
-  if (!r->min.ok()) {
+  int optConst = fOptConst;
+#ifdef FINDSIGMA_NO_CONSTOPT      
+  fOptConst = 0;
+#endif
+  Result::Minimization min(r->min);
+  if (!min.ok()) {
     std::cout << "ExtendedMinimizer::findSigma(): no previous "
                              "minimization detected, geneating new minimum "
                           << std::endl;
-    r->min = robustMinimize();
-    if(!r->min.ok()){
+    min = robustMinimize();
+    if(!min.ok()){
       throw std::runtime_error("unable to findSigma without minimum!");
     }
+#ifdef FINDSIGMA_NO_CONSTOPT    
+  } else if (r->min.constOpt != 0){
+    std::cout << "ExtendedMinimizer::findSigma(): previous minimization was using const optimization, generating new minimum "  << std::endl;
+    min = robustMinimize();
+    if(!min.ok()){
+      throw std::runtime_error("unable to findSigma without minimum!");
+    } else if (!RooFitUtils::compare(min.fit,r->min.fit)){
+      throw std::runtime_error("rerunning minimization yielded inconsistent minimum!");      
+    }
+#endif
   }
-
   for (const auto& it:scanSet){
     RooRealVar *v = dynamic_cast<RooRealVar *>(it);
     if (!v) {
@@ -1409,34 +1441,32 @@ void RooFitUtils::ExtendedMinimizer::findSigma(
       throw std::runtime_error("invalid snapshot!");
     }
 
-    double nsigma = fabs(fNsigma);
     Double_t val = v->getVal();
-    Double_t err = fNsigma * v->getError();
+    Double_t err = fFindSigmaN * v->getError();
     if(err < 1e-9) err = 0.1*val;
-    int maxitr = 25;
 
     setVals(vars, snap, false);
-    Double_t shi = findSigma(r, val + err, val, v, nsigma, maxitr);
+    Double_t shi = findSigma(r,min, val + err, val, v, fFindSigmaN);
     setVals(vars, snap, false);
-    Double_t slo = findSigma(r, val - err, val, v, -nsigma, maxitr);
+    Double_t slo = findSigma(r,min, val - err, val, v, -fFindSigmaN);
     setVals(vars, snap, false);
     
     Result::Parameter poi(v->GetName(), val, shi, slo);
-    r->parameters.push_back(poi);
+    r->min.parameters.push_back(poi);
 
     v->setAsymError(std::isnan(slo) ? val+err : slo, std::isnan(shi) ? val-err : shi);
     std::cout << "ExtendedMinimizer::minimize(" << fName << ") "
                           << std::endl;
     delete snap;
   }
+  fOptConst = optConst;
 }
 
 // ____________________________________________________________________________|__________
 
-Double_t RooFitUtils::ExtendedMinimizer::findSigma(
-    RooFitUtils::ExtendedMinimizer::Result *result, const double guessval,
-    const double val_mle, RooRealVar *par, const double nsigma,
-    const int maxiter) {
+double RooFitUtils::ExtendedMinimizer::findSigma(RooFitUtils::ExtendedMinimizer::Result* result,
+                                                   const RooFitUtils::ExtendedMinimizer::Result::Minimization& min,
+                                                   const double guessval, const double val_mle, RooRealVar *par, const double nsigma) {
   // Find the value of sigma evaluated at a specified nsigma, assuming NLL
   // -2logL is roughly parabolic in par.
   // The precision is specified as a fraction of the error, or based on the
@@ -1446,9 +1476,8 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   // by Aaron Armbruster <aaron.james.armbruster@cern.ch> and adopted by Tim
   // Adye <T.J.Adye@rl.ac.uk>.
 
-  if (!result)
-    throw std::runtime_error("cannot scan without previous result!");
-  double precision = fPrecision;
+  double precision = fFindSigmaPrecision;
+  int maxiter = fFindSigmaIter;  
   const double fitTol = fEps;
   bool isConst(par->isConstant());
 
@@ -1468,10 +1497,14 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   }
 
   bool hesse = fHesse;
+  int optConst = fOptConst;
   fHesse = false;
+#ifdef FINDSIGMA_NO_CONSTOPT      
+  fOptConst = 0;
+#endif
   ExtendedMinimizer::Result::Scan values(TString::Format("findSigma_%s_%g",par->GetName(),val_guess).Data(),{par->GetName()});
-  const double nllmin = result->min.nll;
-  values.add({val_mle}, result->min.status, nllmin);
+  const double nllmin = min.nll;
+  values.add({val_mle}, min.status, nllmin);
   int iter = 0;
   while(iter < maxiter){
     iter++;
@@ -1502,7 +1535,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
       else              sigma_guess *=      10.0; // protect against tmu<=0, and also don't move too far
 
       double corr = damping_factor * (val_pre - val_mle - nsigma * sigma_guess);
-      for (auto iguess:guess_to_corr){
+      for (const auto& iguess:guess_to_corr){
         if (fabs(iguess.first - val_pre) < direction * val_pre * 0.02) {
           damping_factor *= 0.8;
           std::cout
@@ -1564,6 +1597,7 @@ Double_t RooFitUtils::ExtendedMinimizer::findSigma(
   }
   bool ok = (!(iter >= maxiter));
   fHesse = hesse;
+  fOptConst = optConst;  
 
   par->setConstant(isConst);
   if (!ok) {

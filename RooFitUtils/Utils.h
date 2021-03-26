@@ -38,6 +38,7 @@ namespace RooFitUtils {
   bool matches(const std::string& text, const std::string& pattern);
   std::string concat(const std::vector<std::string>& text, const std::string& joint = ",");  
   TMatrixDSym convertToCorrelationMatrix(const TMatrixDSym& covmat);
+  bool compare(const RooFitResult* r1, const RooFitResult* r2, double tol_rel=1e-6);
 }
 
 

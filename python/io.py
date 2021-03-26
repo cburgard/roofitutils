@@ -25,11 +25,15 @@ def dict2mat(mat):
 def mat2dict(parameters,mat):
     return {parameters[j].name:{parameters[i].name:mat[i][j] for i in range(0,j+1)} for j in range(0,len(parameters))}
 
+def list2dict(l,key="name"):
+    return { v[key]:v for v in l }
+
+
 def result2dict(result,addcorrmat=True):
     from RooFitUtils.util import isclose
     mini_info = {"type":result.min.config.MinimizerType(),"strategy":result.min.strategy,"status":result.min.status}
     d = {"MLE":{"minimizer":mini_info,"nll":result.min.nll, "parameters":[]}}
-    for p in result.parameters:
+    for p in result.min.parameters:
         par={"name":p.name,"val":p.value}
         if isclose(abs(p.errHi),abs(p.errLo)):
             par["err"]=p.errHi
@@ -37,9 +41,9 @@ def result2dict(result,addcorrmat=True):
             par["eUp"]=p.errHi
             par["eDn"]=p.errLo
         d["MLE"]["parameters"].append(par)
-    if result.fit and addcorrmat:
-        npar = len(result.parameters)
-        d["MLE"]["cov"] = { "parameter_names":[ p.name for p in result.parameters ],"matrix":[ [ result.fit.covarianceMatrix()[i][j] for j in range(0,npar) ] for i in range(0,npar) ] }
+    if result.min.fit and addcorrmat:
+        npar = len(result.min.parameters)
+        d["MLE"]["cov"] = { "parameter_names":[ p.name for p in result.min.parameters ],"matrix":[ [ result.min.fit.covarianceMatrix()[i][j] for j in range(0,npar) ] for i in range(0,npar) ] }
     d["scans"] = []
     for scan in result.scans:
         d["scans"].append({"label":scan.name,"points":[{"nll":scan.nllValues[i],"minimizer":{"status":scan.fitStatus[i]},"parameters":[{"name":scan.parNames[j],"val":scan.parValues[i][j]} for j in range(len(scan.parNames))]} for i in range(len(scan.nllValues))]})

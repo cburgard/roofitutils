@@ -122,6 +122,12 @@ def buildMinimizer(args,model):
         poiset.add(p)
     pdf = model.GetPdf()
 
+    findSigma = args.get("findSigma",False)
+    constOpt = args.get("constOpt",2)
+    if findSigma and constOpt > 0:
+        print("deactivating constant term optimization: incompatible with findSigma")
+        constOpt = 0
+    
     argelems = [ROOT.RooFit.Minimizer(args.get("minimizerType","Minuit2"), args.get("minimizerAlgo","Migrad")),
                 ROOT.RooFit.Strategy(args.get("defaultStrategy",2)),
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.get("eps",1e-3)),
@@ -134,13 +140,12 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.get("numCPU",1), args.get("mpStrategy",3)),
                 ROOT.RooFit.Offset(args.get("offsetting",True)),
-                ROOT.RooFit.Optimize(args.get("constOpt",1)),
+                ROOT.RooFit.Optimize(constOpt),
                 ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
-                ROOT.RooFit.Precision(args.get("precision",1e-3)),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
     if args.get("findSigma",False):
-        argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.Scan(poiset))
+        argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.FindSigma(poiset))
     elif args.get("minos",True):
         argelems.append(ROOT.RooFit.Minos(poiset))        
 
@@ -247,10 +252,10 @@ def fit(args,model,minimizer):
             print("wrote output to "+outFileName)
         if args.get("writeResult",False):
             outpath,outfile = os.path.split(outFileName.replace(".txt",""))
-            result.fit.SaveAs(outfile+"_fitresult.root")
+            result.min.fit.SaveAs(outfile+"_fitresult.root")
         if args.get("printResult",True):
             for poi in makelist(pois):
-                p = result.fit.floatParsFinal().find(poi)
+                p = result.min.fit.floatParsFinal().find(poi)
                 if p:
                     print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
         if not args.get("writeResult",False) and not outFileName:

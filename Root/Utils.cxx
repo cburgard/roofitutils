@@ -12,6 +12,7 @@
 #include "RooWorkspace.h"
 #include "RooStats/ModelConfig.h"
 #include "RooSimultaneous.h"
+#include "RooFitResult.h"
 
 #include "RooFitUtils/Log.h"
 
@@ -561,4 +562,24 @@ TMatrixDSym RooFitUtils::convertToCorrelationMatrix(const TMatrixDSym& _VM){
     (_CM)(i,i) = 1.0 ;
   }
   return _CM;
+}
+
+
+bool RooFitUtils::compare(const RooFitResult* r1, const RooFitResult* r2,double tol_rel) {
+  if(!r1 || !r2) return false;
+  for(auto ai:r1->floatParsFinal()){
+    RooRealVar* pi = dynamic_cast<RooRealVar*>(ai);
+    if(!pi) continue;
+    double re1 = pi->getError()/pi->getVal();
+    for(auto aj:r2->floatParsFinal()){
+      RooRealVar* pj = dynamic_cast<RooRealVar*>(aj);
+      if(!pj) continue;      
+      if(strcmp(pi->GetName(),pj->GetName()) != 0) continue;
+      double re2 = pj->getError()/pj->getVal();
+      double tol = std::min(tol_rel,std::max(re1,re2));
+      if(!TMath::AreEqualRel(pi->getVal(),pj->getVal(),tol)) return false;
+    }
+  }
+  exit(0);
+  return true;
 }

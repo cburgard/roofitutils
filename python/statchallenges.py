@@ -38,18 +38,21 @@ def runfit(filename,workspacename,moreargs={}):
     return d
 
 def test_simplehf_poivals(filename,workspacename,dataname):
-    return runfit(filename,workspacename,{"hesse":False,"dataName":dataname})["min"]["parameters"]
+    from RooFitUtils.io import list2dict
+    return list2dict(runfit(filename,workspacename,{"hesse":False,"dataName":dataname})["MLE"]["parameters"])
 
 def test_hww_poivals(filename,workspacename,dataname):
-    return runfit(filename,workspacename,{"hesse":False,"dataName":dataname,"poi":["mu_ggF","mu_VBF"]})["min"]["parameters"]
+    from RooFitUtils.io import list2dict
+    return list2dict(runfit(filename,workspacename,{"hesse":False,"dataName":dataname,"poi":["mu_ggF","mu_VBF"]})["MLE"]["parameters"])
 
 def test_simplehf_poiscan(filename,workspacename,dataname,scanpars):
-    result = runfit(filename,workspacename,{"scan":scanpars,"hesse":False,"dataName":dataname})["scans"]["mu"]
-    return [ point["nll"] for point in result ]
+    result = runfit(filename,workspacename,{"scan":scanpars,"findSigma":False,"hesse":False,"dataName":dataname})
+    return [ point["nll"] for point in result["scans"][0]["points"] ]
 
 def test_simplehf_covmat(filename,workspacename,dataname):
     from RooFitUtils.io import dict2mat
-    return dict2mat(runfit(filename,workspacename,{"hesse":True,"findSigma":False,"dataName":dataname})["min"]["cov"])
+    result = runfit(filename,workspacename,{"hesse":True,"findSigma":False,"dataName":dataname})
+    return result["MLE"]["cov"]["matrix"]
 
 # this helper function is only for debugging
 if __name__ == "__main__":
