@@ -1156,6 +1156,10 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
+  if(!r->min.ok() || !r->min.fit){
+    return r;
+  }
+  
   if(r->min.ndim > 0 && r->min.ndim != r->min.fit->floatParsFinal().getSize()){
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
