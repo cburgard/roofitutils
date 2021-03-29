@@ -1214,9 +1214,15 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
       } else {
         fMinimizer->minos();
       }
+
+      delete r->min.fit;
+      std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
+      std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
+                               GetName(), fData->GetName());
+      r->min.fit = fMinimizer->save(name.c_str(), title.c_str());
     }
   }
-
+  
 
   if (fFindSigma) {
     std::cout << "ExtendedMinimizer::minimize(" << fName
