@@ -1156,6 +1156,10 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
+  if(!r->min.ok() || !r->min.fit){
+    return r;
+  }
+  
   if(r->min.ndim > 0 && r->min.ndim != r->min.fit->floatParsFinal().getSize()){
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
@@ -1210,9 +1214,15 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
       } else {
         fMinimizer->minos();
       }
+
+      delete r->min.fit;
+      std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
+      std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
+                               GetName(), fData->GetName());
+      r->min.fit = fMinimizer->save(name.c_str(), title.c_str());
     }
   }
-
+  
 
   if (fFindSigma) {
     std::cout << "ExtendedMinimizer::minimize(" << fName
