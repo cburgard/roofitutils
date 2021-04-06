@@ -180,7 +180,7 @@ def parsePoint(line):
 def reconstructCall(args,arglist,blacklist):
     options = {}
     from argparse import _StoreTrueAction,_StoreFalseAction,_StoreAction
-    for arg in args.__dict__:
+    for arg in args.items():
         actions = []
         for action in arglist:
             if arg in blacklist: continue

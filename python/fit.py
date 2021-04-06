@@ -273,7 +273,7 @@ def createScanJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import stringify,makepoint,reconstructCall,generateCoordsDict,mkdir,concat
     from RooFitUtils.util import distributePointsAroundPoint,distributePointsAroundLine
-    options = reconstructCall(args["arglist"],["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
+    options = reconstructCall(args,arglist,["scan","findSigma","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds"])
     import sys
     submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")    
     if args["refineScan"]:
@@ -351,7 +351,7 @@ def createScanJobs(args,arglist):
 def createImpactJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names,concat
-    options = reconstructCall(args["arglist"],["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds","findSigma"])
+    options = reconstructCall(args,arglist,["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds","findSigma"])
     model = buildModel(args)    
     import sys
     submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")    
