@@ -103,13 +103,17 @@ def timestamp(seconds):
 
 def makelist(coll):
     """turn a RooFit collection into a list"""
-    itr = coll.createIterator()
-    var = itr.Next()
-    retval = []
-    while var :
-        retval.append(var)
+    if hasattr(coll,"createIterator"):
+        itr = coll.createIterator()
         var = itr.Next()
-    return retval
+        retval = []
+        while var :
+            retval.append(var)
+            var = itr.Next()
+        return retval
+    else:
+        return coll
+
 
 def union(listoflists):
     """create the union of a list of lists"""

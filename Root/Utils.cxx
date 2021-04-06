@@ -463,12 +463,12 @@ namespace {
 
 
 
-RooWorkspace* RooFitUtils::makeCleanWorkspace(RooWorkspace* oldWS, const char* newName){
+RooWorkspace* RooFitUtils::makeCleanWorkspace(RooWorkspace* oldWS, const char* newName, bool copySnapshots, const char* mcname, const char* newmcname){
   // clone a workspace, copying all needed components and discarding all others
 	
   // butcher the old workspace
   auto objects = oldWS->allGenericObjects();
-  RooStats::ModelConfig* oldMC = dynamic_cast<RooStats::ModelConfig*>(oldWS->obj("ModelConfig"));
+  RooStats::ModelConfig* oldMC = dynamic_cast<RooStats::ModelConfig*>(oldWS->obj(mcname));
   auto data = oldWS->allData();
   for(auto it:objects){
     if(!oldMC){
@@ -503,18 +503,19 @@ RooWorkspace* RooFitUtils::makeCleanWorkspace(RooWorkspace* oldWS, const char* n
   // create them anew
   RooWorkspace* newWS = new RooWorkspace(newName ? newName : oldWS->GetName());
   newWS->autoImportClassCode(true);
-  RooStats::ModelConfig* newMC = new RooStats::ModelConfig("ModelConfig", newWS);
+  RooStats::ModelConfig* newMC = new RooStats::ModelConfig(newmcname, newWS);
 
   // Copy snapshots
   // Fancy ways to avoid public-private hack used in the following, simplified version in comments above the respective lines
-  //  RooFIter itr(oldWS->_snapshots.fwdIterator());
-  RooFIter itr( ((*oldWS).*::RooWorkspaceHackResult<RooWorkspace_snapshots>::ptr).fwdIterator());
-  RooArgSet* snap;
-  while((snap = (RooArgSet*)itr.next())){
-    RooArgSet* snapClone = (RooArgSet*) snap->snapshot() ;
-    snapClone->setName(snap->GetName()) ;
-    //newWS->_snapshots.Add(snapClone) ;
-    ((*newWS).*::RooWorkspaceHackResult<RooWorkspace_snapshots>::ptr).Add(snapClone) ;
+  if(copySnapshots){
+    RooFIter itr( ((*oldWS).*::RooWorkspaceHackResult<RooWorkspace_snapshots>::ptr).fwdIterator());
+    RooArgSet* snap;
+    while((snap = (RooArgSet*)itr.next())){
+      RooArgSet* snapClone = (RooArgSet*) snap->snapshot() ;
+      snapClone->setName(snap->GetName()) ;
+      //newWS->_snapshots.Add(snapClone) ;
+      ((*newWS).*::RooWorkspaceHackResult<RooWorkspace_snapshots>::ptr).Add(snapClone) ;
+    }
   }
   
   newWS->import(*pdf, RooFit::RecycleConflictNodes());
