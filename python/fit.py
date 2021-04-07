@@ -391,7 +391,7 @@ def createImpactJobs(args,arglist):
 def createBreakdownJobs(args,arglist):
     from os.path import join as pjoin
     from RooFitUtils.util import names,reconstructCall,stringify,mkdir,concat
-    options = reconstructCall(args["arglist"],["breakdown","findSigma","writeSubmit","writeSubmitPoints"])
+    options = reconstructCall(args,arglist,["breakdown","findSigma","writeSubmit","writeSubmitPoints"])
     model = buildModel(args)
     import sys
     submitCommand = concat([args["submitCommand"],sys.argv[0]]," ")
