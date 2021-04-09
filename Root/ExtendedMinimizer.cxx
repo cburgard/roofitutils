@@ -279,8 +279,9 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     minuit->mnemat(mini.cov->GetMatrixArray(),ndim);
     mini.hesse = new TMatrixDSym(mini.cov->Invert(&det));
   } else if(minuit2){
-    mini.hesse = new TMatrixDSym(getHessian(minuit2->State(),ndim));
-    mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));        
+    mini.cov = new TMatrixDSym(ndim);
+    fitter->Result().GetCovarianceMatrix(*mini.cov);
+    mini.hesse = new TMatrixDSym(mini.cov->Invert(&det));    
   } else {
     mini.hesse = new TMatrixDSym(ndim);
     minimizer->GetHessianMatrix(mini.hesse->GetMatrixArray());
@@ -1018,10 +1019,14 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         
 #ifdef USE_ROOFITRESULT_NLL
         nllval = fitres ? fitres->minNll() : nan;
+        if(!fMinimize){
+          nllval = fNll->getVal();
+        }
 #else
         this->SetNllDirty();
         nllval = fNll->getVal();
 #endif
+        
         std::cout
           << "ExtendedMinimizer::robustMinimize(" << fName
           << ") fit succeeded with status " << status << ", NLL=" << nllval;
