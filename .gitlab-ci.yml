@@ -43,6 +43,8 @@ variables:
   image: 
     name: atlasamglab/stats-base:latest
     entrypoint: [""]
+  before_script:
+    - bash scripts/getpip.sh    
   
 .analysisbase: &analysisbase
   image: atlas/analysisbase:21.2.120
