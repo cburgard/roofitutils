@@ -29,6 +29,9 @@ for i in range(0,3):
     nodel(x)
     xvals.add(x)
 
+variables = RooArgSet()
+variables.add(xvals)
+
 covmat = TMatrixDSym(3)
 covmat[0][0] = 1.
 covmat[1][1] = 2.
@@ -40,9 +43,9 @@ covmat[2][1] = 0.6
 covmat[2][0] = 0.3
 covmat[0][2] = 0.3
 
-nevents = 1000
+nevents = 1000.
 mvg = RooMultiVarGaussian("mvg","mvg",xvals,muvals,covmat)
-data = mvg.generate(xvals,float(nevents),False)
+data = mvg.generate(variables,nevents,False)
 
 theresult = mvg.fitTo(data,RooFit.Save())
 theresultcov = theresult.covarianceMatrix()
