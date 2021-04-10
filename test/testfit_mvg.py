@@ -42,7 +42,7 @@ covmat[0][2] = 0.3
 
 nevents = 1000
 mvg = RooMultiVarGaussian("mvg","mvg",xvals,muvals,covmat)
-data = mvg.generate(xvals,nevents)
+data = mvg.generate(xvals,float(nevents),False)
 
 theresult = mvg.fitTo(data,RooFit.Save())
 theresultcov = theresult.covarianceMatrix()
