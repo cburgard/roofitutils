@@ -35,7 +35,6 @@ union MyFloat_t {
 };
 }
 
-#include "definitions.h"
 #ifdef HAS_ROOSTARMOMENTMORPH
 #include "RooStarMomentMorph.h"
 #endif

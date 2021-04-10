@@ -18,6 +18,7 @@ variables:
     - set +e && lsetup "root recommended"; set -e    
     - export CXX=$(which g++)
     - export CC=$(which gcc)
+    - bash scripts/getpip.sh
     
 .hcombroot: &hcombroot
   <<: *cvmfs  
@@ -27,6 +28,7 @@ variables:
     - set +e && lsetup "root 6.04.16-HiggsComb-x86_64-slc6-gcc49-opt"; set -e
     - export CXX=$(which g++)
     - export CC=$(which gcc)
+    - bash scripts/getpip.sh
     
 .latestroot: &latestroot
   image:
@@ -35,16 +37,20 @@ variables:
   before_script:
     - apt-get update
     - apt-get install -y python
+    - bash scripts/getpip.sh
     
 .atlstats: &atlstats
   image: 
     name: atlasamglab/stats-base:latest
     entrypoint: [""]
+  before_script:
+    - bash scripts/getpip.sh    
   
 .analysisbase: &analysisbase
   image: atlas/analysisbase:21.2.120
   before_script:
     - source /home/atlas/release_setup.sh
+    - bash scripts/getpip.sh
 
 
 ##################################################################################
@@ -60,7 +66,7 @@ stages:
   artifacts:
     expire_in: 1d
     paths:
-    - build
+      - build
   script:
     - mkdir build
     - cd build
@@ -70,8 +76,15 @@ stages:
 .run: &run
   stage: run
   script:
-    - source build/setup.sh
-    - ./scripts/fit.py --input test/test_workspace.root --workspace Test --data asimovData --hesse --scan mu 10 0 2  --output mytest.txt 
+    - cd build
+    - source setup.sh
+    - ctest --output-on-failure
+  artifacts:
+    expire_in: 1d
+    paths:
+      - "*.pdf"      
+      - "*.tex"
+      - "*.json"
 
 
 ##################################################################################
