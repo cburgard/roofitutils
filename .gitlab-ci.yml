@@ -73,6 +73,11 @@ stages:
     - cd build
     - source setup.sh
     - ctest --output-on-failure
+  artifacts:
+    expire_in: 1d
+    paths:
+    - *.tex
+    - *.json
 
 
 ##################################################################################
