@@ -5,30 +5,43 @@ variables:
 # setups
 ##################################################################################
 
-.atlstats_base: &atlstats_base    
-  image:
-    name: atlasamglab/stats:latest
-    entrypoint: [""]
-
-.latestroot_base: &latestroot_base
+.cvmfs: &cvmfs
   image: atlasadc/atlas-grid-centos7
-  before_script:
-    - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
-    - set +e && lsetup "python default" && lsetup cmake; set -e    
-    - set +e && lsetup "root recommended"; set -e
   tags:
     - cvmfs
+  
+.atlasroot: &atlasroot
+  <<: *cvmfs  
+  before_script:
+    - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
+    - set +e && lsetup "python default" && lsetup cmake; set -e
+    - set +e && lsetup "root recommended"; set -e    
+    - export CXX=$(which g++)
+    - export CC=$(which gcc)
     
-.hcombroot_base: &hcombroot_base
-  image: atlasadc/atlas-grid-centos7
+.hcombroot: &hcombroot
+  <<: *cvmfs  
   before_script:
     - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
-    - set +e && lsetup "python default" && lsetup cmake; set -e        
+    - set +e && lsetup "python default" && lsetup cmake; set -e
     - set +e && lsetup "root 6.04.16-HiggsComb-x86_64-slc6-gcc49-opt"; set -e
-  tags:
-    - cvmfs
-
-.asg_base: &asg_base
+    - export CXX=$(which g++)
+    - export CC=$(which gcc)
+    
+.latestroot: &latestroot
+  image:
+    name: rootproject/root:latest
+    entrypoint: [""]
+  before_script:
+    - apt-get update
+    - apt-get install -y python
+    
+.atlstats: &atlstats
+  image: 
+    name: atlasamglab/stats-base:latest
+    entrypoint: [""]
+  
+.analysisbase: &analysisbase
   image: atlas/analysisbase:21.2.120
   before_script:
     - source /home/atlas/release_setup.sh
@@ -42,16 +55,20 @@ stages:
   - build
   - run
 
-.build_base: &build_base
+.build: &build
   stage: build
   artifacts:
     expire_in: 1d
     paths:
     - build
-
-.run_base: &run_base
+  script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
+    
+.run: &run
   stage: run
-  
   script:
     - source build/setup.sh
     - ./scripts/fit.py --input test/test_workspace.root --workspace Test --data asimovData --hesse --scan mu 10 0 2  --output mytest.txt 
@@ -61,20 +78,19 @@ stages:
 # jobs
 ##################################################################################
 
-latestroot_compile:
-  <<: *latestroot_base
-  <<: *build_base
-  
-  script:
-    - export CXX=$(which g++)
-    - mkdir build
-    - cd build
-    - cmake -DCMAKE_MODULE_PATH=$ROOTSYS/etc/cmake ..
-    - make
+# build
 
-hcombroot_compile:
-  <<: *hcombroot_base
-  <<: *build_base
+latestroot_build:
+  <<: *latestroot
+  <<: *build
+
+atlasroot_build:
+  <<: *atlasroot
+  <<: *build  
+
+hcombroot_build:
+  <<: *hcombroot
+  <<: *build
 
   script:
     - export CXX=$(which g++)
@@ -82,48 +98,43 @@ hcombroot_compile:
     - cd build
     - cmake -DCMAKE_MODULE_PATH=$ROOTSYS/etc/cmake .. 
     - make
-
   
-asg_compile:
-  <<: *asg_base
-  <<: *build_base
+analysisbase_build:
+  <<: *analysisbase
+  <<: *build
 
-  script:
-    - mkdir build
-    - cd build
-    - cmake ..
-    - make
+atlstats_build:
+  <<: *atlstats
+  <<: *build
 
-atlstats_compile:
-  <<: *atlstats_base
-  <<: *build_base
+# run  
 
-  script:
-    - mkdir build
-    - cd build
-    - cmake ..
-    - make
+atlasroot_run:
+  <<: *atlasroot
+  <<: *run
+  dependencies:
+    - atlasroot_build
 
 latestroot_run:
-  <<: *latestroot_base
-  <<: *run_base
+  <<: *latestroot
+  <<: *run
   dependencies:
-    - latestroot_compile
+    - latestroot_build
 
 hcombroot_run:
-  <<: *hcombroot_base
-  <<: *run_base
+  <<: *hcombroot
+  <<: *run
   dependencies:
-    - hcombroot_compile
+    - hcombroot_build
   
-asg_run:
-  <<: *asg_base
-  <<: *run_base
+analysisbase_run:
+  <<: *analysisbase
+  <<: *run
   dependencies:
-    - asg_compile
+    - analysisbase_build
   
 atlstats_run:
-  <<: *atlstats_base
-  <<: *run_base
+  <<: *atlstats
+  <<: *run
   dependencies:
-    - atlstats_compile
+    - atlstats_build
