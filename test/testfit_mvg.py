@@ -19,6 +19,7 @@ def comparematrix(m1,m2,scale1=1,scale2=1,tolerance=1e-3):
                 raise RuntimeError("assertion error: {:g} != {:g}".format(scale1*m1[i][j],scale2*m2[i][j]))
 
 xvals = RooArgList()
+variables = RooArgSet()
 muvals = RooArgList()
 
 for i in range(0,3):
@@ -28,9 +29,7 @@ for i in range(0,3):
     x  = RooRealVar("x_{:d}".format(i),"x_{:d}".format(i),1.)
     nodel(x)
     xvals.add(x)
-
-variables = RooArgSet()
-variables.add(xvals)
+    variables.add(x)
 
 covmat = TMatrixDSym(3)
 covmat[0][0] = 1.
