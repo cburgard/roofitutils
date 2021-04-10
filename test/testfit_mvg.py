@@ -51,9 +51,9 @@ theresultcov = theresult.covarianceMatrix()
 
 comparematrix(theresultcov,covmat,1000)
 
-import ROOT
-mini = ROOT.RooFitUtils.ExtendedMinimizer("mini",mvg,data)
-mini.minimize(ROOT.RooFit.Hesse(True))
+from RooFitUtils import ExtendedMinimizer
+mini = ExtendedMinimizer("mini",mvg,data)
+mini.minimize(RooFit.Hesse(True))
 mini.minimize()
 minimum = mini.getResult()
 
