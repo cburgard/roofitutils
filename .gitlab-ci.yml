@@ -60,7 +60,7 @@ stages:
   artifacts:
     expire_in: 1d
     paths:
-    - build
+      - build
   script:
     - mkdir build
     - cd build
@@ -76,8 +76,9 @@ stages:
   artifacts:
     expire_in: 1d
     paths:
-    - *.tex
-    - *.json
+      - *.pdf      
+      - *.tex
+      - *.json
 
 
 ##################################################################################
