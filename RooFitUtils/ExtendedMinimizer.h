@@ -15,9 +15,9 @@ class TGraph;
 #include <map>
 
 namespace RooFitUtils {
-	class ExtendedModel;
-class ExtendedMinimizer : public TNamed {
-public:
+  class ExtendedModel;
+  class ExtendedMinimizer : public TNamed {
+  public:
   typedef std::pair<TGraph *, TGraph *> GraphPair;
   typedef std::map<double, double> ValueMap;
   class Result {

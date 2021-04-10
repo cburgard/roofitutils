@@ -19,6 +19,7 @@ def comparematrix(m1,m2,scale1=1,scale2=1,tolerance=1e-3):
                 raise RuntimeError("assertion error: {:g} != {:g}".format(scale1*m1[i][j],scale2*m2[i][j]))
 
 xvals = RooArgList()
+variables = RooArgSet()
 muvals = RooArgList()
 
 for i in range(0,3):
@@ -28,6 +29,7 @@ for i in range(0,3):
     x  = RooRealVar("x_{:d}".format(i),"x_{:d}".format(i),1.)
     nodel(x)
     xvals.add(x)
+    variables.add(x)
 
 covmat = TMatrixDSym(3)
 covmat[0][0] = 1.
@@ -40,18 +42,18 @@ covmat[2][1] = 0.6
 covmat[2][0] = 0.3
 covmat[0][2] = 0.3
 
-nevents = 1000
+nevents = 1000.
 mvg = RooMultiVarGaussian("mvg","mvg",xvals,muvals,covmat)
-data = mvg.generate(xvals,nevents)
+data = mvg.generate(variables,nevents,False)
 
 theresult = mvg.fitTo(data,RooFit.Save())
 theresultcov = theresult.covarianceMatrix()
 
 comparematrix(theresultcov,covmat,1000)
 
-import ROOT
-mini = ROOT.RooFitUtils.ExtendedMinimizer("mini",mvg,data)
-mini.minimize(ROOT.RooFit.Hesse(True))
+from RooFitUtils import ExtendedMinimizer
+mini = ExtendedMinimizer("mini",mvg,data)
+mini.minimize(RooFit.Hesse(True))
 mini.minimize()
 minimum = mini.getResult()
 
