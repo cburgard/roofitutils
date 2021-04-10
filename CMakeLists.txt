@@ -1,7 +1,7 @@
 #########################################################################################################
 # Package: RooFitUtils ###################################################################################
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project( RooFitUtils )
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -16,28 +16,6 @@ IF(${HAS_PARENT})
   set(HAS_RooFitUtils 1 PARENT_SCOPE)
 ENDIF()
 
-find_package( AnalysisBase QUIET)
-
-IF(${AnalysisBase_FOUND})
-  # Set up the usage of CTest:
-  IF(NOT ${HAS_PARENT})
-    atlas_ctest_setup() # Set up the project:
-    atlas_project( RooFitUtils 1.0.0
-      USE AnalysisBase ${AnalysisBase_VERSION} )
-
-    # Generate an environment setup script:
-    lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
-    install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh DESTINATION . )
-
-    # Set up the usage of CPack:
-    set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
-    atlas_cpack_setup()
-  ENDIF()
-
-  # register this as a package to ASG
-  atlas_subdir( RooFitUtils )
-ENDIF()
-
 include_directories ("${PROJECT_SOURCE_DIR}")
 find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats Minuit2 Minuit )
 FOREACH(incfile ${ROOT_USE_FILE})
@@ -48,122 +26,26 @@ ENDFOREACH()
 set(RooFitUtilsLinkDef Root/LinkDef.h)
 file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Root/[A-Za-z]*.cxx")
 file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "RooFitUtils/[A-Za-z]*.h")
-if(EXISTS ${TQPATH})
-  # generate the definitions.h
-  execute_process(
-    COMMAND python ${TQPATH}/share/generateLocals.py --verbose  --output ${PROJECT_SOURCE_DIR}/Root/definitions.h --set-working-directory ${PROJECT_SOURCE_DIR} --flag-header HAS_ROOLAGRANGIANMORPHING RooLagrangianMorphing.h
-    )
-else()
-  execute_process(
-    COMMAND touch ${PROJECT_SOURCE_DIR}/Root/definitions.h
-    )
+
+
+if(NOT STANDALONE_BUILD)
+  include(cmake/ASG.cmake)
 endif()
+
+if(NOT ATLAS_BUILD)
+  include(cmake/standalone.cmake)
+endif()
+
+include(cmake/testing.cmake)
 
 set(SETUP ${CMAKE_CURRENT_BINARY_DIR}/setup.sh)
 file(WRITE ${SETUP} "#!/bin/bash\n")
 file(APPEND ${SETUP} "# this is an auto-generated setup script\n" )
 file(APPEND ${SETUP} "ulimit -S -s unlimited\n" )
-
-if(${AnalysisBase_FOUND})
-
-  atlas_platform_id( BINARY_TAG )
-
-  # this section reflects the standard ASG way of configuring CMake
-  # it is executed when compiling within an ASG environment
-  find_package( GTest )
-  set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc62-opt)
-  atlas_add_root_dictionary( RooFitUtils RooFitUtilsCintDict
-    ROOT_HEADERS ${RooFitUtilsHeaders} ${RooFitUtilsLinkDef}
-    EXTERNAL_PACKAGES ROOT )
-  atlas_add_library( RooFitUtils
-    ${RooFitUtilsHeaders} ${RooFitUtilsSources} ${RooFitUtilsCintDict}
-    PUBLIC_HEADERS RooFitUtils
-    PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS}
-    PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES}
-    )
-
-  find_package(PythonInterp REQUIRED)
-  atlas_install_python_modules( python/* )
-
-  file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/python:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
-  file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
-  file(APPEND ${SETUP} "export DYLD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib\n")
-  file(APPEND ${SETUP} "export ROOT_INCLUDE_PATH=\${ROOT_INCLUDE_PATH}:${CMAKE_BINARY_DIR}/${BINARY_TAG}/include\n")
-
-ELSE()
-  # this section is a standalone compilation segment
-  # it is executed when compiling outside an ASG environment
-
-  # register all the files and directories
-  include_directories ("${PROJECT_SOURCE_DIR}" "${ROOT_INCLUDE_DIRS}")
-
-  # generate the dictionary source code
-  ROOT_GENERATE_DICTIONARY(G__RooFitUtils ${RooFitUtilsHeaders} LINKDEF ${RooFitUtilsLinkDef})
-
-  # register the shared object to include both sources and dictionaries
-  add_library( RooFitUtils SHARED ${RooFitUtilsSources} G__RooFitUtils.cxx)
-
-  # link everything together at the end
-  target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} )
-
-  file(GLOB pyfiles "python/*.py")
-  execute_process(
-    COMMAND mkdir ${CMAKE_CURRENT_BINARY_DIR}/RooFitUtils
-    )
-  foreach(pyfile ${pyfiles})
-    execute_process(
-      COMMAND ln -sf ${pyfile} ${CMAKE_CURRENT_BINARY_DIR}/RooFitUtils
-      )
-  endforeach()
-
-  # Add all targets to the build-tree export set
-  export(TARGETS RooFitUtils FILE "${PROJECT_BINARY_DIR}/RooFitUtilsTargets.cmake")
-
-  # Export the package for use from the build-tree
-  # (this registers the build-tree with a global CMake-registry)
-  export(PACKAGE RooFitUtils)
-
-  set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/RooFitUtils" )
-  set(CONF_LIBRARY_DIRS "${PROJECT_BINARY_DIR}")
-  set(CONF_LIBRARIES    RooFitUtils)
-  configure_file(RooFitUtilsConfig.cmake.in
-    "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake" @ONLY)
-
-  # Install the RooFitUtilsConfig.cmake
-  install(FILES
-    "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake"
-    DESTINATION "${PROJECT_SOURCE_DIR}" COMPONENT dev
-  )
-
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libRooFitUtils_rdict.pcm DESTINATION lib)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libRooFitUtils.rootmap DESTINATION lib)
-
-
-  file(GLOB pyfiles "scripts/*")
-  foreach(pyfile ${pyfiles})
-    install(FILES
-      ${pyfile}
-      PERMISSIONS OWNER_EXECUTE
-      DESTINATION bin
-    )
-  endforeach()
-
-  install(FILES
-    "${PROJECT_BINARY_DIR}/RooFitUtilsConfig.cmake"
-    DESTINATION cmake
-  )
-
-  # install the python package
-  install(DIRECTORY
-    "${PROJECT_BINARY_DIR}/RooFitUtils"
-    DESTINATION lib
-  )
-
-  file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
-  file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}\n")
-  file(APPEND ${SETUP} "export PATH=\${PATH}:${CMAKE_CURRENT_SOURCE_DIR}/scripts\n")
-
-ENDIF()
+file(APPEND ${SETUP} "export PYTHONPATH=\${PYTHONPATH}:${EXPORT_PYTHONPATH}\n")
+file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${EXPORT_LD_LIBRARY_PATH}\n")
+file(APPEND ${SETUP} "export DYLD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${EXPORT_LD_LIBRARY_PATH}\n")
+file(APPEND ${SETUP} "export ROOT_INCLUDE_PATH=\${ROOT_INCLUDE_PATH}:${EXPORT_ROOT_INCUDE_PATH}\n")
 
 # general post-compile installation of the package
 # required for other packages to discover this one via CMake
