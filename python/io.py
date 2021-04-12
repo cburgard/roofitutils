@@ -266,7 +266,8 @@ def collectresult_txt(results,filename,label):
     scans = results["scans"]
     if not "MLE" in results.keys():
         results["MLE"] = {}
-    MLEs = results["MLE"]    
+    MLEs = results["MLE"]
+    import re
     parpat = re.compile(r"([a-zA-Z0-9_.-]+)[ ]*=[ ]*([0-9.naife+-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife+-]+)[ ]*")
     parpat_legacy = re.compile(r"[ \t]*([a-zA-Z0-9_.-]+)[ \t=]+([0-9.naife+-]+)[ \t]*\+/-[ \t]*([0-9.naife+-]+).*")
     nllpat = re.compile(r"Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife+-]+)")

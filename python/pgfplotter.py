@@ -297,7 +297,7 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
             outfile.write("    ymax="+str(ymax)+",\n")
         outfile.write("    "+domain+",\n")
         outfile.write("    legend pos=north east,legend style={draw=none},\n")
-        outfile.write("    xlabel=${0:s}$, ylabel=$-2\\ \\ln \\Lambda$,\n".format(par))
+        outfile.write("    xlabel=${0:s}$, ylabel=$-2\\ \\ln \\Lambda$,\n".format(par.strip("$")))
         outfile.write("    every axis x label/.style={at={(axis description cs:1.0,-0.1)},anchor=north east},\n")
         outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
         outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))
@@ -350,7 +350,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                 #    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
                 if i == 0:
                     s = "{:s} = {:f}".format(parname,cv)
-                    outfile.write("\\addlegendentry{{${:s} = {:s}$}}".format(parlabel,formatPDG(cv,up,down)))
+                    outfile.write("\\addlegendentry{{${:s} = {:s}$}}".format(parlabel.strip("$"),formatPDG(cv,up,down)))
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
@@ -370,21 +370,22 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
         outfile.write("\\begin{axis}[clip=false,minor tick num=4,\n")
         if atlas:
             outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")
-            outfile.write("xticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
-            outfile.write("yticklabel={\\pgfmathprintnumber[assume math mode=true]{\\tick}},\n")
+            outfile.write("xticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
+            outfile.write("yticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
         if len(labels) == 2:
             if flipAxes:
-                outfile.write("    ylabel=$"+labels[0]+"$,\n")
-                outfile.write("    xlabel=$"+labels[1]+"$,\n")
+                outfile.write("    ylabel=$"+labels[0].strip("$")+"$,\n")
+                outfile.write("    xlabel=$"+labels[1].strip("$")+"$,\n")
             else:
-                outfile.write("    xlabel=$"+labels[0]+"$,\n")
-                outfile.write("    ylabel=$"+labels[1]+"$,\n")
+                outfile.write("    xlabel=$"+labels[0].strip("$")+"$,\n")
+                outfile.write("    ylabel=$"+labels[1].strip("$")+"$,\n")
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)
 
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
-                writescan2d(points,outfile,percent_thresholds,parsedict(drawopts),npoints,morepoints=[ s[pnamelist][drawopts] for s in otherscans2d ],flipAxes=flipAxes,contourAlg=contourAlg,smooth=smooth)
+                morepoints = [ s[pnamelist][drawopts] for s in otherscans2d if pnamelist in s.keys() ]
+                writescan2d(points,outfile,percent_thresholds,parsedict(drawopts),npoints,morepoints=morepoints,flipAxes=flipAxes,contourAlg=contourAlg,smooth=smooth)
         for drawopts,points in extrapoints.items():
             writepoints2d(args,points,outfile,parsedict(drawopts))
         outfile.write("\\end{axis}\n")

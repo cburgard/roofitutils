@@ -21,7 +21,8 @@ def parseInput(inset):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot a likelihood scan")
-    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with input information",required=True)
+    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="files with input information",required=True)
+    parser.add_argument('--merge-input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="more files with input information",default=[])
     parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
     parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points on 1d curve")
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
@@ -43,10 +44,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     results = {}
+    mergeresults = {}    
 
     for inset in args.input:
         label,files = parseInput(inset)
         collectresults(results,files,label)
+
+    for inset in args.merge_input:
+        label,files = parseInput(inset)
+        collectresults(mergeresults,files,label)
 
     points = {}
     for inset in args.points:
@@ -77,7 +83,7 @@ if __name__ == '__main__':
                 labels = list(scans2d.keys())[0]
             else:
                 labels = args.labels            
-            writescans2d(args.atlas,[texify(l) for l in labels],scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes)
+            writescans2d(args.atlas,[texify(l) for l in labels],scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})])
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")

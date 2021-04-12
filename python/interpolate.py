@@ -133,7 +133,7 @@ def makegrid(points,npoints):
     return {"minXY":minimum,"minZ":nllmin,"xvals":xvals,"yvals":yvals,"xgrid":grid_x,"ygrid":grid_y,"zgrid":grid_z}
 
 
-def mergegrid(grid,othergrid):
+def mergegrid(grid,othergrid,npoints):
     """merge two 2d-grids by taking the envelope of both"""
     from math import isnan
     for i in range(0,npoints):
@@ -148,7 +148,7 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[]):
     grid = makegrid(points,npoints)
     for p in morepoints:
         othergrid = makegrid(p,npoints)
-        mergegrid(grid,othergrid)
+        mergegrid(grid,othergrid,npoints)
     
     if algorithm == "ROOT":
         thefunc = find_contours_root
