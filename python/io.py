@@ -342,7 +342,7 @@ def collectfilenames(files):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        raise RuntimeError("no points found in "+",".join(files))
+        raise RuntimeError("no files found matching "+",".join(files))
     return filenames
 
 def collectimpacts(rankings,files,poiname):
