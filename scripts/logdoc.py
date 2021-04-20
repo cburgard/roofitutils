@@ -43,7 +43,7 @@ def printlist(l,indent=0):
         
 def printsummary(messages):
     print("Summary of messages")
-    for category in messages.keys():
+    for category in sorted(messages.keys()):
         print("  {:s}: {:d}".format(category,len(messages[category])))
 
 def println():
