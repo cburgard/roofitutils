@@ -63,19 +63,25 @@ def printdetails(messages,printcategories):
 def main(args):
     messages = {}
     with open(args.logfile,"rt") as logfile:
+        print("opening "+args.logfile)
         parse(messages,logfile)
 
-    printsummary(messages)
+    # sumamrize messages
+    if args.summary:
+        printsummary(messages)
+        println()
 
-    println()
-    
+    # detailed category printouts
     if printdetails(messages,args.printcategories):
         println()
     
     # diagnose messages
-    from RooFitUtils.logfile_diagnostics import diagnose
-    print("detailed diagnosis")
-    diagnose(messages)
+    if args.diagnose:
+        from RooFitUtils.logfile_diagnostics import diagnose
+        print("detailed diagnosis")
+        diagnose(messages)
+        
+    print("done")
 
 if __name__ == "__main__":
     from signal import signal, SIGPIPE, SIG_DFL
@@ -84,7 +90,11 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(description="the log file doctor")
     parser.add_argument("logfile")
-    parser.add_argument("--print",dest="printcategories",nargs="+",type=str,default=[])
-    parser.add_argument("--debug",dest="debugcategory",type=str,default=None)        
+    parser.add_argument("--summary",action="store_true",dest="summary",default=True,help="print the summary of all messages")
+    parser.add_argument("--no-summary",action="store_false",dest="summary",default=True,help="do not print the summary of all messages")    
+    parser.add_argument("--diagnose",action="store_true",dest="diagnose",default=True,help="attempt a diagnosis of the messages")
+    parser.add_argument("--no-diagnose",action="store_false",dest="diagnose",default=True,help="do not attempt a diagnosis of all messages")    
+    parser.add_argument("--print",dest="printcategories",nargs="+",type=str,default=[],help="names of the categories for which you would like to have more information")
+    parser.add_argument("--debug",dest="debugcategory",type=str,default=None,help="debugging functionality - intended for developer use only")        
     args = parser.parse_args()
     main(args)
