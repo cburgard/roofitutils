@@ -46,7 +46,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("run a fit")
     arglist = []
-    arglist.append(parser.add_argument( "-i" "--input"    , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
+    arglist.append(parser.add_argument( "-i","--input"    , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
     arglist.append(parser.add_argument( "-o","--output"   , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
     arglist.append(parser.add_argument( "--penalty"       , type=str,     dest="penalty"                    , help="Penalty terms", metavar=("Penalty","vars"), default=None,nargs=2,action="append"))
