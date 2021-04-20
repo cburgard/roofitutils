@@ -53,11 +53,14 @@ def printdetails(messages,printcategories):
     # print a summary
     printed = False
     for category in printcategories:
-        print("the following messages were encountered in category "+category+":")
-        for message in messages[category]:
-            printed = True
-            print(category)
-            printelem(message,1)
+        if category in messages.keys():
+            print("the following messages were encountered in category "+category+":")
+            for message in messages[category]:
+                printed = True
+                print(category)
+                printelem(message,1)
+        else:
+            print("no messages were encountered in category "+category)            
     return printed
             
 def main(args):
@@ -72,8 +75,9 @@ def main(args):
         println()
 
     # detailed category printouts
-    if printdetails(messages,args.printcategories):
-        println()
+    printed = printdetails(messages,args.printcategories)
+    
+    println()
     
     # diagnose messages
     if args.diagnose:
@@ -82,6 +86,9 @@ def main(args):
         diagnose(messages)
         
     print("done")
+
+    if args.failwithprint:
+        exit(printed)
 
 if __name__ == "__main__":
     from signal import signal, SIGPIPE, SIG_DFL
@@ -95,6 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("--diagnose",action="store_true",dest="diagnose",default=True,help="attempt a diagnosis of the messages")
     parser.add_argument("--no-diagnose",action="store_false",dest="diagnose",default=True,help="do not attempt a diagnosis of all messages")    
     parser.add_argument("--print",dest="printcategories",nargs="+",type=str,default=[],help="names of the categories for which you would like to have more information")
-    parser.add_argument("--debug",dest="debugcategory",type=str,default=None,help="debugging functionality - intended for developer use only")        
+    parser.add_argument("--debug",dest="debugcategory",type=str,default=None,help="debugging functionality - intended for developer use only")
+    parser.add_argument("--fail-on-print",action="store_true",dest="failwithprint",default=True,help="exit with code 1 if any messages in the selected category were printed")        
     args = parser.parse_args()
     main(args)

@@ -7,9 +7,14 @@ class MetaParser:
     #   if the MetaParser does not have a parent parser, it will flag the line as "unknown" and move on
     
     def __init__(self,parsers):
+        if not parsers:
+            raise RuntimeError("empty MetaParser dictionary passed!")
         self.parsers = parsers
         for k,v in parsers.items():
-            v.label = k
+            try:
+                v.label = k
+            except AttributeError:
+                raise RuntimeError("object passed along as a parser '"+k+"' is not one, intead "+str(type(v)))
         self.debug = False
         self.parent = None
         
@@ -60,7 +65,10 @@ class Parser:
         self.trigger = re.compile(trigger_regex)
         self.subparser = metaparser
         if self.subparser:
-            self.subparser.parent = self
+            try:
+                self.subparser.parent = self
+            except AttributeError:
+                raise RuntimeError("object passed as metaparser with regex "+str(trigger_regex)+" is not one, instead '"+str(type(metaparser))+"'")
         self.debug = False
         self.label = None
 
@@ -87,6 +95,10 @@ class Parser:
             self.subparser.parse(keys,lines)
         return keys
 
+def extend(d,otherd):
+    d.update(otherd)
+    return d
+    
 def make_parser():
     # this is the gory, catch-all function to create the parsing tree for all known lines in a logfile
     # this function will never be complete and needs to be extended continuously until all possible messages in a logfile can be identified
@@ -95,7 +107,7 @@ def make_parser():
     NUM=r'[+-]?\d+[.]?\d*[e]?[+-]?\d*'
     TIME=r"\d+:\d+:\d+"
 
-    minimum = MetaParser({
+    minimum = {
             "NLL":      Parser(r"FVAL\s+= (?P<VAL>"+NUM+")"),
             "Edm":      Parser(r"Edm\s+= (?P<VAL>"+NUM+")"),
             "Nfcn":     Parser(r"Nfcn\s+= (?P<VAL>"+NUM+")"),
@@ -103,10 +115,10 @@ def make_parser():
             "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),            
             "FloatParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\+/-\s+(?P<err>"+NUM+")"),
             "ConstParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)"),            
-        })
+        }
 
     
-    minimization = MetaParser({
+    minimization = {
         "DefaultOptionChange":Parser(r"Minuit2Minimizer::Minuit\s+- Changing default options",MetaParser({
             "StorageLevel":       Parser(r"StorageLevel\s+:\s+(?P<StorageLevel>\d+)"),
         })),
@@ -120,8 +132,8 @@ def make_parser():
         "AfterHessian":       Parser(r".*VariableMetric.*\s*After Hessian"),
         "FlatLH":             Parser(r"Minuit2:0: RuntimeWarning: VariableMetricBuilder No improvement in line search"),
         "runHesse":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
-        "hesseCalls":         Parser(r".*Hesse using max-calls (?P<maxcalls>\d+)"),
-        "hesseInfo":          Parser(r".*::Hesse : Hesse is (?P<hesseStatus>\w+) - matrix is (?P<matrixStatus>\w+)",minimum),
+        "hesseCalls":         Parser(r".*Hesse [Uu]sing max-calls (?P<maxcalls>\d+)"),
+        "hesseInfo":          Parser(r".*::Hesse[ :]*Hesse is (?P<hesseStatus>\w+) - matrix is (?P<matrixStatus>\w+)",MetaParser(minimum)),
         "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser({
             "MinVal":Parser(r"\s+Minimum value\s+: (?P<val>"+NUM+")"),
             "Edm":Parser(r"\s+Edm\s+: (?P<val>"+NUM+")"),
@@ -130,20 +142,39 @@ def make_parser():
             })),
             "InternalGradient":Parser(r"\s*Internal gradient\s*:",MetaParser({
                 "value":Parser(r"\s*(?P<value>"+NUM+")")
-            })),
+        })),
             "InternalCovMat":Parser(r"\s*Internal covariance matrix\s*:",MetaParser({
                 "value":Parser(r"\s*(?P<value>"+NUM+"\s*)+")
             })),
             "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")"),
             "hesseposdef":Parser(r"Info: MnHesse: matrix was forced pos. def.")
-        }))})
-        
+        }))}
+
+    minos_migrad = extend({
+        "parameter":Parser(r"Pos (?P<pos>\d+): (?P<parname>.*) = (?P<val>"+NUM+")"),
+        "result":Parser(r".*MnFunctionCross Result after [2nd ]*Migrad FCN =\s+(?P<FCN>"+NUM+")\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>\d+)",MetaParser({
+            "header":Parser(r"Pos\s+|\s+Name\s+|\s+type\s+|\s+Value\s+|\s+Error\s+[+]/[-]"),
+            "parameter":Parser(r"(?P<Pos>\d+)\s+|\s+(?P<Name>.*)\s+|\s+(?P<type>\w+)\s+|\s+(?P<Value>"+NUM+")\s+|\s+(?P<Error>"+NUM+")")
+        })),
+    },minimization)
+    
+    minos = {
+        "mnminos":Parser(r".*MnMinos Determination of (?P<direction>\w+) Minos error for parameter (?P<parno>\d+)"),
+        "mncross":       Parser(r".*MnFunctionCross: parameter 0 set to (?P<val>"+NUM+")",MetaParser(minimization)),
+        "end":           Parser(r".*MnMinos end of Minos scan for (?P<direction>\w+) interval for parameter (?P<parname>.*)"),
+        "mncross-migrad":Parser(r".*MnFunctionCross[: ]+Run Migrad [again (2nd)]*with fixed parameters:",MetaParser(minos_migrad)),
+        "result":Parser(r"Minos: (?P<direction>\w+) error for parameter (?P<parname>.+)\s+:\s+(?P<val>"+NUM+")"),
+        "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
+        "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),
+        "stars":Parser("[*]+"),        
+    }
+    
     parser = MetaParser({
         "intro":Parser(r"RooFit v(?P<Version>[\d.]+) -- Developed by Wouter Verkerke and David Kirkby",MetaParser({
             "copyright":Parser(r"Copyright \(C\) (?P<Years>[\d-]+) NIKHEF, University of California & Stanford University"),
             "rights":Parser(r"All rights reserved, please read http://roofit.sourceforge.net/license.txt")
         })),
-        "minimum":Parser(r"Minuit2Minimizer : (?P<State>\w+) minimum - status = (?P<Status>\d+)",minimum),
+        "minimum":Parser(r"Minuit2Minimizer : (?P<State>\w+) minimum - status = (?P<Status>\d+)",MetaParser(minimum)),
         "roofitresult":Parser(r"RooFitResult: minimized FCN value: (?P<FCN>"+NUM+"), estimated distance to minimum: (?P<edm>"+NUM+")",MetaParser({
             "covqual":Parser(r"covariance matrix quality: (?P<status>.*)"),
             "status":Parser(r"Status : (?P<tags>.*)"),
@@ -152,13 +183,9 @@ def make_parser():
                 "floatPar":Parser(r"(?P<parname>.*)\s+(?P<val>"+NUM+")\s*[+]/[-]\s*(?P<err>"+NUM+")")
             }))
         })),
-        "minos":      Parser(r".*GetMinosError for parameter (?P<parno>\d+) (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser({
-            "mncross":Parser(r"MnFunctionCross: parameter 0 set to (?P<val>"+NUM+")",minimization),
-            "result":Parser(r"Minos: (?P<direction>\w+) error for parameter (?P<parname>.+)\s+:\s+(?P<val>"+NUM+")"),
-            "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
-            "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),                        
-        })),
-        "minimization":Parser(r"Minuit2Minimizer: Minimize with max-calls (?P<MaxCalls>\d+) convergence for edm < (?P<Edm>"+NUM+") strategy (?P<Strategy>\d)",minimization),
+        "minos":      Parser(r".*GetMinosError for parameter (?P<parno>\d+) (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
+        "minos2":      Parser(r".*GetMinosError - Run MINOS (?P<direction>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
+        "minimization":Parser(r"Minuit2Minimizer: Minimize with max-calls (?P<MaxCalls>\d+) convergence for edm < (?P<Edm>"+NUM+") strategy (?P<Strategy>\d)",MetaParser(minimization)),
         "quickfit-snapshot":Parser(r"REGTEST: Loading snapshot (?P<Snapshot>.*)"),        
         "quickfit-preparing":Parser(r"Preparing parameters of interest\s*:\s*(?P<poiset>.*)",MetaParser({
             "firstpoi":Parser(r"REGTEST: Set first POI to (?P<POI>.*)"),
@@ -166,8 +193,8 @@ def make_parser():
                 "poi":Parser(r".*RooRealVar::\s*(?P<poiname>.*)\s*=\s*(?P<poival>.*)\s*L\((?P<poirange>.*)\)")
             }))
         })),
-        "quickfit-startminos":Parser(r"Evaluating MINOS errors for all POIs...",minimization),        
-        "quickfit-starthesse":Parser(r"Starting fit with HESSE...",minimization),
+        "quickfit-startminos":Parser(r"Evaluating MINOS errors for all POIs...",MetaParser(minimization)),        
+        "quickfit-starthesse":Parser(r"Starting fit with HESSE...",MetaParser(minimization)),
         "quickfit-saveresults":Parser(r"Saving results to (?P<outpath>.*)"),
         "quickfit-done":Parser(r"All fits done in (?P<cputime>"+NUM+") min \(cpu\), (?P<realtime>"+NUM+") min \(real\)",MetaParser({
             "poisummary":Parser(r"Fit Summary of POIs \( STATUS (?P<status>\w+) \)",MetaParser({
@@ -183,9 +210,15 @@ def make_parser():
             }))
         })),
         "robustminimizer-start":Parser(r".*ExtendedMinimizer::robustMinimize\(minimizer\): starting minimization with strategy (?P<Strategy>\d+)"),
+        "robustminimizer-starthesse":Parser(r".*ExtendedMinimizer::runHesse\(minimizer\) running after minimization \(this might take a while\) ...",MetaParser(minimization)),
+        "robustminimizer-startminos":Parser(r".*ExtendedMinimizer::minimize\(minimizer\): Running Minos",MetaParser({
+            "stars":Parser("[*]+"),
+        })),
+        "robustminimizer-endhesse":Parser(r".*ExtendedMinimizer::runHesse\(minimizer\) finished with status (?P<status>\d) \(covqual=(?P<covqual>\d)\)"),
         "robustminimizer-end"  :Parser(r".*ExtendedMinimizer::robustMinimize\(minimizer\) fit succeeded with status (?P<Status>\d+)"),
         "roofitutils-close":Parser(r"Fitting time: (?P<Time>"+NUM+")s",MetaParser({
             "nll":Parser(r"NLL after minimisation: (?P<Time>"+NUM+")"),
+            "poi":Parser(r"(?P<poiname>.*) = (?P<val>"+NUM+") (?P<uperr>"+NUM+") (?P<dnerr>"+NUM+")"),
             "noop":Parser(r"no (?P<obj>\w+) requested")
         }))
     })
