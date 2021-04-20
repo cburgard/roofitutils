@@ -1,5 +1,12 @@
 #!/bin/env python
-    
+
+def isdict(d):
+    return isinstance(d,dict)
+
+def islist(l):
+    return isinstance(l,list)
+
+
 def parse(messages,lines):
     from RooFitUtils.logfile_diagnostics import make_parser
     parser = make_parser()
@@ -15,21 +22,28 @@ def parse(messages,lines):
     
     parser.parse(messages,logfile)
 
+def printelem(v,indent=0):
+    if isdict(v):
+        printdict(v,indent)
+    elif islist(v):
+        printlist(v,indent)
+    else:
+        print(" "*4*indent+str(v))
+    
 def printdict(d,indent=0):
     for k,v in d.items():
-        if isinstance(v,dict):
-            print(" "*4*indent + k)
-            printdict(v,indent+1)            
-        if isinstance(v,list):
-            for e in v:
-                print(" "*4*indent + k)            
-                printdict(e,indent+1)
-        else:
-            print(" "*4*indent + k + " " + v)
-
+        if k == ".item": continue
+        print(" "*4*indent + k)
+        printelem(v,indent+1)
+        
+def printlist(l,indent=0):
+    for e in l:
+        print(" "*4*indent+e[".item"])
+        printelem(e,indent+1)
+        
 def printsummary(messages):
     print("Summary of messages")
-    for category in messages.keys():
+    for category in sorted(messages.keys()):
         print("  {:s}: {:d}".format(category,len(messages[category])))
 
 def println():
@@ -43,7 +57,7 @@ def printdetails(messages,printcategories):
         for message in messages[category]:
             printed = True
             print(category)
-            printdict(message,1)
+            printelem(message,1)
     return printed
             
 def main(args):
@@ -64,6 +78,9 @@ def main(args):
     diagnose(messages)
 
 if __name__ == "__main__":
+    from signal import signal, SIGPIPE, SIG_DFL
+    signal(SIGPIPE,SIG_DFL) 
+    
     from argparse import ArgumentParser
     parser = ArgumentParser(description="the log file doctor")
     parser.add_argument("logfile")

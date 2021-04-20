@@ -76,13 +76,22 @@ void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
     std::stringstream ss;
     ss << "unable to load object '" << fWsName << "', available keys are \n";
     TList *keys = fFile->GetListOfKeys();
+    TKey* thekey = 0;
+    bool onlyOne = true;
     for (int i = 0; i < keys->GetEntries(); ++i) {
       TKey *k = dynamic_cast<TKey *>(keys->At(i));
-      if (!k)
+      if (!k || strcmp(k->GetClassName(),"RooWorkspace")>0)
         continue;
+      if(thekey) onlyOne=false;
+      thekey = k;
       ss << "    '" << k->GetName() << "' (" << k->GetClassName() << ")\n";
     }
-    throw std::runtime_error(ss.str());
+    if(onlyOne){
+      ws = thekey->ReadObj();
+      coutW(InputArguments) << "unable to load object '" << fWsName << "', but found only one RooWorkspace in the file - using '" << ws->GetName() << "' instead!" << std::endl;
+    } else {
+      throw std::runtime_error(ss.str());
+    }
   }
   fWorkspace = dynamic_cast<RooWorkspace *>(ws);
   if (!fWorkspace) {
