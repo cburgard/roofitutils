@@ -40,12 +40,18 @@ class MetaParser:
             if self.is_parsed(parsed):
                 continue
             if not self.parent:
-                line = next(lines).strip()
+                try:
+                    line = next(lines).strip()
+                except StopIteration:
+                    break
                 if not "unknown" in elements.keys():
                     elements["unknown"] = []
                 elements["unknown"].append(line)
             else:
-                line = lines.peek().strip("\n")
+                try:
+                    line = lines.peek().strip("\n")
+                except StopIteration:
+                    break
                 if self.debug:
                     print(self.parent.label + " encountered line: '"+line+"' unknown to any of: " + " ".join(self.parsers.keys()))
                 return False
@@ -79,10 +85,18 @@ class Parser:
         
     def parse(self,lines):
         from RooFitUtils.util import typecast
-        line = lines.peek().strip()
+        try:
+            line = lines.peek().strip()
+        except StopIteration:
+            line = None
         while not line:
-            next(lines)
-            line = lines.peek().strip()            
+            try:
+                next(lines)
+                line = lines.peek().strip()            
+            except StopIteration:
+                break
+        if not line:
+            return False
         match = self.trigger.match(line)
         if not match:
             if self.debug:
@@ -91,7 +105,10 @@ class Parser:
         if self.debug:
             print(self.label + " parsed line '"+line.strip()+"'")
         keys = typecast(match.groupdict())
-        next(lines)
+        try:
+            next(lines)
+        except StopIteration:
+            pass
         if self.subparser:
             self.subparser.parse(keys,lines)
         return keys
@@ -102,7 +119,7 @@ class Severity:
     ERROR = 5
     FATAL = 10
     
-class IssueHandler:
+class IssueHandler(object):
     def __init__(self,key,severity,info):
         self.key = key
         self.severity = severity
@@ -120,12 +137,12 @@ class IssueHandler:
 
 class Handler(IssueHandler):
     def __init__(self,key,message="",severity=Severity.ERROR,info=""):
-        super().__init__(key=key,severity=severity,info=info)
+        super(Handler,self).__init__(key=key,severity=severity,info=info)
         self.message = message
     
     def handle(self,instance):
         try:
-            return self.message.format_map(instance)
+            return self.message.format(**instance)
         except KeyError as e:
             raise RuntimeError("cannot fine key "+str(e)+" in "+str(instance))
     

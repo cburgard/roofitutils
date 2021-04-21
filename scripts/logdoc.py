@@ -40,7 +40,11 @@ def printsummary(messages):
         print("  {:s}: {:d}".format(category,len(messages[category])))
 
 def println():
-    print()
+    import sys
+    if sys.version_info[0] < 3:
+        print
+    else:
+        print()
         
 def printdetails(messages,printcategories):
     # print a summary
