@@ -557,7 +557,7 @@ def restore_c_output(tup):
     sys.stdout = os.fdopen(newstdout, 'w')
     sys.stderr = os.fdopen(newstderr, 'w')        
 
-def extend(d,otherd):
+def extend(d,otherd={}):
     d.update(otherd)
     return d
 
