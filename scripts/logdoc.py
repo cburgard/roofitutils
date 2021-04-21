@@ -10,7 +10,7 @@ def parse(messages,lines):
             if re.match(args.debugcategory,k):
                 v.set_debug(True)
     
-    from more_itertools import peekable
+    from RooFitUtils.more_itertools import peekable
     logfile = peekable(lines)
     
     parser.parse(messages,logfile)
