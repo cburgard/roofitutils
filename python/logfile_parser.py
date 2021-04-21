@@ -53,13 +53,13 @@ def make_parser():
             "hesseposdef":Parser(r"Info: MnHesse: matrix was forced pos. def.")
         }))}
 
-    minos_migrad = {
+    minos_migrad = extend({
         "parameter":Parser(r"Pos (?P<pos>\d+): (?P<parname>.*) = (?P<val>"+NUM+")"),
         "result":Parser(r".*MnFunctionCross Result after [2nd ]*Migrad FCN =\s+(?P<FCN>"+NUM+")\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>\d+)",MetaParser({
             "header":Parser(r"Pos\s+\|\s+Name\s+\|\s+type\s+\|\s+Value\s+\|\s+Error\s+[+]/[-]"),
             "parameter":Parser(r"(?P<Pos>\d+)\s+\|\s+(?P<Name>.*)\s+\|\s+(?P<type>\w+)\s+\|\s+(?P<Value>"+NUM+")\s+\|\s+(?P<Error>"+NUM+")")
         })),
-    }
+    },minimization)
     
     minos = extend({
         "mnminos":Parser(r".*MnMinos Determination of (?P<direction>\w+) Minos error for parameter (?P<parno>\d+)"),
