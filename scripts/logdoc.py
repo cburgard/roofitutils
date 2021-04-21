@@ -16,6 +16,7 @@ def parse(messages,lines):
     parser.parse(messages,logfile)
 
 def printelem(v,indent=0):
+    from RooFitUtils.util import isdict,islist
     if isdict(v):
         printdict(v,indent)
     elif islist(v):
@@ -39,13 +40,6 @@ def printsummary(messages):
     for category in sorted(messages.keys()):
         print("  {:s}: {:d}".format(category,len(messages[category])))
 
-def println():
-    import sys
-    if sys.version_info[0] < 3:
-        print
-    else:
-        print()
-        
 def printdetails(messages,printcategories):
     # print a summary
     printed = False
@@ -61,6 +55,8 @@ def printdetails(messages,printcategories):
     return printed
             
 def main(args):
+    from RooFitUtils.util import println
+    
     messages = {}
     with open(args.logfile,"rt") as logfile:
         print("opening "+args.logfile)

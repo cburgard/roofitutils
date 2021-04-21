@@ -25,6 +25,16 @@ def flattened(l):
         for j in i:
             yield j
 
+def python_version():
+    import sys
+    return sys.version_info[0]
+
+def println():
+    if python_version() <= 2:
+        print
+    else:
+        print()
+
 def isdict(d):
     return isinstance(d,dict)
 
