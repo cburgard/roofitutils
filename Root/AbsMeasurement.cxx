@@ -738,7 +738,7 @@ void RooFitUtils::AbsMeasurement::PrintRanking(
     double uncert(itr->first);
 
     coutI(ObjectHandling) << "AbsMeasurement::PrintRanking(" << fName << ") "
-			  << Form(" (%03f %): %s", 100*uncert, varName.c_str())
+			  << Form(" (%03f %%): %s", 100*uncert, varName.c_str())
                   << std::endl;
   }
   std::cout << std::endl;

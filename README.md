@@ -57,7 +57,9 @@ The results of individual fits (parameter pulls) can be with this script can be 
 
     scripts/plotpulls.py
 
-There resulting files are `.tex` files that encode the graphics using `TikZ` and can be rendered with `pdflatex`.
+There resulting files are `.tex` files that encode the graphics using `TikZ` and can be rendered with `pdflatex` or `xelatex`.
+
+You can investigate log files with `scripts/logdoc.py`.
 
     
 ## Advanced Usage

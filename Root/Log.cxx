@@ -9,7 +9,7 @@ inline std::string GetTime() {
   char buffer[100];
   tm r;
   strftime(buffer, sizeof(buffer), "%X", localtime_r(&tv.tv_sec, &r));
-  char result[100];
+  char result[121];
   sprintf(result, "%s.%06ld", buffer, (long)tv.tv_usec);
   return result;
 }

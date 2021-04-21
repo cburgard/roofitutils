@@ -5,4 +5,4 @@ try:
     ExtendedModel = ROOT.RooFitUtils.ExtendedModel
     ExtendedMinimizer = ROOT.RooFitUtils.ExtendedMinimizer
 except ImportError as err:
-    raise ImportError("unable to import RooFitUtils: failed to import "+str(type(err)))
+    pass
