@@ -294,8 +294,13 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,minval=-1,maxval=1,rotatelabels=45,axlabel="$\\rho(X,Y)$",flip=True,showall=True)
 
-def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[]):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[],otherscans1d=[]):
     from RooFitUtils.util import make1dscan
+
+    for otherscan in otherscans1d:
+        from RooFitUtils.util import mergescans1d
+        if len(otherscan) > 0: allscans = mergescans1d(allscans,otherscan)
+
     """write a bunch of 1d scans to a pgfplots tex file"""
     with open(outfilename,"w") as outfile:
         writehead(outfile)

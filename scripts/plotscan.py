@@ -77,7 +77,7 @@ if __name__ == '__main__':
                 labels = list(scans1d.keys())[0]
             else:
                 labels = args.labels
-            writescans1d(args.atlas,texify(labels[0]),scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax)
+            writescans1d(args.atlas,texify(labels[0]),scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})])
         elif len(scans2d) > 0:
             if not args.labels:
                 labels = list(scans2d.keys())[0]
@@ -87,4 +87,5 @@ if __name__ == '__main__':
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")
+
 
