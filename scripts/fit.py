@@ -46,8 +46,8 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser("run a fit")
     arglist = []
-    arglist.append(parser.add_argument( "--input"         , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
-    arglist.append(parser.add_argument( "--output"        , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
+    arglist.append(parser.add_argument( "-i","--input"    , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
+    arglist.append(parser.add_argument( "-o","--output"   , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
     arglist.append(parser.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
     arglist.append(parser.add_argument( "--penalty"       , type=str,     dest="penalty"                    , help="Penalty terms", metavar=("Penalty","vars"), default=None,nargs=2,action="append"))
     arglist.append(parser.add_argument( "--penaltyfile"   , type=str,     dest="penaltyfile"                , help="Penalty terms", metavar=("Penalty"), default=None))
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     arglist.append(parser.add_argument( "--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combWS" ))
     arglist.append(parser.add_argument( "--write-workspace", type=str,    dest="outWsName"                  , help="Filename of the output workspace." , default=None ))
     arglist.append(parser.add_argument( "--modelconfig"   , type=str,     dest="modelConfigName"            , help="MC to load.", default="ModelConfig" ))
-    arglist.append(parser.add_argument( "--data"          , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
+    arglist.append(parser.add_argument( "-d", "--data"    , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
     arglist.append(parser.add_argument( "--minimizerType" , type=str,     dest="minimizerType"              , help="Minimizer type.", default="Minuit2" ))
     arglist.append(parser.add_argument( "--minimizerAlgo" , type=str,     dest="minimizerAlgo"              , help="Minimizer algorithm.", default="Migrad" ))
     arglist.append(parser.add_argument( "--printLevel" , type=int,     dest="printLevel"              , help="print level of minimizer", default=1))
