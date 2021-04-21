@@ -377,6 +377,44 @@ def getPercent(nsigma):
 def make1dscan(scan):
     return {k[0]:v for k,v in scan.items()}
 
+def mergescan1d(scanvals1, scanvals2):
+    import numpy as np
+
+    # prepare input scan points for 1d interpolation
+    # sort the scan points in x 
+    x1,x2 = sorted(scanvals1.keys()), sorted(scanvals2.keys()) 
+    y1 = [ scanvals1[val] for val in x1]  
+    y2 = [ scanvals2[val] for val in x2]  
+    # don't extrapolate,
+    xmin = max(min(x1),min(x2))
+    xmax = min(max(x1),max(x2))
+    # grid granularity is finer than the inputs
+    nx = 10*len(x1+x2)
+
+    x_inter = np.linspace(xmin,xmax,nx)
+    mergevals = {}
+    
+    y1_inter = np.interp(x_inter,x1,y1)
+    y2_inter = np.interp(x_inter,x2,y2)
+
+    # find minima of the two curves in the 1d-grid
+    for i in range(len(x_inter)):
+        mergevals[(x_inter[i],)] = float(min(y1_inter[i],y2_inter[i]))
+
+    return mergevals
+
+def mergescans1d(scan1,scan2):
+
+    allvals1 = [ make1dscan(scan) for pnamelist,curves in scan1.items() for options,scan in curves.items()]
+    allvals2 = [ make1dscan(scan) for pnamelist,curves in scan2.items() for options,scan in curves.items()]
+    mergevals = mergescan1d(allvals1[0], allvals2[0])
+    mergescans = {}
+    for param in scan1:
+      mergescans[param] = {}
+      for option in scan1[param]:
+        mergescans[param][option] = mergevals
+    return mergescans
+  
 def createAsimov(ws,mc,asmName):
     import ROOT
     allParams = ROOT.RooArgSet()
