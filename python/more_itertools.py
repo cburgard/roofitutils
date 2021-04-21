@@ -129,6 +129,9 @@ class peekable:
 
         return next(self._it)
 
+    def next(self):
+        return self.__next__()
+
     def _get_slice(self, index):
         # Normalize the slice's arguments
         step = 1 if (index.step is None) else index.step
