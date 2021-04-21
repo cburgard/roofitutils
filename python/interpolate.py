@@ -47,67 +47,6 @@ def minfromscans(xvals,yvals,zvals):
     return minimum,nllmin
 
 
-def findmergecontours(points1,points2,values,smooth,npoints):
-    """find the contours in a 2d graph"""
-    from numpy import array
-    from math import isnan
-    keys1 = sorted(points1.keys())
-    keys2 = sorted(points2.keys())
-
-    xvals1 = [ p[0] for p in keys1 ]
-    yvals1 = [ p[1] for p in keys1 ]
-    zvals1 = [ points1[p] for p in keys1 ]
-
-    xvals2 = [ p[0] for p in keys2 ]
-    yvals2 = [ p[1] for p in keys2 ]
-    zvals2 = [ points2[p] for p in keys2 ]
-
-    from scipy.interpolate import griddata
-    from numpy import mgrid
-    grid1_x, grid1_y = mgrid[min(min(xvals1),min(xvals2)):max(max(xvals2),max(xvals1)):complex(npoints), min(min(yvals1),min(yvals2)):max(max(yvals2),max(yvals1)):complex(npoints)]
-    grid2_x, grid2_y = mgrid[min(min(xvals1),min(xvals2)):max(max(xvals2),max(xvals1)):complex(npoints), min(min(yvals1),min(yvals2)):max(max(yvals2),max(yvals1)):complex(npoints)]
-
-    grid1_z = griddata(array(keys1),array(zvals1),(grid1_x, grid1_y), method='cubic')
-    grid2_z = griddata(array(keys2),array(zvals2),(grid2_x, grid2_y), method='cubic')
-
-    minimum1,nllmin1 = minfromscans(xvals1,yvals1,zvals1)
-    minimum2,nllmin2 = minfromscans(xvals2,yvals2,zvals2)
-
-    if nllmin1 < nllmin2 : nllmin, minimum = nllmin1, minimum1
-    else                 : nllmin, minimum = nllmin2, minimum2
-
-#perform the evelope on the grid
-    for i in range(0,npoints):
-        for j in range(0,npoints):
-            if grid1_x[i][j] == grid2_x[i][j] and grid1_y[i][j] == grid2_y[i][j]:
-                if grid2_z[i][j] != nan and grid2_z[i][j] != nan:
-                    grid1_z[i][j] = min(grid2_z[i][j],grid1_z[i][j])
-
-    from skimage import measure
-    allcontours = []
-    allimgcontours = []
-    for v in values:
-        imgcontours = measure.find_contours(grid1_z,v + nllmin)
-        allimgcontours.append(imgcontours)
-        contours = []
-        for c in imgcontours:
-            realc = []
-            for i,j in c:
-                if isnan(i) or isnan(j): continue
-                realc.append(((i+0.5)/npoints * (max(max(xvals1),max(xvals2))-min(min(xvals1),min(xvals2))) + min(min(xvals1),min(xvals2)),(j+0.5)/npoints * (max(max(yvals1),max(yvals2))-min(min(yvals1),min(yvals2))) + min(min(yvals1),min(yvals2))))
-            if len(realc) > 0:
-                if smooth:
-                    contours.append(smoothgraph(realc))
-                else:
-                    contours.append(realc)
-
-        allcontours.append(contours)
-
-    # Display the image and plot all contours found
-#    disp2dcontour(allimgcontours)
-
-    return allcontours,minimum
-
 def griddata_gp(xyvals,zvals,grids, options={}):
     from sklearn.gaussian_process import GaussianProcessRegressor
     gp = GaussianProcessRegressor()
@@ -177,10 +116,9 @@ def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
         allcontours.append(contours)
     return allcontours
 
-def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
-    """find the contours in a 2d graph"""
+def makegrid(points,npoints):
+    """turn a collection of scan points into a dense grid"""
     from numpy import array
-    from math import isnan
     keys = sorted(points.keys())
     xvals = [ p[0] for p in keys ]
     yvals = [ p[1] for p in keys ]
@@ -190,17 +128,37 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT"):
     from numpy import mgrid
     grid_x, grid_y = mgrid[min(xvals):max(xvals):complex(npoints), min(yvals):max(yvals):complex(npoints)]
     grid_z = griddata(array(keys),array(zvals),(grid_x, grid_y), method='linear')
-#    grid_z = griddata_gp(array(keys),array(zvals),(grid_x, grid_y))
-
     minimum,nllmin = minfromscans(xvals,yvals,zvals)
+
+    return {"minXY":minimum,"minZ":nllmin,"xvals":xvals,"yvals":yvals,"xgrid":grid_x,"ygrid":grid_y,"zgrid":grid_z}
+
+
+def mergegrid(grid,othergrid,npoints):
+    """merge two 2d-grids by taking the envelope of both"""
+    from math import isnan
+    for i in range(0,npoints):
+        for j in range(0,npoints):
+            if grid["xgrid"][i][j] == othergrid["xgrid"][i][j] and grid["ygrid"][i][j] == othergrid["ygrid"][i][j]:
+                if not isnan(grid["zgrid"][i][j]) and not isnan(othergrid["zgrid"][i][j]):
+                    grid["zgrid"][i][j] = min(grid["zgrid"][i][j],othergrid["zgrid"][i][j])
+
+
+def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[]):
+    """find the contours in a 2d graph"""
+    grid = makegrid(points,npoints)
+    for p in morepoints:
+        othergrid = makegrid(p,npoints)
+        mergegrid(grid,othergrid,npoints)
+    
     if algorithm == "ROOT":
-        allcontours = find_contours_root(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
+        thefunc = find_contours_root
     elif algorithm == "skimage":
-        allcontours = find_contours_skimage(xvals,yvals,grid_z,[ nllmin + v for v in values ],smooth,npoints)
+        thefunc = find_contours_skimage
     else:
         print("unknown contour finding algorithm '"+algorithm+"'")
 
-    return allcontours,minimum
+    allcontours = thefunc(grid["xvals"],grid["yvals"],grid["zgrid"],[ grid["minZ"] + v for v in values ],smooth,npoints)
+    return allcontours,grid["minXY"]
 
 def findintervals(points,nllval):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""

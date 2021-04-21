@@ -193,6 +193,13 @@ def parsePoint(line):
     """parse a point into a dictionary"""
     return { n.strip():float(v) for (n,v) in [x.split("=") for x in line.split(",") ]}
 
+def allkeys(d):
+    elems = list(d.keys())
+    for v in d.values():
+        if type(v) == dict:
+            elems += allkeys(v)
+    return sorted(list(set(elems)))
+
 def reconstructCall(args,arglist,blacklist):
     options = {}
     from argparse import _StoreTrueAction,_StoreFalseAction,_StoreAction
