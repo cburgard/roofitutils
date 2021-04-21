@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from RooFitUtils.pgfplotter import writescans1d,writemergescans2d,writescans2d
-from RooFitUtils.io import collectresults,collectpoints
+from RooFitUtils.pgfplotter import writescans1d,writescans2d
+from RooFitUtils.io import collectresults,collectpoints,texify
 from RooFitUtils.util import getPercent
 
 def getPercentages(args,ndim):
@@ -21,12 +21,12 @@ def parseInput(inset):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot a likelihood scan")
-    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with input information",required=True)
-    parser.add_argument('--mergeinput',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with input information")
+    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="files with input information",required=True)
+    parser.add_argument('--merge-input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="more files with input information",default=[])
     parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
     parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points on 1d curve")
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
-    parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=["\\mu"])
+    parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=None)
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
     parser.add_argument("-o","--output",type=str,help="output file name",default="scan.tex",required=True)
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
@@ -43,28 +43,26 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    scans = {}
     results = {}
+    mergeresults = {}    
 
-    scans_merge = {}
-    results_merge = {}
-
-    mergeinp = ""
     for inset in args.input:
         label,files = parseInput(inset)
-        collectresults(scans,results,files,label)
+        collectresults(results,files,label)
 
-    if args.mergeinput != None:
-        for inset in args.mergeinput:
-            label,files = parseInput(inset)
-            collectresults(scans_merge,results_merge,files_merge,label_merge)
+    for inset in args.merge_input:
+        label,files = parseInput(inset)
+        collectresults(mergeresults,files,label)
 
     points = {}
     for inset in args.points:
         label,files = parseInput(inset)
         collectpoints(points,files,label)
 
-    if len(scans) == 0 and len(results) == 0:
+    scans = results["scans"]
+    fits = results["MLE"]
+    
+    if len(scans) == 0 and len(fits) == 0:
         print("no files found matching any of the given input paths")
         exit(1)
 
@@ -72,15 +70,20 @@ if __name__ == '__main__':
 
     scans1d       = {k: v for k, v in scans.items() if len(k) == 1 and (len(pois)==0 or k in pois)}
     scans2d       = {k: v for k, v in scans.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
-    scans2d_merge = {k: v for k, v in scans_merge.items() if len(k) == 2 and (len(pois)==0 or k in pois)}
 
     with open(args.output,"w") as outfile:
         if len(scans1d) > 0:
-            writescans1d(args.atlas,args.labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax)
+            if not args.labels:
+                labels = list(scans1d.keys())[0]
+            else:
+                labels = args.labels
+            writescans1d(args.atlas,texify(labels[0]),scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax)
         elif len(scans2d) > 0:
-            writescans2d(args,scans2d,points,args.npoints,getPercentages(args,2))
-        elif len(scans2d_merge) > 0 and mergeinp != "" :
-            writemergescans2d(args,scans2d,scans2d_merge,points,args.npoints,getPercentages(args,2))
+            if not args.labels:
+                labels = list(scans2d.keys())[0]
+            else:
+                labels = args.labels            
+            writescans2d(args.atlas,[texify(l) for l in labels],scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})])
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")

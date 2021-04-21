@@ -28,8 +28,10 @@ def mat2dict(parameters,mat):
 def list2dict(l,key="name"):
     return { v[key]:v for v in l }
 
-
 def result2dict(result,addcorrmat=True):
+    return result
+
+def result2dict_extendedResult(result,addcorrmat=True):
     from RooFitUtils.util import isclose
     mini_info = {"type":result.min.config.MinimizerType(),"strategy":result.min.strategy,"status":result.min.status}
     d = {"MLE":{"minimizer":mini_info,"nll":result.min.nll, "parameters":[]}}
@@ -50,7 +52,10 @@ def result2dict(result,addcorrmat=True):
     return d
         
 def writeResultJSON(out,result,writecorrmat):
-    js = result2dict(result,writecorrmat)
+    if type(result) is dict:
+        js = result2dict(result,writecorrmat)
+    else:
+        js = result2dict_extendedResult(result,writecorrmat)
     from datetime import datetime
     now = datetime.now() # current date and time
     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -88,6 +93,7 @@ def writeResultTxt(out,result,writecorrmat):
             out.write(" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]) + " "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i]) + " " + " ".join([ str(scan.extraParValues[i][j]) for j in range(0,len(scan.extraParNames)) ]) + "\n")
 
 def collectpoints(points,files,label):
+    print("collecting")
     import glob
     filenames = []
     for expression in files:
@@ -148,39 +154,6 @@ def getCorrelation(infilename,frname=None,parameters=None):
     from math import sqrt
     return array([ [ mat(i,j) / sqrt(mat(i,i) * mat(j,j)) for i in range(0,mat.GetNcols()) ] for j in range(0,mat.GetNrows()) ])
 
-def collectcorrelations(results,filename,parfilter):
-    import re
-    ncorrpat = re.compile(r"Correlations[ ](\w+)")
-    import glob
-    ncorr = 0
-    parnames = []
-    if os.path.isfile(filename):
-        with open(filename,"r") as infile:
-             lines = [line for line in infile ]
-             for lineno in range(0,len(lines)):
-                line = lines[lineno]
-                ncorrmatch = ncorrpat.match(line)
-                if ncorrmatch:
-                    ncorr = int(ncorrmatch.group(1))
-                    lineno = lineno + 1
-                    parline = lines[lineno]
-                    allpars = parline.split(" ")
-                    allpars = allpars[0:len(allpars)-1]
-                    if len(parfilter) != 0:
-                        redpars = reduceparams(allpars,parfilter)
-                        parnames.append(redpars)
-                    else:
-                        for x in allpars: parnames.append(texify(x))
-                    pattern = "".join([r"([-]*\d+.\d+)[ ]"]*ncorr)
-                    rowpat = re.compile(r"([a-zA-Z0-9_.]+)[ ]([a-zA-Z0-9_.]+)[ ]([-]*\d+.\d+)")
-                    for lineno in range(lineno,len(lines)):
-                        rowmatch = rowpat.match(lines[lineno])
-                        if rowmatch:
-                            par1 = (rowmatch.group(1),rowmatch.group(2))
-                            if (len(parfilter) != 0 and par1[0].startswith(parfilter) and par1[1].startswith(parfilter)) or len(parfilter) == 0:
-                                results.append( texify((par1[0])) +" "+ texify((par1[1]))+" "+rowmatch.group(3))
-    return parnames[0]
-
 def readtables(infilenames):
     from RooFitUtils.util import isstr,striplatex
     if isstr(infilenames):
@@ -225,98 +198,142 @@ def readsummary(infilename,form={"cv":("Central","Tot lo","Tot hi"),"stat":("Cen
                 results[k][parname] = tuple([float(parts[translations[key]]) for key in form[k]])
     return results
 
-def collectresult(scans,results,filename,label):
+def collectresult_json(results,filename,label):
+    if not "scans" in results.keys():
+        results["scans"] = {}
+    scans = results["scans"]
+    if not "MLE" in results.keys():
+        results["MLE"] = {}
+    MLEs = results["MLE"]    
+    with open(filename,"rt") as infile:
+        import json
+        js = json.load(infile)
+        for scan in js["scans"]:
+            key = tuple(scan["label"].split(","))
+            scans[key] = {label:{}}
+            for point in scan["points"]:
+                pvals = tuple([ p["val"] for p in point["parameters"]])
+                nll = point["nll"]
+                scans[key][label][pvals] = nll
+        for par in js["MLE"]["parameters"]:
+            pname = par["name"]
+            if not pname in results.keys():
+                MLEs[pname] = {}
+            MLEs[pname][label] = par
+
+def collectresult_root(results,filename,label):
+    if not "scans" in results.keys():
+        results["scans"] = {}
+    scans = results["scans"]
+    if not "limits" in results.keys():
+        results["limits"] = {}
+    limits = results["limits"]        
+    import ROOT
+    infile = ROOT.TFile.Open(filename,"READ")
+    for key in infile.GetListOfKeys():
+        obj = key.ReadObj()
+        if obj.InheritsFrom(ROOT.TGraph.Class()):
+            key = (obj.GetXaxis().GetTitle(),)
+            # try to guess if the graph is 2*NLL or just NLL
+            scale = 2
+            if "2" in obj.GetYaxis().GetTitle():
+                scale = 1
+            if key not in scans.keys():
+                scans[key] = {}
+            if label not in scans[key].keys():
+                scans[key][label] = {}                        
+            for i in range(0,obj.GetN()):
+                scans[key][label][(obj.GetX()[i],)] = obj.GetY()[i]*scale
+        if obj.InheritsFrom(ROOT.TTree.Class()):
+            from os.path import basename
+            from RooFitUtils.util import allkeys
+            rdf = ROOT.RDataFrame(obj)
+            nparr = rdf.AsNumpy()
+            key = basename(filename)
+            limit = { k:float(arr[0]) for k,arr in nparr.items() if "upperlimit" in k }
+            limit["info"] = {"status":float(nparr["fit_status"])}
+            limit["obs"] = { k:float(arr[0]) for k,arr in nparr.items() if "_obs" in k and not "param_" in k and not "hat" in k}
+            limit["med"] = { k:float(arr[0]) for k,arr in nparr.items() if "_med" in k and not "param_" in k and not "hat" in k}
+            limit["parameters_med"] = { k:float(arr[0]) for k,arr in nparr.items() if "_med" in k and "param_" in k}
+            limit["parameters_hat"] = { k:float(arr[0]) for k,arr in nparr.items() if "_hat" in k and "param_" in k}            
+            limit["parameters_const"] = { k:float(arr[0]) for k,arr in nparr.items() if not k in allkeys(limit) }
+            limits[key] = {label:limit}
+
+
+def collectresult_txt(results,filename,label):
+    if not "scans" in results.keys():
+        results["scans"] = {}
+    scans = results["scans"]
+    if not "MLE" in results.keys():
+        results["MLE"] = {}
+    MLEs = results["MLE"]
     import re
     parpat = re.compile(r"([a-zA-Z0-9_.-]+)[ ]*=[ ]*([0-9.naife+-]+)[ ]*-[ ]*([0-9.naife-]+)[ ]*\+[ ]*([0-9.naife+-]+)[ ]*")
     parpat_legacy = re.compile(r"[ \t]*([a-zA-Z0-9_.-]+)[ \t=]+([0-9.naife+-]+)[ \t]*\+/-[ \t]*([0-9.naife+-]+).*")
     nllpat = re.compile(r"Minimization:[ ]*minNll[ ]*=[ ]*([0-9.naife+-]+)")
-    if os.path.isfile(filename):
-        if filename.endswith(".json"):
-            with open(filename,"rt") as infile:
-                import json
-                js = json.load(infile)
-                for scan in js["scans"]:
-                    key = tuple(scan["label"].split(","))
-                    scans[key] = {label:{}}
-                    for point in scan["points"]:
-                        pvals = tuple([ p["val"] for p in point["parameters"]])
-                        nll = point["nll"]
-                        scans[key][label][pvals] = nll
-                for par in js["MLE"]["parameters"]:
-                    pname = par["name"]
-                    if not pname in results.keys():
-                        results[pname] = {}
-                    results[pname][label] = par                    
-        elif filename.endswith(".root"):
-            import ROOT
-            infile = ROOT.TFile.Open(filename,"READ")
-            for key in infile.GetListOfKeys():
-                obj = key.ReadObj()
-                if obj.InheritsFrom(ROOT.TGraph.Class()):
-                    key = (obj.GetXaxis().GetTitle(),)
-                    # try to guess if the graph is 2*NLL or just NLL
-                    scale = 2
-                    if "2" in obj.GetYaxis().GetTitle():
-                        scale = 1
+    with open(filename,'r') as infile:
+        lines = [ line for line in infile ]
+        for lineno in range(0,len(lines)):
+            line = lines[lineno]
+            if ".py" in line:
+                print("skipping file "+filename+", probably a job definition file")
+                break
+            try:
+                parts = line.split()
+                nllmatch = nllpat.match(line)
+                match = parpat.match(line)
+                match_legacy = parpat_legacy.match(line)
+                if nllmatch:
+                    minnll = float(nllmatch.group(1))
+                elif match or "BkgTheory" in line: # todo: cleanup!
+                    pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
+                    result = (float(cv),-float(ed),float(eu))
+                    if not pname in MLEs.keys():
+                        MLEs[pname] = {}
+                    MLEs[pname][label] = result
+                elif match_legacy:
+                    pname,cv,e = match_legacy.group(1).strip(),match_legacy.group(2),match_legacy.group(3)
+                    result = (float(cv),-float(e),float(e))
+                    if not pname in MLEs.keys():
+                        MLEs[pname] = {}
+                    MLEs[pname][label] = result                            
+                elif "nll" in parts:
+                    npars = parts.index("nll")
+                    scanps = parts[0:npars]
+                    key = tuple(scanps)
                     if key not in scans.keys():
                         scans[key] = {}
                     if label not in scans[key].keys():
-                        scans[key][label] = {}                        
-                    for i in range(0,obj.GetN()):
-                        scans[key][label][(obj.GetX()[i],)] = obj.GetY()[i]*scale
+                        scans[key][label] = {}
+                else:
+                    pvals   = tuple([float(parts[i]) for i in range(0,npars)])
+                    nllval = float(parts[npars])
+                    if int(parts[npars+1]) == 0: # check if fit ended with status 0
+                        scans[key][label][pvals] = nllval
+            except UnboundLocalError as err:
+                print("unable to parse line '"+line.strip()+"' in file '"+filename+"', trying to read as nll scan, but no parameter list found. ")
+            except (KeyError,ValueError) as err:
+                if nllmatch:
+                    print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value. "+str(err))
+                elif match:
+                    print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as parameter value. "+str(+err))
+                else:
+                    print("unable to parse line '"+line.strip()+"' in file '"+filename+"', "+str(err))
+                continue
+    for p in scans.keys():
+        if p in MLEs.keys():
+            scans[p][label][MLEs[p][label][0]]=minnll;
+    
+                
+def collectresult(results,filename,label):
+    import re
+    if os.path.isfile(filename):
+        if filename.endswith(".json"):
+            collectresult_json(results,filename,label)
+        elif filename.endswith(".root"):
+            collectresult_root(results,filename,label)
         else:
-            with open(filename,'r') as infile:
-                lines = [ line for line in infile ]
-                for lineno in range(0,len(lines)):
-                    line = lines[lineno]
-                    if ".py" in line:
-                        print("skipping file "+filename+", probably a job definition file")
-                        break
-                    try:
-                        parts = line.split()
-                        nllmatch = nllpat.match(line)
-                        match = parpat.match(line)
-                        match_legacy = parpat_legacy.match(line)
-                        if nllmatch:
-                            minnll = float(nllmatch.group(1))
-                        elif match or "BkgTheory" in line: # todo: cleanup!
-                            pname,cv,ed,eu = match.group(1).strip(),match.group(2),match.group(3),match.group(4)
-                            result = (float(cv),-float(ed),float(eu))
-                            if not pname in results.keys():
-                                results[pname] = {}
-                            results[pname][label] = result
-                        elif match_legacy:
-                            pname,cv,e = match_legacy.group(1).strip(),match_legacy.group(2),match_legacy.group(3)
-                            result = (float(cv),-float(e),float(e))
-                            if not pname in results.keys():
-                                results[pname] = {}
-                            results[pname][label] = result                            
-                        elif "nll" in parts:
-                            npars = parts.index("nll")
-                            scanps = parts[0:npars]
-                            key = tuple(scanps)
-                            if key not in scans.keys():
-                                scans[key] = {}
-                            if label not in scans[key].keys():
-                                scans[key][label] = {}
-                        else:
-                            pvals   = tuple([float(parts[i]) for i in range(0,npars)])
-                            nllval = float(parts[npars])
-                            if int(parts[npars+1]) == 0: # check if fit ended with status 0
-                                scans[key][label][pvals] = nllval
-                    except UnboundLocalError as err:
-                        print("unable to parse line '"+line.strip()+"' in file '"+filename+"', trying to read as nll scan, but no parameter list found. ")
-                    except (KeyError,ValueError) as err:
-                        if nllmatch:
-                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as nll value. "+str(err))
-                        elif match:
-                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', attempted to parse as parameter value. "+str(+err))
-                        else:
-                            print("unable to parse line '"+line.strip()+"' in file '"+filename+"', "+str(err))
-                        continue
-            for p in scans.keys():
-                if p in results.keys():
-                    scans[p][label][results[p][label][0]]=minnll;
+            collectresult_txt(results,filename,label)
 
 def collectfilenames(files):
     if isinstance(files, str): files = [files]
@@ -325,7 +342,7 @@ def collectfilenames(files):
     for expression in files:
         filenames.extend(glob.glob(expression))
     if len(filenames) == 0:
-        raise RuntimeError("no points found in "+",".join(files))
+        raise RuntimeError("no files found matching "+",".join(files))
     return filenames
 
 def collectimpacts(rankings,files,poiname):
@@ -334,29 +351,29 @@ def collectimpacts(rankings,files,poiname):
     fpat = re.compile(r"[^.]*\.([^/^.]*)\.([^.]*)\.txt")
     from os.path import basename
     results = {}
-    scan = {}
     allvars = []
     for filename in filenames:
         fname = basename(filename)
         if "impact.nominal" in fname:
-            collectresult(scan,results,filename,"nominal")
+            collectresult(results,filename,"nominal")
         else:
             match = fpat.match(fname)
             if not match: continue
             npname = match.group(1)
             allvars.append(npname)
             direction = match.group(2)
-            collectresult(scan,results,filename,(npname,direction))
-    if not poiname in results.keys():
+            collectresult(results,filename,(npname,direction))
+    fits = fits["MLE"]    
+    if not poiname in fits.keys():
         raise RuntimeError("did not find any impact results!")
-    if not "nominal" in results[poiname].keys():
+    if not "nominal" in fits[poiname].keys():
         raise RuntimeError("cannot create ranking without nominal result!")
-    nomval = results[poiname]["nominal"][0]
+    nomval = fits[poiname]["nominal"][0]
     if not poiname in rankings.keys():
         rankings[poiname] = {}
     for par in allvars:
-        upval = results[poiname][(par,"up")][0]
-        dnval = results[poiname][(par,"dn")][0]
+        upval = fits[poiname][(par,"up")][0]
+        dnval = fits[poiname][(par,"dn")][0]
         rankings[poiname][par] = (upval-nomval,dnval-nomval)
     return allvars
 
@@ -366,34 +383,34 @@ def collectbreakdowns(rankings,files,poiname):
     fpat = re.compile(r"breakdown\.([^/^.]*)\.txt")
     from os.path import basename
     results = {}
-    scan = {}
     allvars = []
     for filename in filenames:
         fname = basename(filename)
         match = fpat.match(fname)
         if not match: continue
         name = match.group(1)
-        collectresult(scan,results,filename,name)
-    if not poiname in results.keys():
+        collectresult(results,filename,name)
+    fits = results["MLE"]
+    if not poiname in fits.keys():
         raise RuntimeError("did not find any impact results!")            
-    if not "nominal" in results[poiname].keys():
+    if not "nominal" in fits[poiname].keys():
         raise RuntimeError("cannot create ranking without nominal result!")
     if not poiname in rankings.keys():
         rankings[poiname] = {}
-    for key in results[poiname].keys():
+    for key in fits[poiname].keys():
         if key == "nominal": continue
-        upvar = + (pow(results[poiname]["nominal"][1],2) - pow(results[poiname][key][1],2))
-        dnvar = - (pow(results[poiname]["nominal"][2],2) - pow(results[poiname][key][2],2))
+        upvar = + (pow(fits[poiname]["nominal"][1],2) - pow(fits[poiname][key][1],2))
+        dnvar = - (pow(fits[poiname]["nominal"][2],2) - pow(fits[poiname][key][2],2))
         rankings[poiname][key] = (upvar,dnvar)
         allvars.append(key)
     return allvars
         
     
-def collectresults(scans,results,files,label):
+def collectresults(results,files,label):
     """collect a set of results files and return the contents as a dictionary"""
     filenames = collectfilenames(files)
     for filename in filenames:
-        collectresult(scans,results,filename,label)
+        collectresult(results,filename,label)
 
 def readcsv2dict(filename):
     import csv
