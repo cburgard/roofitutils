@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 def parse(messages,lines):
     from RooFitUtils.logfile_parser import make_parser
