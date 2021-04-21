@@ -1,14 +1,7 @@
 #!/bin/env python
 
-def isdict(d):
-    return isinstance(d,dict)
-
-def islist(l):
-    return isinstance(l,list)
-
-
 def parse(messages,lines):
-    from RooFitUtils.logfile_diagnostics import make_parser
+    from RooFitUtils.logfile_parser import make_parser
     parser = make_parser()
     
     if args.debugcategory:
@@ -78,6 +71,14 @@ def main(args):
     printed = printdetails(messages,args.printcategories)
     
     println()
+
+    # write out messages to a file
+    if args.jsonfile:
+        from json import dump
+        with open(args.jsonfile,"wt") as jsonfile:
+            from RooFitUtils.util import filterdict
+            dump(filterdict(messages,keys=[".item"]),jsonfile)
+            
     
     # diagnose messages
     if args.diagnose:
@@ -97,12 +98,15 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(description="the log file doctor")
     parser.add_argument("logfile")
-    parser.add_argument("--summary",action="store_true",dest="summary",default=True,help="print the summary of all messages")
-    parser.add_argument("--no-summary",action="store_false",dest="summary",default=True,help="do not print the summary of all messages")    
-    parser.add_argument("--diagnose",action="store_true",dest="diagnose",default=True,help="attempt a diagnosis of the messages")
-    parser.add_argument("--no-diagnose",action="store_false",dest="diagnose",default=True,help="do not attempt a diagnosis of all messages")    
-    parser.add_argument("--print",dest="printcategories",nargs="+",type=str,default=[],help="names of the categories for which you would like to have more information")
-    parser.add_argument("--debug",dest="debugcategory",type=str,default=None,help="debugging functionality - intended for developer use only")
-    parser.add_argument("--fail-on-print",action="store_true",dest="failwithprint",default=True,help="exit with code 1 if any messages in the selected category were printed")        
+    printing = parser.add_argument_group("Printing")
+    printing.add_argument("--summary",action="store_true",dest="summary",default=True,help="print the summary of all messages")
+    printing.add_argument("--no-summary",action="store_false",dest="summary",default=True,help="do not print the summary of all messages")    
+    printing.add_argument("--diagnose",action="store_true",dest="diagnose",default=True,help="attempt a diagnosis of the messages")
+    printing.add_argument("--no-diagnose",action="store_false",dest="diagnose",default=True,help="do not attempt a diagnosis of all messages")
+    printing.add_argument("--print",dest="printcategories",nargs="+",type=str,default=[],metavar="CATEGORY",help="names of the categories for which you would like to have more information. accepts the category names as given in the summary.")
+    advanced = parser.add_argument_group("Advanced Usage")    
+    advanced.add_argument("--debug",dest="debugcategory",type=str,default=None,help="debugging functionality - intended for developer use only")
+    advanced.add_argument("--write-json",dest="jsonfile",metavar="report.json",default=None,help="print the log in a JSON format")
+    advanced.add_argument("--fail-on-print",action="store_true",dest="failwithprint",default=True,help="exit with code 1 if any messages in the selected category were printed")        
     args = parser.parse_args()
     main(args)

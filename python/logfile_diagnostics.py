@@ -78,6 +78,7 @@ class Parser:
             self.subparser.set_debug(debug)
         
     def parse(self,lines):
+        from RooFitUtils.util import typecast
         line = lines.peek().strip()
         while not line:
             next(lines)
@@ -89,165 +90,88 @@ class Parser:
             return False
         if self.debug:
             print(self.label + " parsed line '"+line.strip()+"'")
-        keys = match.groupdict()
+        keys = typecast(match.groupdict())
         next(lines)
         if self.subparser:
             self.subparser.parse(keys,lines)
         return keys
 
-def extend(d,otherd):
-    d.update(otherd)
-    return d
+class Severity:
+    INFO = 0
+    WARNING = 1
+    ERROR = 5
+    FATAL = 10
     
-def make_parser():
-    # this is the gory, catch-all function to create the parsing tree for all known lines in a logfile
-    # this function will never be complete and needs to be extended continuously until all possible messages in a logfile can be identified
-    # this will of course never happen, but the completeness will improve over time
-    
-    NUM=r'[+-]?\d+[.]?\d*[e]?[+-]?\d*'
-    TIME=r"\d+:\d+:\d+"
+class IssueHandler:
+    def __init__(self,key,severity,info):
+        self.key = key
+        self.severity = severity
+        self.info = info
 
-    minimum = {
-            "NLL":      Parser(r"FVAL\s+= (?P<VAL>"+NUM+")"),
-            "Edm":      Parser(r"Edm\s+= (?P<VAL>"+NUM+")"),
-            "Nfcn":     Parser(r"Nfcn\s+= (?P<VAL>"+NUM+")"),
-            "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
-            "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),            
-            "FloatParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\+/-\s+(?P<err>"+NUM+")"),
-            "ConstParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)"),            
-        }
+    def handle(self,instance):
+        raise NotImplementedError()
+        
+    def handle_all(self,messages):
+        summary = []
+        if self.key in messages.keys():
+            for instance in messages[self.key]:
+                summary.append(self.handle(instance))
+        return summary
 
+class Handler(IssueHandler):
+    def __init__(self,key,message="",severity=Severity.ERROR,info=""):
+        super().__init__(key=key,severity=severity,info=info)
+        self.message = message
     
-    minimization = {
-        "DefaultOptionChange":Parser(r"Minuit2Minimizer::Minuit\s+- Changing default options",MetaParser({
-            "StorageLevel":       Parser(r"StorageLevel\s+:\s+(?P<StorageLevel>\d+)"),
-        })),
-        "InitialState1":       Parser(r"MnSeedGenerator: for initial parameters FCN\s*=\s*(?P<initFCN>"+NUM+")"),
-        "InitialState1a":      Parser(r"(?P<source>.*): Initial state[:]?\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
-        "InitialState2":       Parser(r"Info in <Minuit2>: MnSeedGenerator Initial state:"),# FCN =\s+(?P<FCN>"+NUM+")"),#\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>"+NUM+")"),
-        "StartIteration":     Parser(r".*VariableMetric.*\s*[Ss]tart iterating until Edm is < (?P<Eps>"+NUM+")[ with call limit = (?P<CallLimit>\d+)]?"),
-        "lowTolerance":       Parser(r".*VariableMetric.*\s*Tolerance is not sufficient, continue the minimization"),
-        "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*Edm\s*is\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),
-        "Iteration":          Parser(r".*VariableMetric.*\s*(?P<it>\d+)\s+-\s+FCN\s+=\s+(?P<FCN>"+NUM+")\s+Edm\s+=\s+(?P<Edm>"+NUM+")\s+NCalls\s+=\s+(?P<NCalls>\d+)"),
-        "AfterHessian":       Parser(r".*VariableMetric.*\s*After Hessian"),
-        "FlatLH":             Parser(r"Minuit2:0: RuntimeWarning: VariableMetricBuilder No improvement in line search"),
-        "runHesse":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
-        "hesseCalls":         Parser(r".*Hesse [Uu]sing max-calls (?P<maxcalls>\d+)"),
-        "hesseInfo":          Parser(r".*::Hesse[ :]*Hesse is (?P<hesseStatus>\w+) - matrix is (?P<matrixStatus>\w+)",MetaParser(minimum)),
-        "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser({
-            "MinVal":Parser(r"\s+Minimum value\s+: (?P<val>"+NUM+")"),
-            "Edm":Parser(r"\s+Edm\s+: (?P<val>"+NUM+")"),
-            "InternalParameters":Parser(r"\s*Internal parameters\s*:",MetaParser({
-                "value":Parser(r"\s*(?P<value>"+NUM+")")
-            })),
-            "InternalGradient":Parser(r"\s*Internal gradient\s*:",MetaParser({
-                "value":Parser(r"\s*(?P<value>"+NUM+")")
-        })),
-            "InternalCovMat":Parser(r"\s*Internal covariance matrix\s*:",MetaParser({
-                "value":Parser(r"\s*(?P<value>"+NUM+"\s*)+")
-            })),
-            "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")"),
-            "hesseposdef":Parser(r"Info: MnHesse: matrix was forced pos. def.")
-        }))}
-
-    minos_migrad = extend({
-        "parameter":Parser(r"Pos (?P<pos>\d+): (?P<parname>.*) = (?P<val>"+NUM+")"),
-        "result":Parser(r".*MnFunctionCross Result after [2nd ]*Migrad FCN =\s+(?P<FCN>"+NUM+")\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>\d+)",MetaParser({
-            "header":Parser(r"Pos\s+|\s+Name\s+|\s+type\s+|\s+Value\s+|\s+Error\s+[+]/[-]"),
-            "parameter":Parser(r"(?P<Pos>\d+)\s+|\s+(?P<Name>.*)\s+|\s+(?P<type>\w+)\s+|\s+(?P<Value>"+NUM+")\s+|\s+(?P<Error>"+NUM+")")
-        })),
-    },minimization)
+    def handle(self,instance):
+        try:
+            return self.message.format_map(instance)
+        except KeyError as e:
+            raise RuntimeError("cannot fine key "+str(e)+" in "+str(instance))
     
-    minos = {
-        "mnminos":Parser(r".*MnMinos Determination of (?P<direction>\w+) Minos error for parameter (?P<parno>\d+)"),
-        "mncross":       Parser(r".*MnFunctionCross: parameter 0 set to (?P<val>"+NUM+")",MetaParser(minimization)),
-        "end":           Parser(r".*MnMinos end of Minos scan for (?P<direction>\w+) interval for parameter (?P<parname>.*)"),
-        "mncross-migrad":Parser(r".*MnFunctionCross[: ]+Run Migrad [again (2nd)]*with fixed parameters:",MetaParser(minos_migrad)),
-        "result":Parser(r"Minos: (?P<direction>\w+) error for parameter (?P<parname>.+)\s+:\s+(?P<val>"+NUM+")"),
-        "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
-        "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),
-        "stars":Parser("[*]+"),        
-    }
-    
-    parser = MetaParser({
-        "intro":Parser(r"RooFit v(?P<Version>[\d.]+) -- Developed by Wouter Verkerke and David Kirkby",MetaParser({
-            "copyright":Parser(r"Copyright \(C\) (?P<Years>[\d-]+) NIKHEF, University of California & Stanford University"),
-            "rights":Parser(r"All rights reserved, please read http://roofit.sourceforge.net/license.txt")
-        })),
-        "minimum":Parser(r"Minuit2Minimizer : (?P<State>\w+) minimum - status = (?P<Status>\d+)",MetaParser(minimum)),
-        "roofitresult":Parser(r"RooFitResult: minimized FCN value: (?P<FCN>"+NUM+"), estimated distance to minimum: (?P<edm>"+NUM+")",MetaParser({
-            "covqual":Parser(r"covariance matrix quality: (?P<status>.*)"),
-            "status":Parser(r"Status : (?P<tags>.*)"),
-            "floatpars":Parser(r"Floating Parameter\s+Final\s*Value [+]/[-]\s*Error",MetaParser({
-                "dashes":Parser(r"\-+\s+\-+"),
-                "floatPar":Parser(r"(?P<parname>.*)\s+(?P<val>"+NUM+")\s*[+]/[-]\s*(?P<err>"+NUM+")")
-            }))
-        })),
-        "minos":      Parser(r".*GetMinosError for parameter (?P<parno>\d+) (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
-        "minos2":      Parser(r".*GetMinosError - Run MINOS (?P<direction>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
-        "minimization":Parser(r"Minuit2Minimizer: Minimize with max-calls (?P<MaxCalls>\d+) convergence for edm < (?P<Edm>"+NUM+") strategy (?P<Strategy>\d)",MetaParser(minimization)),
-        "quickfit-snapshot":Parser(r"REGTEST: Loading snapshot (?P<Snapshot>.*)"),        
-        "quickfit-preparing":Parser(r"Preparing parameters of interest\s*:\s*(?P<poiset>.*)",MetaParser({
-            "firstpoi":Parser(r"REGTEST: Set first POI to (?P<POI>.*)"),
-            "summary":Parser(r"Summary of POI setup in the likelihood model",MetaParser({
-                "poi":Parser(r".*RooRealVar::\s*(?P<poiname>.*)\s*=\s*(?P<poival>.*)\s*L\((?P<poirange>.*)\)")
-            }))
-        })),
-        "quickfit-startminos":Parser(r"Evaluating MINOS errors for all POIs...",MetaParser(minimization)),        
-        "quickfit-starthesse":Parser(r"Starting fit with HESSE...",MetaParser(minimization)),
-        "quickfit-saveresults":Parser(r"Saving results to (?P<outpath>.*)"),
-        "quickfit-done":Parser(r"All fits done in (?P<cputime>"+NUM+") min \(cpu\), (?P<realtime>"+NUM+") min \(real\)",MetaParser({
-            "poisummary":Parser(r"Fit Summary of POIs \( STATUS (?P<status>\w+) \)",MetaParser({
-                "dashes":Parser(r"\-+"),
-                "FloatParameter":Parser(r"RooRealVar::(?P<name>.+)\s+=\s+(?P<val>"+NUM+")\s+\+/\-\s+(?P<err>.*)\s+L\((?P<range>.*)\)"),
-                "ConstParameter":Parser(r"RooRealVar::(?P<name>.+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)")
-            }))
-        })),
-        "quickfit-start":Parser(r"Starting fit...",MetaParser({
-            "quickfit-binned":Parser(r"set binned likelihood for:\s*(?P<region>.*)"),        
-            "quickfit-buildnll":Parser(r"Building NLL...",MetaParser({
-                "time":Parser("NLL built in (?P<cputime>.*) min \(cpu\), (?P<realtime>.*) min \(real\)")
-            }))
-        })),
-        "robustminimizer-start":Parser(r".*ExtendedMinimizer::robustMinimize\(minimizer\): starting minimization with strategy (?P<Strategy>\d+)"),
-        "robustminimizer-starthesse":Parser(r".*ExtendedMinimizer::runHesse\(minimizer\) running after minimization \(this might take a while\) ...",MetaParser(minimization)),
-        "robustminimizer-startminos":Parser(r".*ExtendedMinimizer::minimize\(minimizer\): Running Minos",MetaParser({
-            "stars":Parser("[*]+"),
-        })),
-        "robustminimizer-endhesse":Parser(r".*ExtendedMinimizer::runHesse\(minimizer\) finished with status (?P<status>\d) \(covqual=(?P<covqual>\d)\)"),
-        "robustminimizer-end"  :Parser(r".*ExtendedMinimizer::robustMinimize\(minimizer\) fit succeeded with status (?P<Status>\d+)"),
-        "roofitutils-close":Parser(r"Fitting time: (?P<Time>"+NUM+")s",MetaParser({
-            "nll":Parser(r"NLL after minimisation: (?P<Time>"+NUM+")"),
-            "poi":Parser(r"(?P<poiname>.*) = (?P<val>"+NUM+") (?P<uperr>"+NUM+") (?P<dnerr>"+NUM+")"),
-            "noop":Parser(r"no (?P<obj>\w+) requested")
-        }))
-    })
-    return parser
-
 def diagnose_minimizations(minimizations):
     # diagnose all the messages from the minimization branch for any severe issues
     i = 0
     nOk = 0
-    nNegG2 = 0
-    nLowTol = 0
+
+    issue_handlers = [
+        Handler("NegativeG2",  severity = Severity.ERROR, info="some of your parameters might be interdependent",
+                message = "the second derivative matrix was made invertible by adding {posdef[0][padd]} to the diagonal."),
+        Handler("lowTolerance",severity = Severity.WARNING, info="the minimization needed to be prolonged as the minimum was not yet reached",
+                message = "the estimated distances to minimum were recorded as {edminfo[0][edm]} ({edminfo[0][Label]}) and {edminfo[1][edm]} ({edminfo[1][Label]})."),        
+    ]
+    
+    errors = {}
+    warnings = {}    
     for i in range(0,len(minimizations)):
         minimization = minimizations[i]
-        ok = 1
-        if "NegativeG2" in minimization.keys():
-            nNegG2 += 1
-            ok = 0
-        if "lowTolerance" in minimization.keys():
-            nLowTol += 1
-            ok = 0
-        nOk += ok
+        ok = True
+        for handler in issue_handlers:
+            summary = handler.handle_all(minimization)
+            if summary:
+                if handler.severity >= Severity.ERROR:
+                    errors[handler.key] = {"info":handler.info,"messages":summary}
+                    ok = False
+                else:
+                    warnings[handler.key] = {"info":handler.info,"messages":summary}
+        if ok:
+            nOk+=1
     if nOk == i+1:
         print("all {:d} minimizations OK".format(nOk))
     else:
-        print("some minimizations encountered issues ({:d}/{:d}):".format(nOk,i+1))
-        if nNegG2 > 0:
-            print("  {:d} instances of negative G2".format(nNegG2))
-        if nLowTol > 0:
-            print("  {:d} instances of insufficient tolerance".format(nLowTol))
+        print("some minimizations encountered errors ({:d}/{:d}):".format(i+1-nOk,i+1))
+        for key,summary in errors.items():
+            print("  {:d} instances of {:s}. {:s}".format(len(summary["messages"]),key,summary["info"]))
+            for elem in summary["messages"]:
+                if elem:
+                    print("    "+elem)
+        if len(warnings) > 0:
+            print("some minimizations encountered warnings:")
+            for key,summary in warnings.items():
+                print("  {:d} instances of {:s}. {:s}".format(len(summary["messages"]),key,summary["info"]))
+                for elem in summary["messages"]:
+                    if elem:
+                        print("    "+elem)                    
     
 def diagnose_minima(minima):
     # diagnose all the messages from the minima branch for any severe issues    

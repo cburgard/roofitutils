@@ -25,6 +25,12 @@ def flattened(l):
         for j in i:
             yield j
 
+def isdict(d):
+    return isinstance(d,dict)
+
+def islist(l):
+    return isinstance(l,list)
+            
 def isclose(a,b,rel_tol=1e-9,abs_tol=1e-9):
     return abs(a-b) <= max( rel_tol * max(abs(a), abs(b)), abs_tol )
             
@@ -533,3 +539,62 @@ def restore_c_output(tup):
     newstderr = os.dup(2)
     sys.stdout = os.fdopen(newstdout, 'w')
     sys.stderr = os.fdopen(newstderr, 'w')        
+
+def extend(d,otherd):
+    d.update(otherd)
+    return d
+
+def typecast(d):
+    if not isdict(d):
+        raise TypeError("typecast only works on dictionaries!")
+    retval = {}
+    for k,v in d.items():
+        if isdict(v):
+            retval[k] = typecast(v)
+            continue
+        if islist(v):
+            retval[k] = [typecast(e) for e in v]
+            continue
+        try:
+            retval[k] = int(v)
+            continue
+        except ValueError:
+            pass
+        try:
+            retval[k] = float(v)
+            continue
+        except ValueError:
+            pass
+        retval[k] = v
+    return retval
+        
+    
+
+def filterdict(data, types=[], keys=[], allow_empty=False):
+    if isdict(data):
+        result = {}  # dict-like, use dict as a base
+        for k, v in data.items():
+            if k in keys or any([isinstance(v, t) for t in types]):  # skip key/type
+                continue
+            try:
+                result[k] = filterdict(v,types=types,keys=keys,allow_empty=allow_empty)
+            except ValueError:
+                pass
+        if result or allow_empty:
+            return result
+    elif islist(data):
+        result = []  # a sequence, use list as a base
+        for v in data:
+            if any([isinstance(v, t) for t in types]):  # skip type
+                continue
+            try:
+                result.append(filterdict(v,types=types,keys=keys,allow_empty=allow_empty))
+            except ValueError:
+                pass
+        if result or allow_empty:
+            return result
+    else:  # we don't know how to traverse this structure...
+        return data  # return it as-is, hope for the best...
+    raise ValueError
+
+    
