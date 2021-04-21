@@ -21,7 +21,7 @@ def make_parser():
 
     
     minimization = {
-        "DefaultOptionChange":Parser(r"Minuit2Minimizer::Minuit\s+- Changing default options",MetaParser({
+        "DefaultOptionChange":Parser(r"Minuit2Minimizer::Minuit\s+-\s+Changing default.*options",MetaParser({
             "StorageLevel":       Parser(r"StorageLevel\s+:\s+(?P<StorageLevel>\d+)"),
         })),
         "InitialState1":       Parser(r"MnSeedGenerator: for initial parameters FCN\s*=\s*(?P<initFCN>"+NUM+")"),
