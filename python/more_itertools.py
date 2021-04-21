@@ -1,5 +1,8 @@
 # this code was stolen from the python package "more-itertools"
 
+from collections import deque
+_marker = object()
+
 class peekable:
     """Wrap an iterator to allow lookahead and prepending elements.
 
