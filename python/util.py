@@ -636,7 +636,7 @@ def getfitresult(inlist):
     return fitresult
 
 def parsecsv(infile,delimiter=',',quotechar='|'):
-    # requires a csv form where the first column serves as a label 
+    """ requires a csv form where the first column serves as a label """
     import csv
     with open(infile) as csvfile:
         reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar)
