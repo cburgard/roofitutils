@@ -9,17 +9,11 @@ def runOrdering(args):
   loadRooFitUtils()
   pois, NPfilter = "", ".*"
 
-  if args.pois :
-     pois = args.pois
+  if args.pois : pois = args.pois
+  else: pois = makePOIstring(args.inFileName)
 
-  if args.NPfilter :
-     NPfilter = args.NPfilter
+  if args.NPfilter : NPfilter = args.NPfilter
 
-  else:
-     pois = makePOIstring(args.inFileName)
-
- # fitresult = retriveObj(args.fitResult)
-  print args.fitResult
   file0 = ROOT.TFile.Open(args.fitResult[0][0])
   fitresult = file0.Get(args.fitResult[0][1])
 
@@ -32,7 +26,7 @@ def runOrdering(args):
     with open(args.writeSubmit,"w") as f:
       for matind in matindices:
         outfilename = args.outFileName.replace(".txt","")+"_"+str(matind[0])+"_"+str(matind[1])+".txt"
-        f.write("python /project/atlas/users/rahulb/project/hcomb/caf4hcomb/RooFitUtils/scripts/order_NPs.py --output "+outfilename+" --pois "+pois+" --fitResult "+args.fitResult[0][0] + " "+ args.fitResult[0][1] +" --nlo "+str(matind[0])+" --nhi "+str(matind[1])+" & \n")  
+        f.write("python scripts/order_NPs.py --output "+outfilename+" --pois "+pois+" --fitResult "+args.fitResult[0][0] + " "+ args.fitResult[0][1] +" --nlo "+str(matind[0])+" --nhi "+str(matind[1])+" & \n")  
     print("INFO : wrote joblines in "+args.writeSubmit)
    
   else:
@@ -60,3 +54,6 @@ if __name__ == "__main__":
    arglist.append(parser.add_argument( "--jobTime"       , type=float,dest="jobtime"      , help="ballpark-time you want each job to take in mins",default=10))
    args = parser.parse_args()
    runOrdering(args)
+
+# python scripts/order_NPs.py --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --hesse test/WS-Comb-5XS_80ifb_hesse.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --writeSubmit test/joblines_5XS.txt --jobTime 10 --output test/order_NPs.txt
+
