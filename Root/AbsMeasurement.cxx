@@ -126,52 +126,8 @@ void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
      ws->var(par->GetName())->setConstant(kTRUE);
    }
    ws->saveSnapshot(outsnapshot.c_str(), parameters.c_str());
-   ws->writeToFile(outwsname.c_str(),kFALSE);
+   ws->writeToFile(outwsname.c_str(),kTRUE);
 }
-
-// ____________________________________________________________________________|__________
-/*
-void RooFitUtils::AbsMeasurement::PruneNuisanceParameters() {
-  coutP(ObjectHandling)
-      << "AbsMeasurement::PruneNuisanceParameters(" << fName
-      << ") performing fit to compute Hesse matrix for pruning." << std::endl;
-
-  RooArgSet *allParameters = fModelConfig->GetPdf()->getParameters(*fData);
-  fWorkSpace->saveSnapshot("tmpBeforePruning", *allParameters);
-
-  for (RooLinkedListIter it =
-           fModelConfig->GetParametersOfInterest()->iterator();
-       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
-    v->setConstant(1);
-  }
-
-  TString allPoi = fPruningPoi;
-  allPoi.ReplaceAll(" ", "");
-  TObjArray *allPoiArray = allPoi.Tokenize(",");
-  unsigned int numPoi = allPoiArray->GetEntries();
-  for (unsigned int itrPoi = 0; itrPoi < numPoi; ++itrPoi) {
-    TString thisPoi = ((TObjString *)allPoiArray->At(itrPoi))->GetString();
-    fWorkSpace->var(thisPoi.Data())->setConstant(0);
-  }
-
-  ExtendedMinimizer minimizer("minimizer", fPdf, fData);
-  minimizer.minimize(
-      RooFit::Minimizer(fMinimizerType.c_str(), fMinimizerAlgo.c_str()),
-      RooFit::Strategy(fDefaultStrategy),
-      RooFit::Constrain(*fModelConfig->GetNuisanceParameters()),
-      RooFit::GlobalObservables(*fModelConfig->GetGlobalObservables()),
-      RooFit::NumCPU(fNumCPU, 3), RooFit::Offset(1), RooFit::Optimize(2),
-      RooFit::Save(), RooFit::Hesse());
-  RooFitResult *fitresult = minimizer.GetFitResult();
-  TMatrixDSym hesse = minimizer.GetHesseMatrix();
-
-//  auto x = PruneNuisanceParameters( hesse, fitresult, fPruningPoi, fPruningFilter, 
-//                                    fPruningPercentage, fPrunedNuisanceParameters);
-
-  fWorkSpace->loadSnapshot("tmpBeforePruning");
-
-  delete fitresult;
-}*/
 
 // ____________________________________________________________________________|__________
 
@@ -269,10 +225,9 @@ std::set<std::pair<double,std::string>> RooFitUtils::AbsMeasurement::OrderNuisan
 
     coutP(ObjectHandling) << "AbsMeasurement::OrderNuisanceParameters(" << fName
                           << ") Harvest parameter (" << thisIndex
-                          << "): " << *itr << " with Hesse error "
-                          << tmpVals.first << " (" << thisBestFit << ") +/- "
-                          << tmpVals.second << " (" << thisInitErr << ")"
-                          << std::endl;
+                          << "): " << *itr << " "
+                          << tmpVals.first << " +/- "
+                          << tmpVals.second << std::endl;
   }
 
   // Ranking step starts here.
@@ -471,10 +426,9 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
 
     coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
                           << ") Harvest parameter (" << thisIndex
-                          << "): " << *itr << " with Hesse error "
-                          << tmpVals.first << " (" << thisBestFit << ") +/- "
-                          << tmpVals.second << " (" << thisInitErr << ")"
-                          << std::endl;
+                          << "): " << *itr << " "
+                          << tmpVals.first << " +/- "
+                          << tmpVals.second << std::endl;
   }
 
   // Ranking step starts here.
@@ -662,10 +616,9 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
       
           coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
                                 << ") (" << thisIndex
-                                << " ): " << *itr << " with Hesse error "
-                                << tmpVals.first << " (" << thisBestFit << ") +/- "
-                                << tmpVals.second << " (" << thisInitErr << ")"
-                                << " for a fractional variation of "
+                                << " ): " << *itr << " " << tmpVals.first << " +/- "
+                                << tmpVals.second << " "
+			        << " for a fractional variation of "
                                 << 100*PercentageList[itr->Data()] <<" %"
                                 << std::endl;
         }
