@@ -112,13 +112,15 @@ def make_parser():
                 "time":Parser("NLL built in (?P<cputime>.*) min \(cpu\), (?P<realtime>.*) min \(real\)")
             }))
         })),
-        "robustminimizer-start":Parser(r".*ExtendedMinimizer::robustMinimize\(minimizer\): starting minimization with strategy (?P<Strategy>\d+)"),
-        "robustminimizer-starthesse":Parser(r".*ExtendedMinimizer::runHesse\(minimizer\) running after minimization \(this might take a while\) ...",MetaParser(minimization)),
-        "robustminimizer-startminos":Parser(r".*ExtendedMinimizer::minimize\(minimizer\): Running Minos",MetaParser({
+        "sframework-loadsnapshot":Parser(r".*SFramework/(?P<appname>.*): loaded snapshot '(?P<snapshot>.*)' for Nll construction, (?P<npar>\d+) parameters floating"),
+        "sframework-createnll":Parser(r".*SFramework/(?P<appname>.*): constructed Nll with (?P<npar>\d+) floating parameters and starting value (?P<nllval>"+NUM+")"),        
+        "robustminimizer-start":Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.)*\): starting minimization with strategy (?P<Strategy>\d+)"),
+        "robustminimizer-starthesse":Parser(r".*ExtendedMinimizer::runHesse\((?P<appname>.*)\) running after minimization \(this might take a while\) ...",MetaParser(minimization)),
+        "robustminimizer-startminos":Parser(r".*ExtendedMinimizer::minimize\((?P<appname>.*)\): Running Minos",MetaParser({
             "stars":Parser("[*]+"),
         })),
-        "robustminimizer-endhesse":Parser(r".*ExtendedMinimizer::runHesse\(minimizer\) finished with status (?P<status>\d) \(covqual=(?P<covqual>\d)\)"),
-        "robustminimizer-end"  :Parser(r".*ExtendedMinimizer::robustMinimize\(minimizer\) fit succeeded with status (?P<Status>\d+)"),
+        "robustminimizer-endhesse":Parser(r".*ExtendedMinimizer::runHesse\((?P<appname>.*)\) finished with status (?P<status>\d) \(covqual=(?P<covqual>\d)\)"),
+        "robustminimizer-end"  :Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.*)\) fit succeeded with status (?P<Status>\d+)"),
         "roofitutils-close":Parser(r"Fitting time: (?P<Time>"+NUM+")s",MetaParser({
             "nll":Parser(r"NLL after minimisation: (?P<Time>"+NUM+")"),
             "poi":Parser(r"(?P<poiname>.*) = (?P<val>"+NUM+") (?P<uperr>"+NUM+") (?P<dnerr>"+NUM+")"),
