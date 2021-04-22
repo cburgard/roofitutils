@@ -620,7 +620,7 @@ def typecast(d):
             continue
         except ValueError:
             pass
-        retval[k] = v
+        retval[k] = str(v).strip()
     return retval
         
     
