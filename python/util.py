@@ -634,3 +634,64 @@ def getfitresult(inlist):
     file0 = TFile.Open(inlist[0])
     fitresult = file0.Get(inlist[1])
     return fitresult
+
+def parsecsv(infile,delimiter=',',quotechar='|'):
+    # requires a csv form where the first column serves as a label 
+    import csv
+    with open(infile) as csvfile:
+        reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar)
+        header = next(reader, None)
+        tabledict = {}
+        for row in reader:
+            tabledict[row[0]] = {}
+            for icol in range(1,len(header)):
+                tabledict[row[0]][header[icol]] = float(row[icol])
+
+    return tabledict
+
+def dicttoarr(indict,names=False):
+    """ convert a dict of dict of a matrix to an array
+        pass names as True if the names of the parameters
+        is to be returned """
+    matarr = []
+    for ipar1 in sorted(indict.keys()):
+        tmparr = []
+        for ipar2 in sorted(indict.keys()):
+            tmparr.append(indict[ipar1][ipar2])
+        matarr.append(tmparr)
+    if names:
+        return sorted(indict.keys()), matarr
+    else: return matarr
+
+def makecovmat(corarr,uncer):
+    """ make array of a covariance matrix given a
+        array of correlation matrix and uncertainities"""
+    import math
+    covarr, npar = [], len(uncer)
+    for ipar1 in range(0,npar):
+        val1 = uncer[ipar1]
+        tmparr = []
+        for ipar2 in range(0,npar):
+            val2 = uncer[ipar2]
+            tmparr.append(corarr[ipar1][ipar2]*val1*val2)
+        covarr.append(tmparr)
+    return covarr
+
+def arrtotmat(arr):
+    """ return array to a TMatrix object """
+    import ROOT
+
+    npar = len(arr)
+    tmat = ROOT.TMatrixDSym(npar)
+    for ipar1 in range(0,npar):
+        for ipar2 in range(0,npar):
+            tmat[ipar1][ipar2] = arr[ipar1][ipar2]
+    return tmat
+
+def getunc(indict,name="asm up"):
+    import math
+    uncer = []
+    for par in sorted(indict.keys()):
+        uncer.append(0.5*(indict[par][name+"up"]+abs(indict[par][name+"down"])))
+    return uncer
+

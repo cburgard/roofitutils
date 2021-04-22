@@ -1,105 +1,51 @@
-import matplotlib
-import numpy as np
+from RooFitUtils.util import getunc, arrtomat, makecovmat, dicttoarr
 
-def parsecsv(infile,delimiter=',',quotechar='|'):
-    # requires a csv form where the first column serves as a label 
-    import csv
-    with open(infile) as csvfile:
-        reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar)
-        header = next(reader, None)
-        tabledict = {}
-        for row in reader:
-            tabledict[row[0]] = {}
-            for icol in range(1,len(header)):
-                tabledict[row[0]][header[icol]] = float(row[icol])
-                
-    return tabledict 
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+    parser = ArgumentParser("create multi-variate gaussian RooWorkspace")
+    arglist = []
+    arglist.append(parser.add_argument( "--inputCorr"           , type=str,     dest="inCorr"                 , help="csv file of correlation matrix", required=True, metavar="path/to/file"))
+    arglist.append(parser.add_argument( "--inputSummary"        , type=str,     dest="inSumm"                 , help="csv file of parameter results", required=True, metavar="path/to/file"))
+    arglist.append(parser.add_argument( "--datasetName"         , type=str,     dest="data"                   , help="name of output dataset", required=False, metavar="asimovData_1"))
+    arglist.append(parser.add_argument( "--tag"                 , type=str,     dest="tag"                    , help="tag", required=False,default="asm "))
+    arglist.append(parser.add_argument( "--outWS"               , type=str,     dest="outWS"                  , help="path to output workspace"     , required=False,default="out.root"))
 
-def dicttoarr(indict,names=False):
-    # convert a dict of dict of a matrix to an array
-    # pass names as True if the names of the parameters
-    # is to be returned
-    matarr = []
-    for ipar1 in sorted(indict.keys()):
-        tmparr = []
-        for ipar2 in sorted(indict.keys()):
-            tmparr.append(indict[ipar1][ipar2])
-        matarr.append(tmparr)
-    if names:
-        return sorted(indict.keys()), matarr
-    else: return matarr
+    args = parser.parse_args()
+
+    summdict = parsecsv(args.inSumm)
+    corrdict = parsecsv(args.inCorr)
+    cormat = dicttoarr(corrdict)
+    covmat = makecovmat(cormat,getunc(summdict,name=args.tag))
     
-def makecovmat(corarr,uncer):
-    # make array of a covariance matrix given a
-    # array of correlation matrix and uncertainities
-    import math
-    covarr, npar = [], len(uncer)
-    for ipar1 in range(0,npar):
-        val1 = uncer[ipar1]
-        tmparr = []
-        for ipar2 in range(0,npar):
-            val2 = uncer[ipar2]
-            tmparr.append(corarr[ipar1][ipar2]*val1*val2)
-        covarr.append(tmparr)
-        
-    return covarr
-
-def arrtotmat(arr):
-    # convert array to a TMatrix object
     import ROOT
+    cenvals = {}
+    pois = {}
+    for i in sorted(summdict.keys()):
+        x = "poi_"+i
+        pois[i] = ROOT.RooRealVar(x,x,1,-inf,inf)
+        cenvals[i] = ROOT.RooRealVar(i,i,summdict[i][args.tag.replace(" ","")])
     
-    npar = len(arr)
-    tmat = ROOT.TMatrixDSym(npar)
-    for ipar1 in range(0,npar):
-        for ipar2 in range(0,npar):
-            tmat[ipar1][ipar2] = arr[ipar1][ipar2]
+    poilist, poiset = ROOT.RooArgList(), ROOT.RooArgSet()
+    cvlist, cvset = ROOT.RooArgList(), ROOT.RooArgSet()
     
-    return tmat
-
-def getunc(indict,name="asm up"):
-    import math
-    uncer = []
-    for par in sorted(indict.keys()):
-        uncer.append(math.sqrt(indict[par][name+"up"]*indict[par][name+"up"]+indict[par][name+"down"]*indict[par][name+"down"]))
-    return uncer
-
-summdict = parsecsv('/project/atlas/users/rahulb/project/results/stxssummary_asm.data')
-corrdict = parsecsv('/project/atlas/users/rahulb/project/results/correlations-stxs-asimov.data')
-cormat = dicttoarr(corrdict)
-covmat = makecovmat(cormat,getunc(summdict,name="asm "))
-
-fitRes = mvgpdf.fitTo(dat, ROOT.RooFit.Minimizer('Minuit2', 'Migrad'), ROOT.RooFit.Hesse(True), ROOT.RooFit.Save(True))
-import ROOT
-cenvals = {}
-pois = {}
-for i in summdict.keys():
-    x = i.replace("mu","x")
-    pois[i] = ROOT.RooRealVar(x,x,1,-10,10)
-    cenvals[i] = ROOT.RooRealVar(i,i,summdict[i]['asm'])
-
-poilist = ROOT.RooArgList()
-poiset = ROOT.RooArgSet()
-cvlist = ROOT.RooArgList()
-cvset = ROOT.RooArgSet()
-
-for i in cenvals:
-    poilist.add(pois[i])
-    poiset.add(pois[i]) 
-    cvlist.add(cenvals[i])
-    cvset.add(cenvals[i])
+    for i in sorted(cenvals):
+        poilist.add(pois[i])
+        poiset.add(pois[i]) 
+        cvlist.add(cenvals[i])
+        cvset.add(cenvals[i])
+        
+    covtmat = ROOT.TMatrixDSym(len(cvlist))
+    covtmat = arrtotmat(covmat)
     
-covtmat = ROOT.TMatrixDSym(len(cvlist))
-covtmat = arrtotmat(covmat)
-
-mvgpdf = ROOT.RooMultiVarGaussian("mvg","mvg",poilist,cvlist,covtmat)
-dat = ROOT.RooDataSet('asimovData_1', '',ROOT.RooArgSet(cvlist))
-dat.add(ROOT.RooArgSet(cvlist))
-
-w = ROOT.RooWorkspace("combWS")
-mc = ROOT.RooStats.ModelConfig("ModelConfig",w)
-mc.SetPdf(mvgpdf)
-mc.SetParametersOfInterest(poiset)
-mc.SetObservables(cvset)
-getattr(w,'import')(mc)
-getattr(w,'import')(dat)
-w.writeToFile("test.root",True)
+    mvgpdf = ROOT.RooMultiVarGaussian("mvg","mvg",poilist,cvlist,covtmat)
+    dat = ROOT.RooDataSet(args.data, '',ROOT.RooArgSet(cvlist))
+    dat.add(ROOT.RooArgSet(cvlist))
+    w = ROOT.RooWorkspace("combWS")
+    mc = ROOT.RooStats.ModelConfig("ModelConfig",w)
+    mc.SetPdf(mvgpdf)
+    mc.SetParametersOfInterest(poiset)
+    mc.SetSnapshot(poiset)
+    mc.SetObservables(cvset)
+    getattr(w,'import')(mc)
+    getattr(w,'import')(dat)
+    w.writeToFile(args.outWS,True)
