@@ -3,7 +3,7 @@
 def runOrdering(args):
   import ROOT,os
   ROOT.PyConfig.IgnoreCommandLineOptions = True
-  from RooFitUtils.util import loadRooFitUtils,getjobdims,getnofNPs,getfitresult
+  from RooFitUtils.util import loadRooFitUtils,getjobdims,countNPs
   # load libraries
   loadRooFitUtils()
   pois, NPfilter = "", ".*"
@@ -26,7 +26,7 @@ def runOrdering(args):
    
   else:
     msrmnt = ROOT.RooFitUtils.Measurement("meas")
-    if args.nhi == 0: nlo, nhi = 0, getnofNPs(chesse,pois)
+    if args.nhi == 0: nlo, nhi = 0, countNPs(chesse,pois)
     else: nlo, nhi = args.nlo, args.nhi
     orderNP = ROOT.std.set("pair<double,string>>")()
     orderNP = msrmnt.OrderNuisanceParameters(chesse,fitresult, pois, NPfilter, nlo, nhi)
@@ -38,14 +38,15 @@ def runOrdering(args):
 
 if __name__ == "__main__":
    from argparse import ArgumentParser
-   parser = ArgumentParser("run pruning")
+   parser = ArgumentParser(description="order nuisance parameters")
    arglist = []
-   arglist.append(parser.add_argument( "--output"        , type=str,  dest="outFileName"  , help="Output text file. (outname.txt)", required=True, default=None))
+   arglist.append(parser.add_argument( "-o","--output"   , type=str,  dest="outFileName"  , help="Output text file.", required=True, default=None))
    arglist.append(parser.add_argument( "--pois"          , type=str,  dest="pois"         , help="POIs to measure.", required=True))
    arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"     , help="NPs for prune check", default=".*"))
    arglist.append(parser.add_argument( "--pos-lo"           , type=int,  dest="nlo"          , help="start position in NP list",default=0))
    arglist.append(parser.add_argument( "--pos-hi"           , type=int,  dest="nhi"          , help="end pposition in NP list",default=0))
    arglist.append(parser.add_argument( "--writeSubmit"   , type=str,  dest="writeSubmit"  , help="create a txt file for splitting the process",default=""))
    arglist.append(parser.add_argument( "--jobTime"       , type=float,dest="jobtime"      , help="ballpark-time you want each job to take in mins",default=10))
+   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , nargs="+", help="path to fit result"))   
    args = parser.parse_args()
    runOrdering(args)

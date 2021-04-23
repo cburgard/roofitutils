@@ -494,7 +494,6 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
         ++x;
       }
       std::list<std::string> nuis_names;
-      std::cout << "Number of NPs set " << pruneNPnames.size() << std::endl;
       for (RooLinkedListIter it = tmp_pars.iterator();
         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());){
         std::string varname = v->GetName();
@@ -625,7 +624,6 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
      
         for (auto v : pruneNPnames){
            finalNPnames.insert(v);
-           std::cout << v << "\n";
         }
         break;
       }

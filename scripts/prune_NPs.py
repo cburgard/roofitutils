@@ -29,27 +29,28 @@ def runPruning(args):
       x = ROOT.pair("double,std::string")(float(pair[0]),pair[1])
       order.insert(x)
   pruneNPs = msrmnt.PruneNuisanceParameters(order, chesse, fitresult, ",".join(pois), ",".join(pcts), args.NPfilter)
-  NPs = ""
   print("Setting {} NPs out of {} to constant ".format(len(pruneNPs),len(order)))
-  for x in pruneNPs : NPs = NPs + x + ","
-  NPs = NPs[0:len(NPs)-1]
 
-  print("INFO: making pruned snapshot: "+args.snapname)
-  msrmnt.MakeConstSnapshot(args.inws, fitresult, NPs, args.outws, args.snapname)
-  print("INFO: saved pruned snapshots in "+ args.outws)
+  if args.outws:
+    msrmnt.MakeConstSnapshot(args.inws, fitresult, ",".join(pruneNPs), args.outws, args.snapname)
+  if args.outlist:
+    with open(args.outlist,"wt") as outfile:
+      for np in pruneNPs:
+        outfile.write(np+"\n")
+    
 
 if __name__ == "__main__":
    from argparse import ArgumentParser
-   parser = ArgumentParser("run pruning")
-   arglist = []
-   arglist.append(parser.add_argument( "-i","--input"         , type=str,  dest="inws"        ,  help="input workspace name.", required=True, default=None))
-   arglist.append(parser.add_argument( "-o","--output"        , type=str,  dest="outws"       , help="output workspace name.", required=True))
-   arglist.append(parser.add_argument( "--pois"          , nargs="+", type=str,    dest="pois"        , help="POIs to measure.", required=True))
-   arglist.append(parser.add_argument( "--percentages"   , nargs="+", type=float,  dest="pct"         , help="percentage change in poi variances",default=[1]))
-   arglist.append(parser.add_argument( "--snapshot-name"      , type=str,  dest="snapname"    , help="name of the pruned snapshot", required=True))
-   arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"    , help="NPs for prune check", default=".*"))
-   arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , nargs="+", help="path to fit result"))
-   arglist.append(parser.add_argument( "--order"         ,action='append',nargs="+"      , dest="orderfiles", help="files with the NPs and their ranks"))
+   parser = ArgumentParser(description="prune nuisance parameters")
+   parser.add_argument( "-i","--input"         , type=str,  dest="inws"        ,  help="input workspace name.", required=True, default=None)
+   parser.add_argument( "-o","--output"        , type=str,  dest="outws"       , help="output workspace name.",default=None)
+   parser.add_argument( "--write-list",type=str,  dest="outlist"       , help="output list of pruned parameters.",default=None)
+   parser.add_argument( "--pois"          , nargs="+", type=str,    dest="pois"        , help="POIs to measure.", required=True)
+   parser.add_argument( "--percentages"   , nargs="+", type=float,  dest="pct"         , help="percentage change in poi variances",default=[1])
+   parser.add_argument( "--snapshot-name"      , type=str,  dest="snapname"    , help="name of the pruned snapshot", required=True)
+   parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"    , help="NPs for prune check", default=".*")
+   parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , nargs="+", help="path to fit result")
+   parser.add_argument( "--order"         ,action='append',nargs="+"      , dest="orderfiles", help="files with the NPs and their ranks")
    args = parser.parse_args()
 
    from sys import flags

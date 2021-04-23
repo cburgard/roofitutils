@@ -450,9 +450,9 @@ def getjobdims(dim,time):
         k = k+dimsize+1
     return dims
 
-def getnofNPs(hesse,pois):
+def countNPs(hesse,pois):
     N = hesse.GetNcols()
-    npois = len(pois.strip(","))
+    npois = len(pois)
     return N - npois
 
 def sgnstr(x):
