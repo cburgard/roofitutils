@@ -179,7 +179,11 @@ def writepois(atlas,pois,allsets_input,outfilename,plotlabels=[],range=[-2,2],sm
             outfile.write("\\draw ("+str(smval)+",-1) -- ("+str(smval)+","+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:
             outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{\\textsf{"+texify(x))
-            scale=poiopts.get(x,{}).get("scale",1.)
+            opts = poiopts.get(x,{})
+            if isdict(opts):
+                scale= opts.get("scale",1.)
+            else:
+                scale = 1.
             if scale != 1.:
                 outfile.write(" ($\\times {:g}$)".format(scale))
             outfile.write("}};\n")
