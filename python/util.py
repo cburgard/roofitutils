@@ -410,9 +410,9 @@ def mergescans1d(scan1,scan2):
     mergevals = mergescan1d(allvals1[0], allvals2[0])
     mergescans = {}
     for param in scan1:
-      mergescans[param] = {}
-      for option in scan1[param]:
-        mergescans[param][option] = mergevals
+        mergescans[param] = {}
+        for option in scan1[param]:
+            mergescans[param][option] = mergevals
     return mergescans
   
 def createAsimov(ws,mc,asmName):
@@ -427,57 +427,33 @@ def createAsimov(ws,mc,asmName):
     asimovData.SetName(asmName)
     getattr(ws,"import")(asimovData)
 
-def makePOIstring(infilename):
-  from ROOT import TFile, RooStats
-  f = TFile.Open(infilename)
-  for key in f.GetListOfKeys():
-    if "ProcessID" not in key.GetName():
-      wkspc = f.Get(key.GetName())
-      modelconfig = wkspc.obj("ModelConfig")
-      pois = modelconfig.GetParametersOfInterest()
-      itr = pois.createIterator()
-      pois, var = "", itr.Next()
-      while var:
-        pois = pois + var.GetName() + ","
-        var = itr.Next()
-      pois = pois[0:len(pois)-1]
-  return pois
-
-def retriveObj(filename):
-  import ROOT
-  file0 = ROOT.TFile.Open(filename)
-  for x in file0.GetListOfKeys():
-    if "ProcessID" not in x.GetName():
-      obj = file0.Get(x.GetName())
-  return obj
-
 def makepctstring(pois,pct):
-  pctstring, npois = "", len(pois)
-  for i in range(0,npois): pctstring = pctstring + str(pct)+","
-  return pctstring[0:len(pctstring)-1]
+    pctstring, npois = "", len(pois)
+    for i in range(0,npois): pctstring = pctstring + str(pct)+","
+    return pctstring[0:len(pctstring)-1]
 
 def getjobdims(dim,time):
- import math
- dimred = dim/1000.
- t = 25*dimred*dimred*dimred*dimred
- # split into n jobs such that 
- njobs = int(math.ceil(t/time))
- dimsize = int(math.ceil(dim/njobs))
- k = 0
- dims = []
- for i in range(0,njobs):
-   lo = k 
-   hi = k+dimsize
-   if lo >=dim: break
-   if hi >=dim: hi = dim
-   dims.append([lo,hi])
-   k = k+dimsize+1
- return dims
+    import math
+    dimred = dim/1000.
+    t = 25*dimred*dimred*dimred*dimred
+    # split into n jobs such that 
+    njobs = int(math.ceil(t/time))
+    dimsize = int(math.ceil(dim/njobs))
+    k = 0
+    dims = []
+    for i in range(0,njobs):
+        lo = k 
+        hi = k+dimsize
+        if lo >=dim: break
+        if hi >=dim: hi = dim
+        dims.append([lo,hi])
+        k = k+dimsize+1
+    return dims
 
 def getnofNPs(hesse,pois):
-  N = hesse.GetNcols()
-  npois = len(pois.strip(","))
-  return N - npois
+    N = hesse.GetNcols()
+    npois = len(pois.strip(","))
+    return N - npois
 
 def sgnstr(x):
     if x<0: return str(x)
@@ -669,4 +645,63 @@ def filterdict(data, types=[], keys=[], allow_empty=False):
         return data  # return it as-is, hope for the best...
     raise ValueError
 
-    
+def parsecsv(infile,delimiter=',',quotechar='|'):
+    """ requires a csv form where the first column serves as a label """
+    import csv
+    with open(infile) as csvfile:
+        reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar)
+        header = next(reader, None)
+        tabledict = {}
+        for row in reader:
+            tabledict[row[0]] = {}
+            for icol in range(1,len(header)):
+                tabledict[row[0]][header[icol]] = float(row[icol])
+
+    return tabledict
+
+def dicttoarr(indict,names=False):
+    """ convert a dict of dict of a matrix to an array
+        pass names as True if the names of the parameters
+        is to be returned """
+    matarr = []
+    for ipar1 in sorted(indict.keys()):
+        tmparr = []
+        for ipar2 in sorted(indict.keys()):
+            tmparr.append(indict[ipar1][ipar2])
+        matarr.append(tmparr)
+    if names:
+        return sorted(indict.keys()), matarr
+    else: return matarr
+
+def makecovmat(corarr,uncer):
+    """ make array of a covariance matrix given a
+        array of correlation matrix and uncertainities"""
+    import math
+    covarr, npar = [], len(uncer)
+    for ipar1 in range(0,npar):
+        val1 = uncer[ipar1]
+        tmparr = []
+        for ipar2 in range(0,npar):
+            val2 = uncer[ipar2]
+            tmparr.append(corarr[ipar1][ipar2]*val1*val2)
+        covarr.append(tmparr)
+    return covarr
+
+def arrtotmat(arr):
+    """ return array to a TMatrix object """
+    import ROOT
+
+    npar = len(arr)
+    tmat = ROOT.TMatrixDSym(npar)
+    for ipar1 in range(0,npar):
+        for ipar2 in range(0,npar):
+            tmat[ipar1][ipar2] = arr[ipar1][ipar2]
+    return tmat
+
+def getunc(indict,name="asm up"):
+    import math
+    uncer = []
+    for par in sorted(indict.keys()):
+        uncer.append(0.5*(indict[par][name+"up"]+abs(indict[par][name+"down"])))
+    return uncer
+

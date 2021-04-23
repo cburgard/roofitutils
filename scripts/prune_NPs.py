@@ -3,19 +3,16 @@
 def runPruning(args):
   import ROOT, sys
   ROOT.PyConfig.IgnoreCommandLineOptions = True
-  from RooFitUtils.util import loadRooFitUtils,makepctstring,getjobdims,makePOIstring,retriveObj
+  from RooFitUtils.util import loadRooFitUtils,makepctstring,getjobdims
  # load libraries
   loadRooFitUtils()
 
   msrmnt = ROOT.RooFitUtils.Measurement("meas")
-  if not len(args.pois):
-     pois = makePOIstring(args.inws)
-  else: 
-   pois = args.pois
 
   from RooFitUtils.io import getFitResult
-  fitresult = getFitResult(*args.fitResult)   
+  pois = args.pois
 
+  fitresult = getFitResult(*args.fitResult)   
   chesse = fitresult.covarianceMatrix().Invert()
   dim = chesse.GetNcols()
 
@@ -45,20 +42,16 @@ if __name__ == "__main__":
    from argparse import ArgumentParser
    parser = ArgumentParser("run pruning")
    arglist = []
-   arglist.append(parser.add_argument( "--input"         , type=str,  dest="inws"        ,  help="input workspace name.", required=True, default=None))
-   arglist.append(parser.add_argument( "--output"        , type=str,  dest="outws"       , help="output workspace name.", default=None))
+   arglist.append(parser.add_argument( "-i","--input"         , type=str,  dest="inws"        ,  help="input workspace name.", required=True, default=None))
+   arglist.append(parser.add_argument( "-o","--output"        , type=str,  dest="outws"       , help="output workspace name.", required=True))
    arglist.append(parser.add_argument( "--pois"          , nargs="+", type=str,    dest="pois"        , help="POIs to measure.", required=True))
    arglist.append(parser.add_argument( "--percentages"   , nargs="+", type=float,  dest="pct"         , help="percentage change in poi variances",default=[1]))
    arglist.append(parser.add_argument( "--snapshot-name"      , type=str,  dest="snapname"    , help="name of the pruned snapshot", required=True))
    arglist.append(parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"    , help="NPs for prune check", default=".*"))
    arglist.append(parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , nargs="+", help="path to fit result"))
    arglist.append(parser.add_argument( "--order"         ,action='append',nargs="+"      , dest="orderfiles", help="files with the NPs and their ranks"))
-   arglist.append(parser.add_argument( "--logsave"       , action='store_true',  dest="logsave" , help="save a log"))
    args = parser.parse_args()
 
    from sys import flags
-
    from ROOT import gSystem
    runPruning(args)
-
-# python scripts/prune_NPs.py --input test/WS-Comb-5XS_80ifb_postFit.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root fitresult_minimizer_combData --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --snapshot-name prune_combData_1pct --order test/order_*.txt --output test/WS-Comb-5XS_80ifb_postFit_prune.root
