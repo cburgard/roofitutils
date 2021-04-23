@@ -16,9 +16,10 @@ def texify(string):
         return latex_aliases[string]
     return string.replace("_","\\_")
 
-def dict2mat(mat):
-    pars = sorted(list(set(list(mat.keys()))))
-    m = [ [ mat[pi][pj] if pj in mat[pi].keys() else mat[pj][pi] for pi in pars] for pj in pars ]
+def dict2mat(mat,parnames=None):
+    if not parnames:
+        parnames = sorted(list(set(list(mat.keys()))))
+    m = [ [ mat[pi][pj] if pj in mat[pi].keys() else mat[pj][pi] for pi in parnames] for pj in parnames ]
     from numpy import array
     return array(m)
 
@@ -150,10 +151,16 @@ def getCovariance(infilename,frname=None,parameters=None):
 
 def getCorrelation(infilename,frname=None,parameters=None):
     mat = getCovariance_ROOT(infilename,frname,parlist=parameters)
+    return cov2corr(mat)
+
+def cov2corr(mat):
     from numpy import array
     from math import sqrt
-    return array([ [ mat(i,j) / sqrt(mat(i,i) * mat(j,j)) for i in range(0,mat.GetNcols()) ] for j in range(0,mat.GetNrows()) ])
-
+    try:
+        return array([ [ mat(i,j) / sqrt(mat(i,i) * mat(j,j)) for i in range(0,mat.GetNcols()) ] for j in range(0,mat.GetNrows()) ])
+    except:
+        return array([ [ mat[i][j] / sqrt(mat[i][i] * mat[j][j]) for i in range(0,len(mat)) ] for j in range(0,len(mat)) ])        
+    
 def readtables(infilenames):
     from RooFitUtils.util import isstr,striplatex
     if isstr(infilenames):
@@ -204,22 +211,31 @@ def collectresult_json(results,filename,label):
     scans = results["scans"]
     if not "MLE" in results.keys():
         results["MLE"] = {}
-    MLEs = results["MLE"]    
+    if not "cov" in results.keys():
+        results["cov"] = {}    
     with open(filename,"rt") as infile:
         import json
         js = json.load(infile)
-        for scan in js["scans"]:
-            key = tuple(scan["label"].split(","))
-            scans[key] = {label:{}}
-            for point in scan["points"]:
-                pvals = tuple([ p["val"] for p in point["parameters"]])
-                nll = point["nll"]
-                scans[key][label][pvals] = nll
-        for par in js["MLE"]["parameters"]:
-            pname = par["name"]
-            if not pname in results.keys():
-                MLEs[pname] = {}
-            MLEs[pname][label] = par
+        if "scans" in js.keys():
+            for scan in js["scans"]:
+                key = tuple(scan["label"].split(","))
+                scans[key] = {label:{}}
+                for point in scan["points"]:
+                    pvals = tuple([ p["val"] for p in point["parameters"]])
+                    nll = point["nll"]
+                    scans[key][label][pvals] = nll
+        if "MLE" in js.keys():
+            MLE = results["MLE"]
+            for par in js["MLE"]["parameters"]:
+                pname = par["name"]
+                if not label in MLE.keys():
+                    MLE[label] = {}
+                MLE[label][pname] = par
+            if "cov" in js["MLE"].keys():
+                matrix = js["MLE"]["cov"]["matrix"]
+                params = js["MLE"]["cov"]["parameter_names"]        
+                results["cov"][label] = { params[i]:{params[j]:matrix[i][j] for j in range(len(params))} for i in range(len(params)) }
+
 
 def collectresult_root(results,filename,label):
     if not "scans" in results.keys():
@@ -406,7 +422,7 @@ def collectbreakdowns(rankings,files,poiname):
     return allvars
         
     
-def collectresults(results,files,label):
+def collectresults(results,files,label="default"):
     """collect a set of results files and return the contents as a dictionary"""
     filenames = collectfilenames(files)
     for filename in filenames:
@@ -482,3 +498,28 @@ def collecthistograms(histograms,cfg,parameters=None):
                         histograms[p][b] = float(match.group("c").replace(" ",""))
 
                         
+def readparameter(elem,style={}):
+    from RooFitUtils.util import isdict
+    cvs = []
+    intervals = []
+    if isdict(elem):
+        try:
+            cvs = [ v for v in elem["val"] ]
+        except TypeError:
+            cvs = [elem["val"]]
+        if "intervals" in elem.keys():
+            intervals = elem["intervals"]
+        elif "eDn" in elem.keys() and "eUp" in elem.keys():
+            intervals = [[elem["val"]-abs(elem["eDn"]),elem["val"]+abs(elem["eUp"])]]
+        elif "err" in elem.keys():
+            intervals = [[elem["val"]-abs(elem["err"]),elem["val"]+abs(elem["err"])]]
+    elif style.get("interval",False):
+        intervals = [(lo,hi) for lo,hi in elem]
+    elif style.get("error",True):
+        cv,lo,hi = elem
+        cvs = [cv]
+        intervals = [[cv-abs(lo),cv+abs(hi)]]
+    elif style.get("point",True):
+        cvs = [elem[0]]
+    return cvs,intervals
+

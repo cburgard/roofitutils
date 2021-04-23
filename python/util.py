@@ -511,7 +511,7 @@ def findSignificantDigits(x):
     else:
         return max(0,-scale-1)
 
-def formatPDG(x,xup,xdn):
+def formatPDG(x,xup,xdn,lap=False,show="v+-"):
     from math import isnan
     if isnan(x): return "NaN"
     elif isnan(xup) and isnan(xdn): return str(x)
@@ -520,7 +520,21 @@ def formatPDG(x,xup,xdn):
     else:
         digits = max(findSignificantDigits(abs(xup)),findSignificantDigits(abs(xdn)))
     fmt = "{:."+str(int(digits))+"f}"
-    return fmt.format(x) + "^{+" + fmt.format(abs(xup)) +"}_{" + fmt.format(-abs(xdn))+"}"
+    retval = "\\ensuremath{"
+    if "v" in show:
+        num = fmt.format(x)
+        if lap and "." in num:
+            parts = num.split(".")
+            num = "\\llap{\\ensuremath{"+parts[0]+"}}."+parts[1]
+        retval += num
+    else:
+        retval += "{}"
+    if "+" in show:
+        retval += "^{+" + fmt.format(abs(xup)) +"}"
+    if "-" in show:
+        retval += "_{" + fmt.format(-abs(xdn))+"}"
+    retval += "}"
+    return retval
     
     
 def formatNumberPDG(x,forceSign=False):
@@ -574,6 +588,9 @@ def restore_c_output(tup):
 def extend(d,otherd={}):
     d.update(otherd)
     return d
+
+def superset(thelist):
+    return sorted(list(set(flattened(thelist))))
 
 def typecast(d):
     if not isdict(d):
