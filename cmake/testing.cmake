@@ -1,7 +1,7 @@
 file(GLOB TestScripts "${CMAKE_CURRENT_SOURCE_DIR}/test/*.sh")
 foreach(TestScript ${TestScripts})
   get_filename_component(TestName ${TestScript} NAME)
-  add_test(NAME ${TestName} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMMAND bash ${TestScript})
+  add_test(NAME ${TestName} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMMAND bash -e ${TestScript})
   set_tests_properties(${TestName} PROPERTIES ENVIRONMENT "PYTHONPATH=$ENV{PYTHONPATH}:${EXPORT_PYTHONPATH}")
 endforeach()
 
