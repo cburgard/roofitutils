@@ -216,22 +216,25 @@ def collectresult_json(results,filename,label):
     with open(filename,"rt") as infile:
         import json
         js = json.load(infile)
-        for scan in js["scans"]:
-            key = tuple(scan["label"].split(","))
-            scans[key] = {label:{}}
-            for point in scan["points"]:
-                pvals = tuple([ p["val"] for p in point["parameters"]])
-                nll = point["nll"]
-                scans[key][label][pvals] = nll
-        MLEs = results["MLE"]
-        for par in js["MLE"]["parameters"]:
-            pname = par["name"]
-            if not label in MLEs.keys():
-                MLEs[label] = {}
-            MLEs[label][pname] = par
-        matrix = js["MLE"]["cov"]["matrix"]
-        params = js["MLE"]["cov"]["parameter_names"]        
-        results["cov"][label] = { params[i]:{params[j]:matrix[i][j] for j in range(len(params))} for i in range(len(params)) }
+        if "scans" in js.keys():
+            for scan in js["scans"]:
+                key = tuple(scan["label"].split(","))
+                scans[key] = {label:{}}
+                for point in scan["points"]:
+                    pvals = tuple([ p["val"] for p in point["parameters"]])
+                    nll = point["nll"]
+                    scans[key][label][pvals] = nll
+        if "MLE" in js.keys():
+            MLE = results["MLE"]
+            for par in js["MLE"]["parameters"]:
+                pname = par["name"]
+                if not label in MLE.keys():
+                    MLE[label] = {}
+                MLE[label][pname] = par
+            if "cov" in js["MLE"].keys():
+                matrix = js["MLE"]["cov"]["matrix"]
+                params = js["MLE"]["cov"]["parameter_names"]        
+                results["cov"][label] = { params[i]:{params[j]:matrix[i][j] for j in range(len(params))} for i in range(len(params)) }
 
 
 def collectresult_root(results,filename,label):
