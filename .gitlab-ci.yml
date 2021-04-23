@@ -9,7 +9,10 @@ variables:
   image: atlasadc/atlas-grid-centos7
   tags:
     - cvmfs
-  
+
+.latex: &latex
+  image: blang/latex
+    
 .atlasroot: &atlasroot
   <<: *cvmfs  
   before_script:
@@ -60,6 +63,7 @@ variables:
 stages:
   - build
   - run
+  - render
 
 .build: &build
   stage: build
@@ -80,11 +84,21 @@ stages:
     - source setup.sh
     - ctest --output-on-failure
   artifacts:
-    expire_in: 1d
+    expire_in: 3mo
     paths:
-      - "*.pdf"      
+      - "*.root"      
+      - "*.txt"
       - "*.tex"
       - "*.json"
+
+.render: &render
+  stage: render
+  script:
+    - for file in *.tex; pdflatex $file; done
+  artifacts:
+    expire_in: 3mo
+    paths:
+      - "*.pdf"      
 
 
 ##################################################################################
@@ -151,3 +165,37 @@ atlstats_run:
   <<: *run
   dependencies:
     - atlstats_build
+
+# render  
+
+atlasroot_render:
+  <<: *latex
+  <<: *render
+  dependencies:
+    - atlasroot_run
+
+latestroot_render:
+  <<: *latex
+  <<: *render
+  dependencies:
+    - latestroot_run
+
+hcombroot_render:
+  <<: *latex
+  <<: *render
+  dependencies:
+    - hcombroot_run
+  
+analysisbase_render:
+  <<: *latex
+  <<: *render
+  dependencies:
+    - analysisbase_run
+  
+atlstats_render:
+  <<: *latex
+  <<: *render
+  dependencies:
+    - atlstats_run    
+
+    
