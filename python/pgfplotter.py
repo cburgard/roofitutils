@@ -204,8 +204,6 @@ def guessanchor(angle):
         return "north"
     else:
         return "north east"
-
-
     
 def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None,centralval=None):
     """write a correlation matrix to a pgfplots tex file"""
@@ -269,8 +267,8 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
         outfile.write("    layers/decorated plot/.define layer set={background,main,foreground}{},\n")
         outfile.write("    clip mode=individual,\n")
         outfile.write("    set layers=decorated plot,\n")
-        outfile.write("    x tick label style={scale=1.5,anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
-        outfile.write("    y tick label style={scale=1.5},\n")
+        outfile.write("    x tick label style={font={\sffamily},scale=1.5,anchor="+guessanchor(rotatelabels)+",rotate="+str(rotatelabels)+"},\n")
+        outfile.write("    y tick label style={font={\sffamily},scale=1.5},\n")
         outfile.write("    colorbar style={y tick label style={scale=1.5,/pgf/number format/fixed}")
         if axlabel: outfile.write(",ylabel={"+axlabel+"},y label style={anchor=east,yshift=-2cm,scale=2,at={(axis description cs:1,1)}}")
         outfile.write("},\n")        
