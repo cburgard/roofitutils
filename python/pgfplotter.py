@@ -21,6 +21,7 @@ def writehead(stream,atlas=True,varwidth=None):
     stream.write("]{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
     stream.write("\\usepackage{pgfplots,tikz}\n")
+    stream.write("\\usepackage{iftex}\n")
     stream.write("\\usetikzlibrary{calc}\n")
     if atlas:
         stream.write("\\ifpdftex\\usepackage[scaled=1]{helvet}\\fi\n")
