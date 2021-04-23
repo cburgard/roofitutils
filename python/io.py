@@ -121,6 +121,20 @@ def reduceparams(allpars,parfilter):
             skimpars += " "+ texify(x)
     return skimpars[1:len(skimpars)]
 
+def getFitResult(infilename,key=None):
+    import ROOT
+    file0 = ROOT.TFile.Open(infilename,"READ")
+    if not file0 or not file0.IsOpen():
+        raise RuntimeError("unable to open file "+infilename)
+    if key:
+        fitresult = file0.Get(key)
+    else:
+        for k in file0.GetListOfKeys():
+            if k.GetClassName() == "RooFitResult":
+                fitresult = k.ReadObj()
+    file0.Close()
+    return fitresult
+
 def getCovariance_ROOT(infilename,frname,parlist):
     import ROOT
     from os.path import isfile

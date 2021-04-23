@@ -452,7 +452,7 @@ def retriveObj(filename):
   return obj
 
 def makepctstring(pois,pct):
-  pctstring, npois = "", len(pois.split(","))
+  pctstring, npois = "", len(pois)
   for i in range(0,npois): pctstring = pctstring + str(pct)+","
   return pctstring[0:len(pctstring)-1]
 

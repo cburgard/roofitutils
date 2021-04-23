@@ -53,8 +53,8 @@ RooFitUtils::AbsMeasurement::AbsMeasurement(const std::string &MeasurementName,
   ROOT::Math::MinimizerOptions::SetDefaultStrategy(fDefaultStrategy);
   ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(1);
 
-  coutP(InputArguments) << "AbsMeasurement::AbsMeasurement(" << fName
-                        << ") created" << std::endl;
+//  coutP(InputArguments) << "AbsMeasurement::AbsMeasurement(" << fName
+//                        << ") created" << std::endl;
 }
 
 // ____________________________________________________________________________|__________

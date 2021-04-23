@@ -23,8 +23,8 @@ const std::string RooFitUtils::RenamingMap::ConstraintTypeNames[] = {
 RooFitUtils::RenamingMap::RenamingMap(std::string MapName)
     : TNamed(MapName.c_str(), MapName.c_str()) {
   // Constqructor
-  coutP(InputArguments) << "RenamingMap::RenamingMap(" << fName << ") created"
-                        << std::endl;
+//  coutP(InputArguments) << "RenamingMap::RenamingMap(" << fName << ") created"
+//                        << std::endl;
 }
 
 // ____________________________________________________________________________|__________
