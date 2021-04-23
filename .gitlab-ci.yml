@@ -94,7 +94,7 @@ stages:
 .render: &render
   stage: render
   script:
-    - for file in *.tex; pdflatex $file; done
+    - for file in *.tex; do pdflatex $file; done
   artifacts:
     expire_in: 3mo
     paths:
