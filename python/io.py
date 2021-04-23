@@ -217,9 +217,9 @@ def collectresult_json(results,filename,label):
                 scans[key][label][pvals] = nll
         for par in js["MLE"]["parameters"]:
             pname = par["name"]
-            if not pname in results.keys():
-                MLEs[pname] = {}
-            MLEs[pname][label] = par
+            if not label in MLEs.keys():
+                MLEs[label] = {}
+            MLEs[label][pname] = par
 
 def collectresult_root(results,filename,label):
     if not "scans" in results.keys():
@@ -482,3 +482,28 @@ def collecthistograms(histograms,cfg,parameters=None):
                         histograms[p][b] = float(match.group("c").replace(" ",""))
 
                         
+def readparameter(elem,style={}):
+    from RooFitUtils.util import isdict
+    cvs = []
+    intervals = []
+    if isdict(elem):
+        try:
+            cvs = [ v for v in elem["val"] ]
+        except TypeError:
+            cvs = [elem["val"]]
+        if "intervals" in elem.keys():
+            intervals = elem["intervals"]
+        elif "eDn" in elem.keys() and "eUp" in elem.keys():
+            intervals = [[elem["val"]-abs(elem["eDn"]),elem["val"]+abs(elem["eUp"])]]
+        elif "err" in elem.keys():
+            intervals = [[elem["val"]-abs(elem["err"]),elem["val"]+abs(elem["err"])]]
+    elif style.get("interval",False):
+        intervals = [(lo,hi) for lo,hi in elem]
+    elif style.get("error",True):
+        cv,lo,hi = elem
+        cvs = [cv]
+        intervals = [[cv-abs(lo),cv+abs(hi)]]
+    elif style.get("point",True):
+        cvs = [elem[0]]
+    return cvs,intervals
+

@@ -62,17 +62,18 @@ def writefoot(stream):
 def writeATLAS(outfile,label="\\ATLASlabel",inside=True,
                labels=["\\scriptsize{$\\sqrt{s}=$13 TeV, 139 fb$^{\\scriptsize{-1}}$}",
                        "\\scriptsize{$m_{\\scalebox{.9}{$\\scriptstyle H$}}=$ 125.09 GeV, $|y_{\\scalebox{.9}{$\\scriptstyle H$}}|$ $<$ 2.5}"],labelspread=1.8):
+    from RooFitUtils.io import texify
     if inside:
-        outfile.write("\\node (atlas) at (rel axis cs:0.025,0.975) [anchor=north west,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape}]{ATLAS};\n")
-        outfile.write("\\node (atlaslabel) at (atlas.east) [anchor=west,font={\\fontfamily{qhv}\\selectfont}]{"+label+"};\n")        
+        outfile.write("\\node (atlas) at (rel axis cs:0.025,0.975) [anchor=north west]{\\textsf{\\textbf{\\textit{ATLAS}}}};\n")
+        outfile.write("\\node (atlaslabel) at (atlas.east) [anchor=west]{\\textsf{"+label+"}};\n")        
     else:
-        outfile.write("\\node (atlas) at (rel axis cs:0,1) [scale=2,above right,font={\\fontfamily{qhv}\\selectfont\\bfseries\\itshape}]{ATLAS};\n")
-        outfile.write("\\node (atlaslabel) at (atlas.east) [scale=2,anchor=west,font={\\fontfamily{qhv}\\selectfont}]{"+label+"};\n")
+        outfile.write("\\node (atlas) at (rel axis cs:0,1) [scale=2,above right]{\\textsf{\\textbf{\\textit{ATLAS}}}};\n")
+        outfile.write("\\node (atlaslabel) at (atlas.east) [scale=2,anchor=west]{\\textsf{"+label+"}};\n")
     if inside:
         for i in range(0,len(labels)):
-            outfile.write("\\node at (atlas.west) [anchor=west,scale=0.8,yshift=-"+str(labelspread*(i+1))+"em]{"+labels[i]+"};\n")
+            outfile.write("\\node at (atlas.west) [anchor=west,scale=0.8,yshift=-"+str(labelspread*(i+1))+"em]{"+texify(labels[i])+"};\n")
     else:
-        outfile.write("\\node at (atlaslabel.east) [anchor=west,scale=1.5]{"+", ".join(labels)+"};\n")
+        outfile.write("\\node at (atlaslabel.east) [anchor=west,scale=1.5]{"+", ".join(map(texify,labels))+"};\n")
 
 def concat(strlist):
     string = ""
@@ -82,92 +83,113 @@ def concat(strlist):
 
 def writepoiset(idx,poinames,allpois,outfile,style,poiopts,spread,printvalues):
     from math import isnan
-    from RooFitUtils.util import formatNumberPDG
-    from RooFitUtils.io import texify
+    from RooFitUtils.util import formatNumberPDG,formatPDG
+    from RooFitUtils.io import texify,readparameter
     color = style.get("color","black")
     count = 0
-    shift = style.get("labelshift",str(-1.5+-3*idx)+"em")
+    shift = style.get("labelshift",str(1+4*idx)+"em")
     if printvalues and "label" in style.keys():
-        outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*len(poinames)))+"}) {"+texify(style.get("label",""))+"};\n")
-    for ipoi in poinames:
-        x = ipoi
-        scale = poiopts.get(ipoi,{}).get("scale",1)
-        if not x in allpois.keys(): continue
-        tup = allpois[x]
-        if style.get("interval",False):
-            for lo,hi in tup:
-                outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(scale*lo,spread*count,scale*hi,spread*count))
-        if style.get("error",True):
-            cv,lo,hi = tup
-            if isnan(lo) or isnan(hi):
-                print("encountered nan while plotting!")
-            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(float((cv+abs(hi))*scale),float(spread*count),float((cv-abs(lo))*scale),float(spread*count)))
-        if style.get("point",True):
-            if style.get("error",True):
-                cvs = [tup[0]]
-            else:
-                try:
-                    cvs = [v for v in tup]
-                except TypeError:
-                    cvs = [tup]
-            for v in cvs:
-                outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(float(scale*v),float(spread*count))+ "{};\n")
+        outfile.write("  \\node[xshift="+shift+",anchor=base] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*len(poinames)))+"}) {\\textsf{"+texify(style.get("label",""))+"}};\n")
+    for poi in poinames:
+        scale = poiopts.get(poi,{}).get("scale",1)
+        if not poi in allpois.keys(): continue
+        cvs,intervals = readparameter(allpois[poi])
+        
+        for lo,hi in intervals:
+            outfile.write("  \\draw[color="+color+","+style.get("style","solid")+"] (axis cs:{:.5f},{:.2f})--(axis cs:{:.5f},{:.2f});\n".format(scale*lo,spread*count,scale*hi,spread*count))
+        for v in cvs:
+            outfile.write("  \\node[circle,fill,inner sep=2pt,color="+color+","+style.get("style","draw=none")+"] at (axis cs:{:.5f},{:.2f})".format(float(scale*v),float(spread*count))+ "{};\n")
         if printvalues:
-            if style.get("error",True) and style.get("point",True):
-                cv,lo,hi = tup
-                outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {$" + formatNumberPDG(v) + "^{" + formatNumberPDG(hi,True) + "}_{" + formatNumberPDG(lo,True)+"}$};\n")
-            elif style.get("error",True):
-                cv,lo,hi = tup                
-                outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {${}^{" + formatNumberPDG(hi,True) + "}_{" + formatNumberPDG(lo,True)+"}$};\n")
-            elif style.get("point",True):
-                try:
-                    cv = tup[0]
-                except TypeError:
-                    cv = tup                
-                outfile.write("  \\node[xshift="+shift+"] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {" + formatNumberPDG(v) + "};\n")
+            if len(cvs) == 1 and len(intervals) == 1:
+                v = cvs[0]
+                lo = intervals[0][0]-v
+                hi = intervals[0][1]-v
+                outfile.write("  \\node[xshift="+shift+",anchor=base west] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*count))+"}) {")                    
+                if style.get("point",True) and style.get("error",True):
+                    outfile.write(formatPDG(v,hi,lo,lap=True,show="v+-"))
+                elif style.get("error",True):
+                    outfile.write(formatPDG(v,hi,lo,lap=True,show="v"))
+                elif style.get("point",True):
+                    outfile.write(formatNumberPDG(v))
+                outfile.write("};\n")
         count = count+1
 
 
         
-def writepois(atlas,pois,allsets,outfilename,plotlabels=[],range=[-2,2],smval=0,spread=1,printvalues=False):
+def writepois(atlas,pois,allsets_input,outfilename,plotlabels=[],range=[-2,2],smval=0,spread=1,printvalues=False):
     """write a POI plot to a pgfplots tex file"""
-    from RooFitUtils.io import texify
-    from RooFitUtils.util import parsepois,parsegroups
+    from RooFitUtils.io import texify,readparameter
+    from RooFitUtils.interpolate import inf
+    from RooFitUtils.util import parsepois,parsegroups,islist,isdict,parsedict,flattened
+    
+    if islist(allsets_input):
+        allsets = allsets_input
+    elif isdict(allsets_input):
+        allsets = [(parsedict(key),value) for key,value in allsets_input.items()]
+    
     poinames,poiopts = parsepois(pois,options=True)
     poinames.reverse()
     groups = parsegroups(pois)
+
+    if range[0] != None:
+        minval = range[0]
+    else:
+        minval = inf
+        for key,poiset in allsets:
+            for poi in poinames:
+                if not poi in poiset.keys(): continue
+                cvs,intervals = readparameter(poiset[poi])
+                minval = min(minval,min(cvs + list(flattened(intervals))))
+    if range[1] != None:
+        maxval = range[1]
+    else:
+        maxval = -inf
+        for key,poiset in allsets:
+            for poi in poinames:
+                if not poi in poiset.keys(): continue
+                cvs,intervals = readparameter(poiset[poi])
+                maxval = max(maxval,max(cvs + list(flattened(intervals))))
+    
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
+        outfile.write("    width = 0.8\\textwidth,\n")        
         outfile.write("    width = 0.8\\textwidth,\n")
         outfile.write("    y=1cm,\n")
-        outfile.write("    xlabel = {Parameter Value}, \n")
+        outfile.write("    xlabel = {\\textsf{Parameter Value}}, \n")
         outfile.write("    clip = false,\n")
-        outfile.write("    ymin=-1,\n")
-        outfile.write("    ymax= "+str(len(plotlabels) + spread * len(poinames))+ ",\n")
-        outfile.write("    xmin="+str(range[0])+",\n")
-        outfile.write("    xmax="+str(range[1])+",\n")
+        outfile.write("    ymin=-0.5,\n")
+        ymax = spread*(len(poinames)-0.5)
+        if atlas:
+            ymax += 1+len(plotlabels)
+        outfile.write("    ymax= "+str(ymax)+ ",\n")
+        outfile.write("    xmin="+str(minval)+",\n")
+        outfile.write("    xmax="+str(maxval)+",\n")
         outfile.write("    minor tick num=4,\n")
         outfile.write("    ytick style={draw=none},\n")
         outfile.write("    yticklabels=\empty,\n")
+        outfile.write("    enlarge x limits=true,\n")        
         outfile.write("    xticklabel style={/pgf/number format/fixed},\n")
         outfile.write("    scaled ticks=false,\n")
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)            
         count = 0
-        outfile.write("\\draw ("+str(smval)+",-1) -- ("+str(smval)+","+str(spread*(len(poinames)-0.5))+");\n")
+        if smval > minval and smval < maxval:
+            outfile.write("\\draw ("+str(smval)+",-1) -- ("+str(smval)+","+str(spread*(len(poinames)-0.5))+");\n")
         for x in poinames:
-            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{"+texify(x))
+            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{\\textsf{"+texify(x))
             scale=poiopts.get(x,{}).get("scale",1.)
             if scale != 1.:
                 outfile.write(" ($\\times {:g}$)".format(scale))
-            outfile.write("};\n")
+            outfile.write("}};\n")
             count += 1
         count = 0
-        for options,poiset in allsets:
-            writepoiset(count,poinames,poiset,outfile,options,poiopts,spread,printvalues)
+        
+        for key,poiset in allsets:
+            writepoiset(count,poinames,poiset,outfile,key,poiopts,spread,printvalues)
             count += 1
+                
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
