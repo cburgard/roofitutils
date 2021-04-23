@@ -11,7 +11,7 @@ variables:
     - cvmfs
 
 .latex: &latex
-  image: blang/latex
+  image: joergklein/texlive
     
 .atlasroot: &atlasroot
   <<: *cvmfs  
