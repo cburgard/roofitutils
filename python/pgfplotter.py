@@ -92,7 +92,9 @@ def writepoiset(idx,poinames,allpois,outfile,style,poiopts,spread,printvalues):
     if printvalues and "label" in style.keys():
         outfile.write("  \\node[xshift="+shift+",anchor=base] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*len(poinames)))+"}) {\\textsf{"+texify(style.get("label",""))+"}};\n")
     for poi in poinames:
-        scale = poiopts.get(poi,{}).get("scale",1)
+        opts = poiopts.get(x,{})
+        if isdict(opts):
+            scale= opts.get("scale",1.)        
         if not poi in allpois.keys(): continue
         cvs,intervals = readparameter(allpois[poi])
         
