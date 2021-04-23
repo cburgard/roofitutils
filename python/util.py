@@ -428,7 +428,7 @@ def createAsimov(ws,mc,asmName):
     getattr(ws,"import")(asimovData)
 
 def makepctstring(pois,pct):
-    pctstring, npois = "", len(pois.split(","))
+    pctstring, npois = "", len(pois)
     for i in range(0,npois): pctstring = pctstring + str(pct)+","
     return pctstring[0:len(pctstring)-1]
 
@@ -450,9 +450,9 @@ def getjobdims(dim,time):
         k = k+dimsize+1
     return dims
 
-def getnofNPs(hesse,pois):
+def countNPs(hesse,pois):
     N = hesse.GetNcols()
-    npois = len(pois.strip(","))
+    npois = len(pois)
     return N - npois
 
 def sgnstr(x):
@@ -644,13 +644,6 @@ def filterdict(data, types=[], keys=[], allow_empty=False):
     else:  # we don't know how to traverse this structure...
         return data  # return it as-is, hope for the best...
     raise ValueError
-
-def getfitresult(inlist):
-    """return fitresult given ["infilename","fitresname"]"""
-    from ROOT import TFile
-    file0 = TFile.Open(inlist[0])
-    fitresult = file0.Get(inlist[1])
-    return fitresult
 
 def parsecsv(infile,delimiter=',',quotechar='|'):
     """ requires a csv form where the first column serves as a label """

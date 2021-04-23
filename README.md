@@ -118,7 +118,7 @@ available.
  order_NPs script with `--writeSubmit` options creates a txt file
  whose lines split the rank-finding into multiple jobs.
 
-    python scripts/order_NPs.py --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --fitResult test/WS-Comb-5XS_80ifb_fitresult.root fitresult_minimizer_combData --writeSubmit test/joblines_5XS.txt --jobTime 10 --output test/order_NPs.txt
+    python scripts/order_NPs.py --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --writeSubmit test/joblines_5XS.txt --jobTime 10 --output test/order_NPs.txt
 
 This creates the joblines file `test/joblines_5XS.txt`. You can run
 these lines in parallel which will write out the nuisance parameters
@@ -127,7 +127,7 @@ ranks for the nuisance parameters witten in
 `test/order_NPs_*.txt`. You can then run the pruning procedure with
 the following line,
 
-    python scripts/prune_NPs.py --input test/WS-Comb-5XS_80ifb_postFit.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root fitresult_minimizer_combData --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --snapshot-name prune_combData_1pct --order test/order_*.txt --output test/WS-Comb-5XS_80ifb_postFit_prune.root    
+    python scripts/prune_NPs.py --input test/WS-Comb-5XS_80ifb_postFit.root --fitResult test/WS-Comb-5XS_80ifb_fitresult.root --pois r_ggF,r_VBF,r_WH,r_ZH,r_ttH --snapshot-name prune_combData_1pct --order test/order_*.txt --output test/WS-Comb-5XS_80ifb_postFit_prune.root --write-list test/pruned_NPs.txt
 
 This creates a workspace `WS-Comb-5XS_80ifb_postFit_prune.root` that
 contain the snapshots `prune_combData_1pct` that contains the nuisance

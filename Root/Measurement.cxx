@@ -19,8 +19,8 @@ RooFitUtils::Measurement::Measurement(const std::string &MeasurementName,
                      DataName),
       fSnapshotName(SnapshotName), fBinnedLikelihood(BinnedLikelihood) {
   // Constructor
-  coutP(InputArguments) << "Measurement::Measurement(" << fName << ") created"
-                        << std::endl;
+//  coutP(InputArguments) << "Measurement::Measurement(" << fName << ") created"
+//                        << std::endl;
 }
 
 // ____________________________________________________________________________|__________
@@ -34,16 +34,16 @@ RooFitUtils::Measurement::Measurement(const std::string &MeasurementName,
     : AbsMeasurement(MeasurementName, ws, ModelConfigName, DataName),
       fSnapshotName(SnapshotName), fBinnedLikelihood(BinnedLikelihood) {
   // Constructor
-  coutP(InputArguments) << "Measurement::Measurement(" << fName << ") created"
-                        << std::endl;
+//  coutP(InputArguments) << "Measurement::Measurement(" << fName << ") created"
+//                        << std::endl;
 }
 
 // ____________________________________________________________________________|__________
 
 RooFitUtils::Measurement::~Measurement() {
   // Destructor
-  coutI(InputArguments) << "Measurement::~Measurement(" << fName
-                        << ") cleaning up" << std::endl;
+//  coutI(InputArguments) << "Measurement::~Measurement(" << fName
+//                        << ") cleaning up" << std::endl;
 
   if (fIsInitialised) {
     fNuisanceParameters->Delete();

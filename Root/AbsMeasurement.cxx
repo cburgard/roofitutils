@@ -53,8 +53,8 @@ RooFitUtils::AbsMeasurement::AbsMeasurement(const std::string &MeasurementName,
   ROOT::Math::MinimizerOptions::SetDefaultStrategy(fDefaultStrategy);
   ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(1);
 
-  coutP(InputArguments) << "AbsMeasurement::AbsMeasurement(" << fName
-                        << ") created" << std::endl;
+//  coutP(InputArguments) << "AbsMeasurement::AbsMeasurement(" << fName
+//                        << ") created" << std::endl;
 }
 
 // ____________________________________________________________________________|__________
@@ -471,11 +471,10 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
     unsigned int lopos = 0;
     unsigned int pos = 0;
     // Loop over parameters in the global ranking
-    for (std::set<std::pair<double, std::string>>::iterator rankitr =
-         ranks.begin(); rankitr != ranks.end(); ++rankitr) {
+    for (auto rankitr:ranks){
       std::set<std::string> pruneNPnames;
-      par2rem = rankitr->second;
-      par2rem_err = rankitr->first;
+      par2rem = rankitr.second;
+      par2rem_err = rankitr.first;
       bool passThreshold = true;
       int tmpIndex = 0;
 
@@ -494,14 +493,13 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
         ++x;
       }
       std::list<std::string> nuis_names;
-      std::cout << "Number of NPs set " << pruneNPnames.size() << std::endl;
       for (RooLinkedListIter it = tmp_pars.iterator();
         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());){
         std::string varname = v->GetName();
         bool found = (std::find(pruneNPnames.begin(), pruneNPnames.end(), varname) != pruneNPnames.end());
         if (found) nuis_names.push_back(varname);
         else{if (allPoi.Contains(varname)) continue;
-        if (varname == rankitr->second) continue;}
+        if (varname == rankitr.second) continue;}
       } 
 
       RemoveParameter(tmp_hesse, tmp_pars, nuis_names);
@@ -625,7 +623,6 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
      
         for (auto v : pruneNPnames){
            finalNPnames.insert(v);
-           std::cout << v << "\n";
         }
         break;
       }
