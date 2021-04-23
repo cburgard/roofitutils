@@ -471,11 +471,10 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
     unsigned int lopos = 0;
     unsigned int pos = 0;
     // Loop over parameters in the global ranking
-    for (std::set<std::pair<double, std::string>>::iterator rankitr =
-         ranks.begin(); rankitr != ranks.end(); ++rankitr) {
+    for (auto rankitr:ranks){
       std::set<std::string> pruneNPnames;
-      par2rem = rankitr->second;
-      par2rem_err = rankitr->first;
+      par2rem = rankitr.second;
+      par2rem_err = rankitr.first;
       bool passThreshold = true;
       int tmpIndex = 0;
 
@@ -500,7 +499,7 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
         bool found = (std::find(pruneNPnames.begin(), pruneNPnames.end(), varname) != pruneNPnames.end());
         if (found) nuis_names.push_back(varname);
         else{if (allPoi.Contains(varname)) continue;
-        if (varname == rankitr->second) continue;}
+        if (varname == rankitr.second) continue;}
       } 
 
       RemoveParameter(tmp_hesse, tmp_pars, nuis_names);

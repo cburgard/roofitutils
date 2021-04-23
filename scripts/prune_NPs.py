@@ -28,7 +28,7 @@ def runPruning(args):
       pair = line.split(" ")
       x = ROOT.pair("double,std::string")(float(pair[0]),pair[1])
       order.insert(x)
-  pruneNPs = msrmnt.PruneNuisanceParameters(order, chesse, fitresult, ",".join(pois), ",".join(pcts), args.NPfilter)
+  pruneNPs = list(msrmnt.PruneNuisanceParameters(order, chesse, fitresult, ",".join(pois), ",".join(pcts), args.NPfilter))
   print("Setting {} NPs out of {} to constant ".format(len(pruneNPs),len(order)))
 
   if args.outws:
