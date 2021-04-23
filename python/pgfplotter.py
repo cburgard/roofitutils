@@ -84,7 +84,7 @@ def concat(strlist):
 
 def writepoiset(idx,poinames,allpois,outfile,style,poiopts,spread,printvalues):
     from math import isnan
-    from RooFitUtils.util import formatNumberPDG,formatPDG
+    from RooFitUtils.util import formatNumberPDG,formatPDG,isdict
     from RooFitUtils.io import texify,readparameter
     color = style.get("color","black")
     count = 0
