@@ -24,8 +24,8 @@ def writehead(stream,atlas=True,varwidth=None):
     stream.write("\\usepackage{iftex}\n")
     stream.write("\\usetikzlibrary{calc}\n")
     if atlas:
-        stream.write("\\ifpdftex\\usepackage[scaled=1]{helvet}\\fi\n")
-        stream.write("\\ifxetex\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\\fi\n")        
+        stream.write("\\ifPDFTeX\\usepackage[scaled=1]{helvet}\\fi\n")
+        stream.write("\\ifXeTeX\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\\fi\n")        
         stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
     stream.write("\\usetikzlibrary{shapes.misc,positioning,patterns}\n")
