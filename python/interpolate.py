@@ -160,9 +160,15 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[]):
     allcontours = thefunc(grid["xvals"],grid["yvals"],grid["zgrid"],[ grid["minZ"] + v for v in values ],smooth,npoints)
     return allcontours,grid["minXY"]
 
+def scipy_interpolate(xvals,yvals):
+    from scipy.interpolate import PchipInterpolator as interpolate
+    try:
+        return interpolate(xvals,yvals,extrapolate=True)
+    except TypeError:
+        return interpolate(xvals,yvals)
+
 def findintervals(points,nllval):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
-    from scipy.interpolate import PchipInterpolator as interpolate
     from math import isnan
     xvals = [ x for x,y in points ]
     yvals = [ y for x,y in points ]
@@ -172,7 +178,7 @@ def findintervals(points,nllval):
     xrr = xr + 0.1*r
     n = 100
     step = (xrr-xll)/n
-    interp = interpolate(xvals, yvals, extrapolate=True)
+    interp = scipy_interpolate(xvals, yvals)
     from scipy.optimize import ridder as solve
     leftbound = None
     rightbound = None
@@ -216,7 +222,6 @@ def findallminima(points,nllmin,minthreshold=0.05):
 
 def findcrossings(points,nllval,minthreshold=0.05):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
-    from scipy.interpolate import PchipInterpolator as interpolate
     xvals = [ x for x,y in points ]
     yvals = [ y for x,y in points ]
     i0 = 0
@@ -230,7 +235,7 @@ def findcrossings(points,nllval,minthreshold=0.05):
     r = abs(xr - xl)
     xll = xl - 0.1*r
     xrr = xr + 0.1*r
-    interp = interpolate(xvals, yvals, extrapolate=True)
+    interp = scipy_interpolate(xvals, yvals)
     from scipy.optimize import ridder as solve
     up = nan
     down = nan
@@ -248,12 +253,11 @@ def findcrossings(points,nllval,minthreshold=0.05):
 
 def findminimum(points):
     """find the interpolated minimum of a 1d graph"""
-    from scipy.interpolate import PchipInterpolator as interpolate
     from scipy.optimize import minimize
     from numpy import array
     xvals = sorted(points.keys())
     yvals = [ points[x] for x in xvals ]
-    interp = interpolate(xvals, yvals, extrapolate=True)
+    interp = scipy_interpolate(xvals, yvals)
     minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]), bounds=[[min(xvals),max(xvals)]])
     miny = minimum.fun
     for y in yvals:

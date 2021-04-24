@@ -1,5 +1,6 @@
 file(GLOB TestScripts "${CMAKE_CURRENT_SOURCE_DIR}/test/*.sh")
 foreach(TestScript ${TestScripts})
+  get_filename_component(TestName ${TestScript} NAME)
   if(${ATLAS_BUILD})
     add_test(NAME ${TestName} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMMAND bash -e ${TestScript})
   else()
