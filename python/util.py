@@ -40,6 +40,9 @@ def isdict(d):
 
 def islist(l):
     return isinstance(l,list)
+
+def islist(l):
+    return isinstance(l,tuple)
             
 def isclose(a,b,rel_tol=1e-9,abs_tol=1e-9):
     return abs(a-b) <= max( rel_tol * max(abs(a), abs(b)), abs_tol )
@@ -468,14 +471,14 @@ def parsegroups(pois):
 
 
 def parsepois(pois,options=False):
-    if isinstance(pois, dict):
+    if isdict(pois):
         poinames = list(pois.keys())
         poiopts = pois
     else:
-        if isinstance(pois[0],str):
+        if isstr(pois[0]):
             poinames = pois
             poiopts = {}
-        elif isinstance(pois[0],tuple):
+        elif istuple(pois[0]):
             poinames = list(flattened([t[-1] for t in pois]))
             poiopts = {}
         else:

@@ -21,10 +21,11 @@ def writehead(stream,atlas=True,varwidth=None):
     stream.write("]{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
     stream.write("\\usepackage{pgfplots,tikz}\n")
+    stream.write("\\usepackage{iftex}\n")
     stream.write("\\usetikzlibrary{calc}\n")
     if atlas:
-        stream.write("\\ifpdftex\\usepackage[scaled=1]{helvet}\\fi\n")
-        stream.write("\\ifxetex\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\\fi\n")        
+        stream.write("\\ifPDFTeX\\usepackage[scaled=1]{helvet}\\fi\n")
+        stream.write("\\ifXeTeX\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\\fi\n")        
         stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
     stream.write("\\usetikzlibrary{shapes.misc,positioning,patterns}\n")
@@ -83,7 +84,7 @@ def concat(strlist):
 
 def writepoiset(idx,poinames,allpois,outfile,style,poiopts,spread,printvalues):
     from math import isnan
-    from RooFitUtils.util import formatNumberPDG,formatPDG
+    from RooFitUtils.util import formatNumberPDG,formatPDG,isdict
     from RooFitUtils.io import texify,readparameter
     color = style.get("color","black")
     count = 0
@@ -91,7 +92,9 @@ def writepoiset(idx,poinames,allpois,outfile,style,poiopts,spread,printvalues):
     if printvalues and "label" in style.keys():
         outfile.write("  \\node[xshift="+shift+",anchor=base] at ({rel axis cs:1,0}|-{axis cs:0,"+str(float(spread*len(poinames)))+"}) {\\textsf{"+texify(style.get("label",""))+"}};\n")
     for poi in poinames:
-        scale = poiopts.get(poi,{}).get("scale",1)
+        opts = poiopts.get(poi,{})
+        if isdict(opts):
+            scale= opts.get("scale",1.)        
         if not poi in allpois.keys(): continue
         cvs,intervals = readparameter(allpois[poi])
         
@@ -177,9 +180,9 @@ def writepois(atlas,pois,allsets_input,outfilename,plotlabels=[],range=[-2,2],sm
         count = 0
         if smval > minval and smval < maxval:
             outfile.write("\\draw ("+str(smval)+",-1) -- ("+str(smval)+","+str(spread*(len(poinames)-0.5))+");\n")
-        for x in poinames:
-            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{\\textsf{"+texify(x))
-            opts = poiopts.get(x,{})
+        for poi in poinames:
+            outfile.write("\\node at ({rel axis cs:0,0}|-{axis cs:0,"+ str(spread*count)+"}) [anchor = east]{\\textsf{"+texify(poi))
+            opts = poiopts.get(poi,{})
             if isdict(opts):
                 scale= opts.get("scale",1.)
             else:

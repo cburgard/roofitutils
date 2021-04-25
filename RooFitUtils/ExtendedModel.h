@@ -31,8 +31,7 @@ public:
                 const std::string &WsName, const std::string &ModelConfigName,
                 const std::string &DataName, const std::string &SnapshotName,
                 bool binnedLikelihood = true, RooArgSet* penalty = NULL,
-                const std::string &TagAsMeasurement = "pdf_",
-                bool FixCache = true, bool FixMulti = true);
+                const std::string &TagAsMeasurement = "pdf_");
   virtual ~ExtendedModel();
   RooWorkspace *GetWorkspace() { return fWorkspace; }
   RooStats::ModelConfig *GetModelConfig() { return fModelConfig; }
@@ -80,7 +79,7 @@ public:
 
   // _____________________________________________________________________________
 protected:
-  void initialise(bool fixCache, bool fixMulti);
+  void initialise();
   RooRealVar * parseParameter(const std::string &pname,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary);
   void fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params);
   void floatParameters(const std::vector<std::string> &parsed, const RooArgSet* params);
