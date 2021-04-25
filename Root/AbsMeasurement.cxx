@@ -107,7 +107,7 @@ void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
      std::string outsnapshot){
    TFile* file = new TFile(infilename.c_str(),"READ");
    TIter next(file->GetListOfKeys()); TKey *key;
-   RooWorkspace* ws;
+   RooWorkspace* ws = NULL;
     while ((key = (TKey*)next())) {
       TString keyname = key->GetName();
       if (!keyname.Contains("ProcessID"))
@@ -437,7 +437,6 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
   // final ranking.
   // Maybe filter list of parameters to prune base on regexp.
 
-  unsigned int allParams = pars.getSize();
   std::set<std::string> finalNPnames;
   // Start looping over the different NP sets if any order is mentioned
   // if everything is looked at in one go
@@ -448,14 +447,12 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
     std::string stringFilter = thisFilter.Data();
 
     TRegexp reg(thisFilter);
-    Ssiz_t dummy(0);
 
     // ranks is a set of the NP and their estimated rank rank
     // part_uncerts is the variance change due to the NP for all POIs
     if (ranks.empty()) break;
 
     // Print ranking of parameters
-    std::cout << std::endl;
     coutI(ObjectHandling)
               << "AbsMeasurement::PruneNuisanceParameters(" << fName
               << ") Ranking of parameters"
@@ -464,17 +461,13 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
 
     bool foundPar2Rem = false;
     std::string par2rem = ranks.begin()->second;
-    double par2rem_err  = ranks.begin()->first;
-    unsigned int tmpSum = pars.getSize() + 1 - numPoi;
 
     unsigned int hipos = ranks.size();
     unsigned int lopos = 0;
-    unsigned int pos = 0;
     // Loop over parameters in the global ranking
     for (auto rankitr:ranks){
       std::set<std::string> pruneNPnames;
       par2rem = rankitr.second;
-      par2rem_err = rankitr.first;
       bool passThreshold = true;
       int tmpIndex = 0;
 
@@ -487,7 +480,7 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
       RooArgList tmp_pars = fitresult->floatParsFinal();
 
       auto x = ranks.begin();
-      pos = (hipos + lopos)/2;
+      int pos = (hipos + lopos)/2;
       for(int j = 0; j < pos; ++j){
         pruneNPnames.insert(x->second);
         ++x;

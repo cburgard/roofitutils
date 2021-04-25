@@ -746,7 +746,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
       fNll = fPdf->createNLL(*fData, fNllCmdList);
       //here goes the penalty 
       if (fPenaltyMini){
-        int ipen = 0;	
         std::string s("fNLL");
         RooArgSet fnset = RooArgSet();
         for (auto pen:*fPenaltyMini){
@@ -1345,7 +1344,6 @@ void RooFitUtils::ExtendedMinimizer::scan(
     if (point.size() != parnames.size()) {
       throw std::runtime_error("inconsistent vector lengths in scan!");
     }
-    auto pntstr = new TString("");
     for (size_t i = 0; i < params.size(); ++i) {
       params[i]->setVal(point[i]);
       params[i]->setConstant(true);

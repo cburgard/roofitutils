@@ -28,6 +28,13 @@ file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Root/[A-Za-z]
 file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "RooFitUtils/[A-Za-z]*.h")
 
 
+find_package(RooFitExtensions QUIET)
+if(${RooFitExtensions_FOUND})
+  SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DHAS_ROOSTARMOMENTMORPH")
+else()
+  message("disabling RooStarMomentmorph integration")
+endif()
+
 if(ATLAS_BUILD OR NOT STANDALONE_BUILD)
   include(cmake/ASG.cmake)
 endif()

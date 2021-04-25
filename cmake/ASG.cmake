@@ -39,7 +39,7 @@ IF(${AnalysisBase_FOUND})
     )
 
   find_package(PythonInterp REQUIRED)
-  atlas_install_python_modules( python/* )
+  atlas_install_python_modules( python/*.py )
 
   set(EXPORT_PYTHONPATH ${CMAKE_BINARY_DIR}/${BINARY_TAG}/python)
   set(EXPORT_LD_LIBRARY_PATH ${CMAKE_BINARY_DIR}/${BINARY_TAG}/lib)

@@ -108,9 +108,8 @@ int RooFitUtils::fixRooStarMomentMorph(RooWorkspace *workspace) {
 // ____________________________________________________________________________
 
 void RooFitUtils::addArgSet(RooArgSet* args, const RooArgSet* addArgs){
-
   // convert const RooArgSet* to RooArgSet*
-  args->add(*args);
+  args->add(*addArgs);
 }
 // _____________________________________________________________________________
 

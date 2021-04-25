@@ -37,14 +37,13 @@ RooFitUtils::ExtendedModel::ExtendedModel(
 					  const std::string &ModelName, const std::string &FileName,
 					  const std::string &WsName, const std::string &ModelConfigName,
 					  const std::string &DataName, const std::string &SnapshotName,
-					  bool binnedLikelihood, RooArgSet *penalty, const std::string &TagAsMeasurement,
-					  bool FixCache, bool FixMulti)
+					  bool binnedLikelihood, RooArgSet *penalty, const std::string &TagAsMeasurement)
 : TNamed(ModelName.c_str(), ModelName.c_str()), fFileName(FileName),
   fWsName(WsName), fModelConfigName(ModelConfigName), fDataName(DataName),
   fSnapshotName(SnapshotName), fBinnedLikelihood(binnedLikelihood),
   fTagAsMeasurement(TagAsMeasurement), fPenalty(penalty) {
   // Constructor
-  initialise(FixCache, FixMulti);
+  initialise();
   
   coutP(InputArguments) << "ExtendedModel::ExtendedModel(" << fName
                         << ") created" << std::endl;
@@ -58,7 +57,7 @@ RooFitUtils::ExtendedModel::~ExtendedModel() {
 
 // _____________________________________________________________________________
 
-void RooFitUtils::ExtendedModel::initialise(bool fixCache, bool fixMulti) {
+void RooFitUtils::ExtendedModel::initialise() {
   // Load all model information from specified file
   coutP(InputArguments) << "Opening file " << fFileName << std::endl;
   fFile = TFile::Open(fFileName.c_str());
@@ -383,7 +382,6 @@ void RooFitUtils::ExtendedModel::randomizeParameters(const std::vector<std::stri
 void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
   if(!params || params->getSize() == 0) return;
-  TObject* obj;
   for(const auto&s:parsed){
     auto nameEnd = s.find_first_of("=[");
     std::string pat(s.substr(0,nameEnd));
@@ -420,7 +418,6 @@ void RooFitUtils::ExtendedModel::fixParameters(const std::vector<std::string> &p
 void RooFitUtils::ExtendedModel::floatParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Fix a subset of the parameters at the specified values
   if(!params || params->getSize() == 0) return;  
-  TObject* obj;
   for(const auto&pat:parsed){
     int found = 0;
     for(auto obj:*params){
