@@ -11,7 +11,7 @@ variables:
     - cvmfs
 
 .latex: &latex
-  image: joergklein/texlive
+  image: gitlab-registry.cern.ch/cburgard/latex:latest
     
 .atlasroot: &atlasroot
   <<: *cvmfs  
