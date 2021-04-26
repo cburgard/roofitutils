@@ -30,6 +30,10 @@ file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "RooFitUtils/[
 
 find_package(RooFitExtensions QUIET)
 if(${RooFitExtensions_FOUND})
+  list(APPEND CMAKE_PREFIX_PATH $ENV{RooFitExtensions_DIR})
+  find_package(RooFitExtensions REQUIRED CONFIG)
+  include_directories(${RooFitExtensions_INCLUDE_DIRS})
+  link_directories(${RooFitExtensions_LIBRARY_DIRS}) 
   SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DHAS_ROOSTARMOMENTMORPH")
 else()
   message("disabling RooStarMomentmorph integration")
