@@ -58,13 +58,12 @@ if __name__ == '__main__':
     parser.add_argument('-o',"--output",type=str,help="output file name",default="pulls.tex",required=True)
     args = parser.parse_args()
 
-    scans = {}
     pullresults = {}
     from RooFitUtils.io import collectresults
     for inset in args.input:
         label = inset[0]
         files = inset[1:]
-        collectresults(scans,pullresults,files,label)
+        collectresults(pullresults,files,label)
         
     parset = set(pullresults.keys())
     rankings = {}

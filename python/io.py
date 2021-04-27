@@ -378,7 +378,7 @@ def collectfilenames(files):
 def collectimpacts(rankings,files,poiname):
     filenames = collectfilenames(files)
     import re
-    fpat = re.compile(r"[^.]*\.([^/^.]*)\.([^.]*)\.txt")
+    fpat = re.compile(r"[^.]*\.([^/^.]*)\.([^.]*)\.json")
     from os.path import basename
     results = {}
     allvars = []
@@ -393,18 +393,18 @@ def collectimpacts(rankings,files,poiname):
             allvars.append(npname)
             direction = match.group(2)
             collectresult(results,filename,(npname,direction))
-    fits = fits["MLE"]    
-    if not poiname in fits.keys():
+    if not 'MLE' in results.keys():
         raise RuntimeError("did not find any impact results!")
-    if not "nominal" in fits[poiname].keys():
+    fits = results["MLE"]
+    if not "nominal" in fits.keys():
         raise RuntimeError("cannot create ranking without nominal result!")
-    nomval = fits[poiname]["nominal"][0]
+    nomval = fits["nominal"][poiname]["val"]
     if not poiname in rankings.keys():
         rankings[poiname] = {}
     for par in allvars:
-        upval = fits[poiname][(par,"up")][0]
-        dnval = fits[poiname][(par,"dn")][0]
-        rankings[poiname][par] = (upval-nomval,dnval-nomval)
+        upval = fits[(par,"up")][poiname]["val"]
+        dnval = fits[(par,"dn")][poiname]["val"]
+        rankings[poiname][par] = (upval-nomval,nomval-dnval)
     return allvars
 
 def collectbreakdowns(rankings,files,poiname):
