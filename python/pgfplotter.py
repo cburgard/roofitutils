@@ -510,10 +510,10 @@ def writepull(args,results,outfile,parname,ypos,offset=True):
             outfile.write("  \\draw[pull,"+style+"] ({:.5f},{:.2f})--({:.5f},{:.2f});".format(cv-abs(edn),ypos+voffset,cv+abs(eup),ypos+voffset))
             outfile.write("  \\node[dot,"+style+"] at ({:.5f},{:.2f})".format(cv,ypos+voffset)+ "{};\n")
 
-def writeranking(args,ranking,outfile,ypos,ysize="5pt"):
+def writeranking(args,ranking,outfile,ypos,impscale=1,ysize="5pt"):
     up,dn = ranking
-    outfile.write("  \\fill[myblue]   ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(dn,ypos,ysize,0, ypos,ysize))
-    outfile.write("  \\fill[myyellow] ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(0, ypos,ysize,up,ypos,ysize))
+    outfile.write("  \\fill[myblue]   ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(float(impscale*dn),ypos,ysize,0, ypos,ysize))
+    outfile.write("  \\fill[myyellow] ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(0, ypos,ysize,float(impscale*up),ypos,ysize))
     outfile.write("\n")
         
 def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False):
@@ -531,6 +531,17 @@ def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False)
             outfile.write(("{{${:}^{{+{:}}}_{{-{:}}}$}};").format(cv,abs(eup),abs(edn)))
         else:
             outfile.write(" {};")
+
+def writerankinghead(args,outfile,allpars,zoom=10):
+    npar = len(allpars)
+    from math import floor,ceil
+    from numpy import arange
+    outfile.write("% top axis\n")
+    outfile.write("  \\draw[blue] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5-npar)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5-npar)+ ") node [pos=1,anchor=north east,yshift=1.1cm]{$\Delta\mu$};\n")
+    ii = 0
+    for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.25):
+        outfile.write("  \\draw[blue] (" +str(x)+ "," + str(-0.5-npar) + ") -- (" +str(x)+ "," +str(-0.5-0.2-npar)+ ") node [axlbl,above=3pt]{" +str(x/zoom)+ "};\n")
+        ii = ii + 1
 
 def writepullshead(args,outfile,allpars,labels):
     xunit = 3
@@ -564,7 +575,7 @@ def writepullsfoot(args,outfile,allpars):
     outfile.write("% bottom axis\n")
     for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.25):
         outfile.write("  \\draw[black] (" +str(x)+ "," + str(-0.5+0.2) + ") -- (" +str(x)+ "," +str(-0.5)+ ") node [axlbl,below=3pt]{" +str(x)+ "};\n")
-    outfile.write("  \\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5)+ ") node [pos=1,anchor=north east,yshift=-.5cm]{Parameter of Interest};\n")
+    outfile.write("  \\draw[black] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5)+ ") node [pos=1,anchor=north east,yshift=-.5cm]{$(\hat{\\theta}-\\theta_{0})/\Delta\\theta$};\n")
     for x in range(int(floor(args.range[0])),int(ceil(args.range[1]+1))):
         outfile.write("  \\draw[dashed,black] (" +str(x)+ "," +str(-0.5)+ ") -- (" +str(x)+ "," +str(-0.5-npar)+ ");\n")
     outfile.write("% highlighting\n")        

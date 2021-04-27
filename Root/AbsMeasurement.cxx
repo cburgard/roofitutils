@@ -110,7 +110,7 @@ void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
    RooWorkspace* ws = NULL;
     while ((key = (TKey*)next())) {
       TString keyname = key->GetName();
-      if (!keyname.Contains("ProcessID"))
+      if (!keyname.Contains("ProcessID") && !keyname.Contains("nllscan") && !keyname.Contains("fitResult"))
       ws = (RooWorkspace*) file->Get(keyname);
      }
    
