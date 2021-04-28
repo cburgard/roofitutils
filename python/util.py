@@ -209,9 +209,9 @@ def reconstructCall(args,arglist,blacklist):
     for arg in args.items():
         actions = []
         for action in arglist:
-            if arg in blacklist: continue
-            if arg == action.dest:
-                argval = args.__dict__[arg]
+            if arg[0] in blacklist: continue
+            if arg[0] == action.dest:
+                argval = arg[1]
                 argopt = action.option_strings[0]
                 if argval == True and isinstance(action,_StoreTrueAction):
                     options[argopt]=None

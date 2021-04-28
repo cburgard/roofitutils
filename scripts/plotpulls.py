@@ -29,14 +29,28 @@ def filterparameters(parlist,blacklist):
             newlist.append(par)
     return newlist
 
+def specifyparameters(parlist,whitelist):
+    newlist = []
+    for parin in whitelist:
+        exist = False
+        newlist.append(parin)
+        for par in parlist:
+            if parin == par:
+                exist = True
+        if not exist:
+            print('ERROR ',parin,'cannot be found in the workspace')
+    return newlist
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot pulls of parameters")
     parser.add_argument('--range',nargs=2,default=[-5,5],help="range to plot",type=float)    
+    parser.add_argument('--scaleimpacts',default=1,help="Scale impacts for better visualization",type=float)
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with the input information",default=[])
     parser.add_argument('--impacts',action='append',nargs="+",metavar=('POI','file.txt'),help="text files with the input information for ranking the nuisance parameters",default=[])
     parser.add_argument('--breakdown',action='append',nargs="+",metavar=('POI','file.txt'),help="text files with the input information for ranking the nuisance parameters",default=[])
     parser.add_argument('--blacklist',nargs="+",metavar="NP",help="parameters and groups to avoid showing",default=[])    
+    parser.add_argument('--whitelist',nargs="+",metavar="NPw",help="parameters to show",default=[])
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--numbers",action="store_true",help="show numbers",default=False)    
     parser.add_argument("--labels",help="position of the labels",choices=["l","r"],default="r")    
@@ -44,13 +58,12 @@ if __name__ == '__main__':
     parser.add_argument('-o',"--output",type=str,help="output file name",default="pulls.tex",required=True)
     args = parser.parse_args()
 
-    scans = {}
     pullresults = {}
     from RooFitUtils.io import collectresults
     for inset in args.input:
         label = inset[0]
         files = inset[1:]
-        collectresults(scans,pullresults,files,label)
+        collectresults(pullresults,files,label)
         
     parset = set(pullresults.keys())
     rankings = {}
@@ -65,19 +78,25 @@ if __name__ == '__main__':
         files = inset[1:]
         parset = parset.union(set(collectbreakdowns(rankings,files,poiname)))        
 
-    filtallpars = filterparameters(parset,args.blacklist)
+    # whitelist used only if the blacklist is not specified
+    filtallpars = []
+    if len(args.blacklist) < 1 and len(args.whitelist) > 0:
+        filtallpars = specifyparameters(parset,args.whitelist)
+    else:
+        filtallpars = filterparameters(parset,args.blacklist)
     allpars = sortparameters(filtallpars,rankings)
     npar = len(allpars)
         
     with open(args.output,"wt") as outfile:
-        from RooFitUtils.pgfplotter import writehead,writefoot,writepullshead,writepullsfoot,writepull,writepullnumbers,writeranking
+        from RooFitUtils.pgfplotter import writehead,writefoot,writepullshead,writepullsfoot,writepull,writepullnumbers,writeranking,writerankinghead
         writehead(outfile,args.atlas)
         writepullshead(args,outfile,allpars,args.labels)
+        writerankinghead(args,outfile,allpars,args.scaleimpacts)
         for np in range(0,npar):
             for poi,ranking in rankings.items():
                 if allpars[np] in ranking.keys():
                     npname = allpars[np]
-                    writeranking(args,rankings[poiname][npname],outfile,np-npar)
+                    writeranking(args,rankings[poiname][npname],outfile,np-npar,args.scaleimpacts)
             if allpars[np] in pullresults.keys():
                 writepull(args,pullresults,outfile,allpars[np],np-npar,True)
                 writepullnumbers(args,pullresults,outfile,allpars[np],np-npar,args.labels,args.numbers)
