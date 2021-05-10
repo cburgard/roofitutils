@@ -34,8 +34,8 @@ IF(${AnalysisBase_FOUND})
   atlas_add_library( RooFitUtils
     ${RooFitUtilsHeaders} ${RooFitUtilsSources} ${RooFitUtilsCintDict}
     PUBLIC_HEADERS RooFitUtils
-    PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS}
-    PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES}
+    PRIVATE_INCLUDE_DIRS ${ROOT_INCLUDE_DIRS} ${RooFitExtensions_INCLUDE_DIRS}
+    PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES} ${RooFitExtensions_LIBRARIES}
     )
 
   find_package(PythonInterp REQUIRED)

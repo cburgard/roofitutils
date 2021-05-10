@@ -27,7 +27,6 @@ set(RooFitUtilsLinkDef Root/LinkDef.h)
 file(GLOB RooFitUtilsSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Root/[A-Za-z]*.cxx")
 file(GLOB RooFitUtilsHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "RooFitUtils/[A-Za-z]*.h")
 
-
 find_package(RooFitExtensions QUIET)
 if(${RooFitExtensions_FOUND})
   list(APPEND CMAKE_PREFIX_PATH $ENV{RooFitExtensions_DIR})
