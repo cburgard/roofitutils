@@ -67,3 +67,10 @@ set(EXPORT_PYTHONPATH ${CMAKE_CURRENT_BINARY_DIR})
 set(EXPORT_LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR})
 set(EXPORT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/scripts)
 set(EXPORT_ROOT_INCLUDE_PATH ${CMAKE_BINARY_DIR}/include)
+
+if(${RooFitExtensions_FOUND})
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+  find_package(Threads REQUIRED)
+  target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} ${RooFitExtensions_LIBRARIES} Threads::Threads)
+endif()
+

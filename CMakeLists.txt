@@ -58,12 +58,6 @@ file(APPEND ${SETUP} "export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${EXPORT_LD_LIB
 file(APPEND ${SETUP} "export DYLD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${EXPORT_LD_LIBRARY_PATH}\n")
 file(APPEND ${SETUP} "export ROOT_INCLUDE_PATH=\${ROOT_INCLUDE_PATH}:${EXPORT_ROOT_INCUDE_PATH}\n")
 
-if(${RooFitExtensions_FOUND})
-  set(THREADS_PREFER_PTHREAD_FLAG ON)
-  find_package(Threads REQUIRED)
-  target_link_libraries( RooFitUtils ${ROOT_LIBRARIES} ${RooFitExtensions_LIBRARIES} Threads::Threads)
-endif()
-
 # general post-compile installation of the package
 # required for other packages to discover this one via CMake
 install(
