@@ -16,6 +16,13 @@ def runPruning(args):
   chesse = fitresult.covarianceMatrix().Invert()
   dim = chesse.GetNcols()
 
+  if args.prunefromalist != None:
+    with open(args.prunefromalist,"r") as f:
+      lines = [line.strip("\n") for line in f.readlines()]
+    pruneNPs_list = ",".join(lines)
+    msrmnt.MakeConstSnapshot(args.inws, fitresult, pruneNPs_list, args.outws, args.snapname)
+    return
+
   pcts = []
   for pct in args.pct:
     pcts.append(makepctstring(pois,args.pct))
@@ -49,8 +56,9 @@ if __name__ == "__main__":
    parser.add_argument( "--percentages"   , nargs="+", type=float,  dest="pct"         , help="percentage change in poi variances",default=[1])
    parser.add_argument( "--snapshot-name"      , type=str,  dest="snapname"    , help="name of the pruned snapshot", required=True)
    parser.add_argument( "--NPfilter"      , type=str,  dest="NPfilter"    , help="NPs for prune check", default=".*")
-   parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , nargs="+", help="path to fit result")
+   parser.add_argument( "--fitResult"     , type=str,  dest="fitResult"   , nargs="+", help="path to the file containing the fit result")
    parser.add_argument( "--order"         ,action='append',nargs="+"      , dest="orderfiles", help="files with the NPs and their ranks")
+   parser.add_argument( "--prunefromalist",type=str,  dest="prunefromalist"       , help="txt file specifying NPs to be pruned",default=None)
    args = parser.parse_args()
 
    from sys import flags
