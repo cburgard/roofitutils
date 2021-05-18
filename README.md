@@ -85,11 +85,16 @@ After your jobs finish, plot a simple, 1D likelihood scan with
 
 Create breakdown job definitions with
 
-    python scripts/fit.py --input workspace.root --fit --data asimovData --breakdown ATLAS_* --breakdown theo_* --breakdown gamma_* --writeSubmit breakdown
+    python scripts/fit.py --input workspace.root --fit --data asimovData --breakdown "ATLAS_*" --breakdown "theo_*" --breakdown "gamma_*" --writeSubmit breakdown
     
 Create impact job definitions with
 
-    python scripts/fit.py --input workspace.root --fit --data asimovData --impacts ATLAS_* theo_*  gamma_* --writeSubmit impacts
+    python scripts/fit.py --input workspace.root --fit --data asimovData --impacts "ATLAS_*" "theo_*"  "gamma_*" --writeSubmit impacts
+    
+If you want to derive postfit impacts, you need to run in two steps like this:
+
+    python scripts/fit.py -i workspace.root --data asimovData --poi mu --fit --write-workspace postfit.root
+    python scripts/fit.py -i postfit.root --poi mu --data asimovData --impacts 'norm_bkg' 'gamma_stat_*' --writeSubmit impacts 
     
 Use some batch submission of your choice to submit the jobs defined in 
 
@@ -98,7 +103,7 @@ Use some batch submission of your choice to submit the jobs defined in
 
 After your jobs finish, plot a full breakdown and impact plot including parameter pulls with
 
-    scripts/plotpulls.py -i red breadkown/*nominal*.txt --breakdown mu breakdown/*.tex --impacts mu impacts/*.tex
+    scripts/plotpulls.py -i red "impacts/*nominal*.json" --impacts mu "impacts/*.json" --range -2 2 --scaleimpacts 5 --numbers --atlas True --output impacts.tex
 
 ### Pruning
 
