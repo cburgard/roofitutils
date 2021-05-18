@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
 def sortparameters(parset,rankings):
+    from math import isnan
     sorting = []
     for par in parset:
         score = 0.
         count = 0
         for ranking in rankings.values():
-            if par not in ranking.keys(): print('ERROR Information for the parameter ', par,' was not found in the specified output directory!')
-            score += ranking[par][0]*ranking[par][0] + ranking[par][1]*ranking[par][1]
-            count += 1
+            if par not in ranking.keys():
+                print('ERROR Information for the parameter ', par,' was not found in the specified output directory!')
+            else:
+                score += 0
+                if not isnan(ranking[par][0]): score += ranking[par][0]*ranking[par][0]
+                if not isnan(ranking[par][1]): score += ranking[par][1]*ranking[par][1]
+                count += 1
         sorting.append((par,score))
     sortedlist = sorted(sorting,key=lambda x:x[1])
     sortedparams = [ e[0] for e in sortedlist ]
@@ -47,7 +52,7 @@ if __name__ == '__main__':
     parser = ArgumentParser("plot pulls of parameters")
     parser.add_argument('--range',nargs=2,default=[-5,5],help="range to plot",type=float)    
     parser.add_argument('--scaleimpacts',default=1,help="Scale impacts for better visualization",type=float)
-    parser.add_argument("--top15",action="store_true",help="plot only top 15 ranked NPs",default=True)
+    parser.add_argument("--top-N",dest="topN",help="plot only top N ranked NPs",default=15)
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.json'),help="json files with the input information",default=[])
     parser.add_argument('--impacts',action='append',nargs="+",metavar=('POI','file.json'),help="json files with the input information for ranking the nuisance parameters",default=[])
     parser.add_argument('--breakdown',action='append',nargs="+",metavar=('POI','file.txt'),help="text files with the input information for ranking the nuisance parameters",default=[])
@@ -88,13 +93,13 @@ if __name__ == '__main__':
     else:
         filtallpars = filterparameters(parset,args.blacklist)
     allpars = sortparameters(filtallpars,rankings)
-    if args.top15 and len(allpars)>15: allpars = allpars[:15]
+    if args.topN and len(allpars)>args.topN: allpars = allpars[:args.topN]
     npar = len(allpars)
 
     with open(args.output,"wt") as outfile:
-        from RooFitUtils.pgfplotter import writehead,writefoot,writepullshead,writepullsfoot,writepull,writepullnumbers,writeranking,writerankinghead
+        from RooFitUtils.pgfplotter import writehead,writefoot,writeparameters,writeparametershead,writepullsfoot,writepull,writepullnumbers,writeranking,writerankinghead
         writehead(outfile,args.atlas)
-        writepullshead(args,outfile,allpars,args.labels)
+        writeparametershead(args,outfile)    
         writerankinghead(args,outfile,allpars,args.scaleimpacts)
         for np in range(0,npar):
             for poi,ranking in rankings.items():
@@ -106,5 +111,7 @@ if __name__ == '__main__':
                 if allpars[np] in pullresults['MLE'][label].keys():
                     writepull(args,pullresults['MLE'][label],outfile,allpars[np],np-npar,True,label)
                     writepullnumbers(args,pullresults['MLE'][label],outfile,allpars[np],np-npar,args.labels,args.numbers)
+        writeparameters(args,outfile,allpars,args.labels)        
         writepullsfoot(args,outfile,allpars)        
         writefoot(outfile)
+    print("wrote "+args.output)

@@ -49,7 +49,7 @@ if __name__ == "__main__":
     
     basic = parser.add_argument_group("Basic Usage")
     arglist.append(basic.add_argument( "-i","--input"    , type=str,     dest="inFileName"                 , help="File to run over.", required=True, metavar="path/to/workspace.root"))
-    arglist.append(basic.add_argument( "-o","--output"   , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.txt",default=None))
+    arglist.append(basic.add_argument( "-o","--output"   , type=str,     dest="outFileName"                , help="Output file.", required=False, metavar="out.json",default=None))
     arglist.append(basic.add_argument( "-d", "--data"    , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
     arglist.append(basic.add_argument( "-w","--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combWS" ))
     arglist.append(basic.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))

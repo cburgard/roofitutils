@@ -376,6 +376,7 @@ def collectfilenames(files):
     return filenames
 
 def collectimpacts(rankings,files,poiname):
+    nan = float("nan")
     filenames = collectfilenames(files)
     import re
     fpat = re.compile(r"[^.]*\.([^/^.]*)\.([^.]*)\.json")
@@ -402,8 +403,15 @@ def collectimpacts(rankings,files,poiname):
     if not poiname in rankings.keys():
         rankings[poiname] = {}
     for par in allvars:
-        upval = fits[(par,"up")][poiname]["val"]
-        dnval = fits[(par,"dn")][poiname]["val"]
+        if par == poiname: continue
+        try:
+            upval = fits[(par,"up")][poiname]["val"]
+        except KeyError:
+            upval = nan
+        try:
+            dnval = fits[(par,"dn")][poiname]["val"]
+        except KeyError:
+            dnval = nan
         rankings[poiname][par] = (upval-nomval,dnval-nomval)
     return allvars
 

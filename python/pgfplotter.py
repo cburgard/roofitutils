@@ -496,14 +496,23 @@ def getColorDefStringLaTeX(name,color):
   return "\\definecolor{"+name+"}{rgb}{"+str(r)+","+str(g)+","+str(b)+"}"
 
 def writepull(args,results,outfile,parname,ypos,offset=True,style="red"):
+    from math import isnan
     res = results[parname]
     ires = 0
     cv = res['val']
-    edn = res['err']
-    eup = res['err'] 
+    if "eUp" in res.keys():
+        eup = res["eUp"]
+    else:
+        eup = res["err"]
+    if "eDn" in res.keys():
+        edn = res["eDn"]
+    else:
+        edn = res["err"]
+    if isnan(edn): edn = 0
+    if isnan(eup): eup = 0
     ires = ires+1
     if offset:
-        voffset = float(ires)/(len(res)+1) - 0.5
+        voffset = 0
     else:
         voffset = 0
     if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
@@ -513,26 +522,40 @@ def writepull(args,results,outfile,parname,ypos,offset=True,style="red"):
        outfile.write("  \\node[dot,"+style+"] at ({:.5f},{:.2f})".format(cv,ypos+voffset)+ "{};\n")
 
 def writeranking(args,ranking,outfile,ypos,impscale=1,ysize="5pt"):
+    from math import isnan
     up,dn = ranking
+    if isnan(up): up=0
+    if isnan(dn): dn=0
     outfile.write("  \\fill[myblue]   ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(float(impscale*dn),ypos,ysize,0, ypos,ysize))
     outfile.write("  \\fill[myyellow] ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(0, ypos,ysize,float(impscale*up),ypos,ysize))
     outfile.write("\n")
         
 def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False):
+    from math import isnan
     res = results[parname]
     ires = 0
     cv = res['val']
-    edn = res['err']
-    eup = res['err']
-    ires = ires+1
-    if labels == "r":
-        hoffset = float(len(res.items())-ires)
-        outfile.write("  \\node[lbl,xshift=-"+str(hoffset)+"cm,anchor=east] at ("+str(args.range[0])+","+str(ypos)+") ")            
+    if "eUp" in res.keys():
+        eup = res["eUp"]
     else:
-        hoffset = 2*float(ires)
-        outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(ypos)+") ")
+        eup = res["err"]
+    if "eDn" in res.keys():
+        edn = res["eDn"]
+    else:
+        edn = res["err"]
+    if not isnan(eup): seup = "+{:.4f}".format(abs(eup))
+    else:          seup = "?"
+    if not isnan(edn): sedn = "-{:.4f}".format(abs(edn))
+    else:          sedn = "?"
+    snom = "{:.4f}".format(cv)
+    ires = ires+1
+    hpos = args.range[1]
+    hoffset = 5*float(ires)
+    if labels == "r":
+        hoffset += 3
+    outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(hpos)+","+str(ypos)+") ")
     if numbers:
-        outfile.write(("{{${:.4f}^{{+{:.4f}}}_{{-{:.4f}}}$}};").format(cv,abs(eup),abs(edn)))
+        outfile.write(" {$"+snom+"^{"+seup+"}_{"+sedn+"}$};")
     else:
         outfile.write(" {};")
 
@@ -547,7 +570,7 @@ def writerankinghead(args,outfile,allpars,zoom=10):
         outfile.write("  \\draw[blue] (" +str(x)+ "," + str(-0.5-npar) + ") -- (" +str(x)+ "," +str(-0.5-0.2-npar)+ ") node [axlbl,above=3pt]{" +str(x/zoom)+ "};\n")
         ii = ii + 1
 
-def writepullshead(args,outfile,allpars,labels):
+def writeparametershead(args,outfile):
     xunit = 3
     yunit = .5
     outfile.write("\\begin{tikzpicture}[x="+str(xunit)+"cm,y=-"+str(yunit)+"cm,%\n")
@@ -558,6 +581,8 @@ def writepullshead(args,outfile,allpars,labels):
     outfile.write("  every node/.append style={font=\\sffamily}\n")
     outfile.write("]\n")
     outfile.write("\\pgfdeclarelayer{background}\\pgfsetlayers{background,main}\n")
+    
+def writeparameters(args,outfile,allpars,labels):    
     npar = len(allpars)
     for np in range(0,npar):
         text = allpars[np]
@@ -595,7 +620,8 @@ def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=
     if not allpars:
         allpars = sorted(list(results.keys()))
     writehead(outfile)
-    writepullshead(args,outfile,allpars,labels)
+    writeparametershead(args,outfile)    
+    writeparameters(args,outfile,allpars,labels)
     npar = len(allpars)
     for np in range(0,npar):
         writepull(args,results,outfile,allpars[np],np-npar,offset)
