@@ -350,7 +350,7 @@ def createScanJobs(args,arglist):
 
 def createImpactJobs(args,arglist):
     from os.path import join as pjoin
-    from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names,concat
+    from RooFitUtils.util import stringify,makepoint,reconstructCall,mkdir,names,concat,makelist
     options = reconstructCall(args,arglist,["impacts","writeSubmit","writeSubmitPoints","refineScan","refineScanThresholds","findSigma"])
     model = buildModel(args)    
     import sys
@@ -359,7 +359,7 @@ def createImpactJobs(args,arglist):
     for group in args["impacts"]:
         import re
         regex = re.compile(group)
-        for par in model.GetNuisanceParameters():
+        for par in makelist(model.GetNuisanceParameters()):
             if regex.match(par.GetName()):
                 if abs(par.getErrorHi()) > 0 and abs(par.getErrorLo()) > 0:
                     pars.append(par)
