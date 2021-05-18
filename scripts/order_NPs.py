@@ -21,7 +21,9 @@ def runOrdering(args):
     with open(args.writeSubmit,"w") as f:
       for matind in matindices:
         outfilename = args.outFileName.replace(".txt","")+"_"+str(matind[0])+"_"+str(matind[1])+".txt"
-        f.write("order_NPs.py --output {} --pois {} --fitResult {} {} --pos-lo {} --pos-hi {} & \n".format(outfilename,pois,args.fitResult[0][0],args.fitResult[0][1],matind[0],matind[1])) 
+        import sys
+        if(len(args.fitResult) != 2): print('ERROR  Argument fitResult requires a length of two: --fitResult <name of the root file> <name of the fitResult>')
+        f.write("python {} --output {} --pois {} --fitResult {} {} --pos-lo {} --pos-hi {} & \n".format(sys.argv[0],outfilename,pois,args.fitResult[0],args.fitResult[1],matind[0],matind[1])) 
     print("INFO : wrote joblines in "+args.writeSubmit)
    
   else:

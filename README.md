@@ -106,13 +106,15 @@ As an example, you can try the pruning code on a Higgs 5XS
 workspace. The directory
 `/afs/cern.ch/user/r/rabalasu/public/test_prune` contains the 5XS
 80ifb workspace (pre-fit and post-fit) and the corresponding hesse and
-fitresults as root files. To test the pruning code, copy it's contents
+fitresults as root files. To test the pruning code, copy its contents
 to `test`.  The first step would be to obtain the following inputs for
-the pruning code, the postfit workspace, and the fitresult. 
+the pruning code, the postfit workspace, and the fitresult. If the
+workspace contains more POIs than those that should be profiled, make sure
+to specify only those that should be profiled. 
 You can skip this step for the example as they are already
 available.
 
-    python scripts/fit.py --input test/WS-Comb-5XS_80ifb.root --output test/WS-Comb-5XS.txt --workspace combWS --data combData --no-findSigma --hesse --writeResult --make-snapshots --write-workspace prune_test/WS-Comb-5XS_80ifb_postFit.root
+    python scripts/fit.py --poi r_ggF r_VBF r_WH r_ZH r_ttH --input test/WS-Comb-5XS_80ifb.root --output test/WS-Comb-5XS.txt --workspace combWS --data combData --no-findSigma --hesse --writeResult --make-snapshots --write-workspace prune_test/WS-Comb-5XS_80ifb_postFit.root
 
  To perform the prune run the `order_NPs.py` script. Running the
  order_NPs script with `--writeSubmit` options creates a txt file

@@ -373,16 +373,16 @@ def createImpactJobs(args,arglist):
     options["--no-findSigma"] = ""
     
     with open(pjoin(outpath,outfile),"w") as jobs:
-        options["--output"]=pjoin(outpath,"impact.nominal.txt")
+        options["--output"]=pjoin(outpath,"impact.nominal.json")
         cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
         jobs.write(submitCommand+" "+cmd+"\n")
         for par in pars:
             options["--fix"]="{:s}={:f}".format(par.GetName(),par.getVal()+abs(par.getErrorHi()))
-            options["--output"]=pjoin(outpath,"impact."+par.GetName()+".up.txt")
+            options["--output"]=pjoin(outpath,"impact."+par.GetName()+".up.json")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")
             options["--fix"]="{:s}={:f}".format(par.GetName(),par.getVal()-abs(par.getErrorLo()))
-            options["--output"]=pjoin(outpath,"impact."+par.GetName()+".dn.txt")
+            options["--output"]=pjoin(outpath,"impact."+par.GetName()+".dn.json")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")            
     print("wrote "+args["writeSubmit"])

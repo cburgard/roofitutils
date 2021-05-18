@@ -495,20 +495,22 @@ def getColorDefStringLaTeX(name,color):
   color.GetRGB(r,g,b);
   return "\\definecolor{"+name+"}{rgb}{"+str(r)+","+str(g)+","+str(b)+"}"
 
-def writepull(args,results,outfile,parname,ypos,offset=True):
+def writepull(args,results,outfile,parname,ypos,offset=True,style="red"):
     res = results[parname]
     ires = 0
-    for style,(cv,edn,eup) in res.items():
-        ires = ires+1
-        if offset:
-            voffset = float(ires)/(len(res)+1) - 0.5
-        else:
-            voffset = 0
-        if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
-            print("unable to print parameter "+parname+", dimension too large: "+str(cv)+" +"+str(eup)+" "+str(edn))
-        else:
-            outfile.write("  \\draw[pull,"+style+"] ({:.5f},{:.2f})--({:.5f},{:.2f});".format(cv-abs(edn),ypos+voffset,cv+abs(eup),ypos+voffset))
-            outfile.write("  \\node[dot,"+style+"] at ({:.5f},{:.2f})".format(cv,ypos+voffset)+ "{};\n")
+    cv = res['val']
+    edn = res['err']
+    eup = res['err'] 
+    ires = ires+1
+    if offset:
+        voffset = float(ires)/(len(res)+1) - 0.5
+    else:
+        voffset = 0
+    if cv+abs(eup) > args.range[1] or cv-abs(edn) < args.range[0]:
+        print("unable to print parameter "+parname+", dimension too large: "+str(cv)+" +"+str(eup)+" "+str(edn))
+    else:
+       outfile.write("  \\draw[pull,"+style+"] ({:.5f},{:.2f})--({:.5f},{:.2f});".format(cv-abs(edn),ypos+voffset,cv+abs(eup),ypos+voffset))
+       outfile.write("  \\node[dot,"+style+"] at ({:.5f},{:.2f})".format(cv,ypos+voffset)+ "{};\n")
 
 def writeranking(args,ranking,outfile,ypos,impscale=1,ysize="5pt"):
     up,dn = ranking
@@ -519,18 +521,20 @@ def writeranking(args,ranking,outfile,ypos,impscale=1,ysize="5pt"):
 def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False):
     res = results[parname]
     ires = 0
-    for style,(cv,edn,eup) in res.items():
-        ires = ires+1
-        if labels == "r":
-            hoffset = float(len(res.items())-ires)
-            outfile.write("  \\node[lbl,xshift=-"+str(hoffset)+"cm,anchor=east] at ("+str(args.range[0])+","+str(ypos)+") ")            
-        else:
-            hoffset = 2*float(ires)
-            outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(ypos)+") ")
-        if numbers:
-            outfile.write(("{{${:}^{{+{:}}}_{{-{:}}}$}};").format(cv,abs(eup),abs(edn)))
-        else:
-            outfile.write(" {};")
+    cv = res['val']
+    edn = res['err']
+    eup = res['err']
+    ires = ires+1
+    if labels == "r":
+        hoffset = float(len(res.items())-ires)
+        outfile.write("  \\node[lbl,xshift=-"+str(hoffset)+"cm,anchor=east] at ("+str(args.range[0])+","+str(ypos)+") ")            
+    else:
+        hoffset = 2*float(ires)
+        outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(args.range[1])+","+str(ypos)+") ")
+    if numbers:
+        outfile.write(("{{${:.4f}^{{+{:.4f}}}_{{-{:.4f}}}$}};").format(cv,abs(eup),abs(edn)))
+    else:
+        outfile.write(" {};")
 
 def writerankinghead(args,outfile,allpars,zoom=10):
     npar = len(allpars)
@@ -539,7 +543,7 @@ def writerankinghead(args,outfile,allpars,zoom=10):
     outfile.write("% top axis\n")
     outfile.write("  \\draw[blue] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5-npar)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5-npar)+ ") node [pos=1,anchor=north east,yshift=1.1cm]{$\Delta\mu$};\n")
     ii = 0
-    for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.25):
+    for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.5):
         outfile.write("  \\draw[blue] (" +str(x)+ "," + str(-0.5-npar) + ") -- (" +str(x)+ "," +str(-0.5-0.2-npar)+ ") node [axlbl,above=3pt]{" +str(x/zoom)+ "};\n")
         ii = ii + 1
 
@@ -548,7 +552,7 @@ def writepullshead(args,outfile,allpars,labels):
     yunit = .5
     outfile.write("\\begin{tikzpicture}[x="+str(xunit)+"cm,y=-"+str(yunit)+"cm,%\n")
     outfile.write("  lbl/.style={scale=1,anchor=west},%\n")
-    outfile.write("  axlbl/.style={scale=0.5,anchor=center},%\n")
+    outfile.write("  axlbl/.style={scale=0.7,anchor=center},%\n")
     outfile.write("  pull/.style={{|[scale=1]}-{|[scale=1]}},%\n")
     outfile.write("  dot/.style={circle,fill,inner sep=1pt},\n")
     outfile.write("  every node/.append style={font=\\sffamily}\n")

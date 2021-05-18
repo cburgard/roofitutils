@@ -110,9 +110,10 @@ void RooFitUtils::AbsMeasurement::MakeConstSnapshot(
    RooWorkspace* ws = NULL;
     while ((key = (TKey*)next())) {
       TString keyname = key->GetName();
-      if (!keyname.Contains("ProcessID") && !keyname.Contains("nllscan") && !keyname.Contains("fitResult"))
-      ws = (RooWorkspace*) file->Get(keyname);
+      TString keyclass = key->GetClassName();
+      if(keyclass == "RooWorkspace") ws = (RooWorkspace*) file->Get(keyname);
      }
+   if(ws == NULL) std::cout<<"AbsMeasurement::MakeConstSnapshot    ERROR No workspace found in the input directory!"<<std::endl;
    
    TString allParameters = parameters;
    allParameters.ReplaceAll(" ", "");
