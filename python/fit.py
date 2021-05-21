@@ -1,5 +1,21 @@
 verbosity = {"DEBUG":4,"INFO":3,"WARNING":2,"ERROR":1}
 
+def simplefit(args):
+    """this is a simple drop-in replacement running a fit that is useful for debugging"""
+    from ROOT import TFile
+    infile = TFile.Open(args["inFileName"],"READ")
+    if not infile or not infile.IsOpen(): raise RuntimeError("unable to open file "+args["inFileName"])    
+    workspace = infile.Get(args["wsName"])
+    if not workspace: raise RuntimeError("unable to find workspace "+args["wsName"])
+    model = workspace.obj(args["modelConfigName"])
+    if not model: raise RuntimeError("unable to obtain "+args["modelConfigName"])        
+    pdf = model.GetPdf()
+    if not pdf: raise RuntimeError("unable to obtain pdf from model!")
+    data = workspace.data(args["dataName"])
+    if not data: raise RuntimeError("no dataset '"+args["dataName"])
+    pdf.fitTo(data)
+
+
 def setup(args):
     # general setup and loading of modules
     import ROOT
