@@ -31,6 +31,8 @@ def make_parser():
         "lowTolerance":       Parser(r".*VariableMetric.*\s*Tolerance is not sufficient, continue the minimization",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*Edm\s*is\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")")
         })),
+        "DavidonErrorUpdator": Parser(r".*DavidonErrorUpdator: delgam < 0 : first derivatives increasing along search line"),
+        "NoImprovementInLineSearch": Parser(r".*VariableMetricBuilder: no improvement in line search"),
         "Iteration":          Parser(r".*VariableMetric.*\s*(?P<it>\d+)\s+-\s+FCN\s+=\s+(?P<FCN>"+NUM+")\s+Edm\s+=\s+(?P<Edm>"+NUM+")\s+NCalls\s+=\s+(?P<NCalls>\d+)"),
         "AfterHessian":       Parser(r".*VariableMetric.*\s*After Hessian"),
         "FlatLH":             Parser(r"Minuit2:0: RuntimeWarning: VariableMetricBuilder No improvement in line search"),
@@ -112,6 +114,7 @@ def make_parser():
                 "time":Parser("NLL built in (?P<cputime>.*) min \(cpu\), (?P<realtime>.*) min \(real\)")
             }))
         })),
+        "sframework-initialize-parameter":Parser(r".*SFramework/(?P<appname>.*): initializing parameter '(?P<name>.*)' to '(?P<value>"+NUM+")'"),        
         "sframework-loadsnapshot":Parser(r".*SFramework/(?P<appname>.*): loaded snapshot '(?P<snapshot>.*)' for Nll construction, (?P<npar>\d+) parameters floating"),
         "sframework-createnll":Parser(r".*SFramework/(?P<appname>.*): constructed Nll with (?P<npar>\d+) floating parameters and starting value (?P<nllval>"+NUM+")"),        
         "robustminimizer-start":Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.)*\): starting minimization with strategy (?P<Strategy>\d+)"),
