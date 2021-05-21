@@ -9,13 +9,14 @@ IF(${AnalysisBase_FOUND})
     atlas_ctest_setup() # Set up the project:
     atlas_project( RooFitUtils 1.0.0
       USE AnalysisBase ${AnalysisBase_VERSION} )
+    set(BINARY_TAG ${ATLAS_PLATFORM})
 
     # Generate an environment setup script:
     lcg_generate_env( SH_FILE ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh )
     install( FILES ${CMAKE_BINARY_DIR}/${ATLAS_PLATFORM}/env_setup.sh DESTINATION . )
 
     # Set up the usage of CPack:
-    set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc49-opt)
+    set(CMAKE_INSTALL_PREFIX /InstallArea/${BINARY_TAG})
     atlas_cpack_setup()
   ENDIF()
 
