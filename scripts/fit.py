@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 import sys
+from RooFitUtils.fit import setup,buildModel,buildMinimizer,fit,simplefit
 
 def main(args):
+    """the main function setting up and performing the fit"""
     if args["writeSubmit"]:
         if args["scan"] or args["refineScan"]:
             from RooFitUtils.fit import createScanJobs
@@ -25,7 +27,6 @@ def main(args):
             from RooFitUtils.util import redirect_c_output
             fd = redirect_c_output(logfile,False)
 
-    from RooFitUtils.fit import setup,buildModel,buildMinimizer,fit
     setup(args)
     model = buildModel(args)
     minimizer = buildMinimizer(args,model)
@@ -36,9 +37,12 @@ def main(args):
             from RooFitUtils.util import restore_c_output            
             restore_c_output(fd)
     else:
+        import builtins
         print("prepared fit:")
         print("  ExtendedModel model")
+        builtins.model = model
         print("  ExtendedMinimizer minimizer")
+        builtins.minimizer = minimizer        
         print("call 'fit(args,model,minimizer)' to run!")
 
     
@@ -122,6 +126,6 @@ if __name__ == "__main__":
     arglist.append(advanced.add_argument( "--eigen"         , action='store_true',   dest="eigendecomposition"         , help="Eigenvalues and vectors.", default=False ))
 
 
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
 
-    main(vars(args))
+    main(args)
