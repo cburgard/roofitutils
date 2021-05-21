@@ -744,6 +744,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     double nllval = 0.;
     try {
       fNll = fPdf->createNLL(*fData, fNllCmdList);
+
       //here goes the penalty 
       if (fPenaltyMini){
         std::string s("fNLL");
@@ -1089,7 +1090,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
 void RooFitUtils::ExtendedMinimizer::initialize() {
   // apply all pre-minimization settings
-  if (fCondSet) {
+  if (fCondSet && fNll) {
     setVals(*fNll->getVariables(), fCondSet, true);
   }
 }
