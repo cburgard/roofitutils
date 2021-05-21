@@ -288,12 +288,24 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     mini.cov = new TMatrixDSym(mini.hesse->Invert(&det));
   }
   if(!(det > 0)){
-    std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix found invalid (D=" << det << "), deleting" << std::endl;
-    delete mini.hesse;
-    delete mini.cov;
-    mini.hesse = NULL;
-    mini.cov = NULL;
-    hesseStatus = -1;
+    TMatrixDSymEigen m(*mini.hesse);
+    double newdet = 1;
+    for(int i=0; i<m.GetEigenValues().GetNrows(); ++i){
+      newdet *= m.GetEigenValues()[i];
+      if(m.GetEigenValues()[i] == 0.){
+        std::cout << "ExtendedMinimizer::runHesse(" << fName << ") identified row "<<i<< " (parameter " << mini.parameters[i].name << ") as problematic" << std::endl;
+      }
+    }
+    if(newdet == det){
+      std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix found invalid (D=" << det << "), deleting" << std::endl;
+      delete mini.hesse;
+      delete mini.cov;
+      mini.hesse = NULL;
+      mini.cov = NULL;
+      hesseStatus = -1;
+    } else {
+      std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix determinant subject to numerical fluctuations (D=" << det << " or " << newdet << ")!" << std::endl;
+    }
   }
   
   return hesseStatus;
