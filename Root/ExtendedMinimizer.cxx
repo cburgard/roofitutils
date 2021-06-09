@@ -304,7 +304,36 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
       mini.cov = NULL;
       hesseStatus = -1;
     } else {
-      std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix determinant subject to numerical fluctuations (D=" << det << " or " << newdet << ")!" << std::endl;
+      double invdet;
+      TMatrixDSym closure(mini.cov->Invert(&invdet));
+      bool ok = true;
+      for(int i=0; i<closure.GetNcols(); ++i){
+        for(int j=0; j<closure.GetNcols(); ++j){
+          if(closure(i,j) != (*mini.hesse)(i,j)){
+            ok = false;
+          }
+        }
+      }
+      if(ok) {
+        std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix determinant subject to numerical fluctuations (D=" << det << " or " << newdet << "), but closure seems fine, continuing!" << std::endl;
+      } else {
+        std::cout << "ExtendedMinimizer::runHesse(" << fName << ") Hesse matrix determinant subject to numerical fluctuations (D=" << det << " or " << newdet << ") and closure failed, reconstructing from eigenvectors!" << std::endl;
+        TMatrixDSym evals(mini.hesse->GetNcols());
+        TMatrixDSym invevals(mini.hesse->GetNcols());        
+        TMatrixD evecs(m.GetEigenVectors());
+        for(int i=0; i<mini.hesse->GetNcols(); ++i){
+          evals(i,i) = m.GetEigenValues()[i];
+          invevals(i,i) = 1./m.GetEigenValues()[i];
+        }
+        delete mini.cov;
+        TMatrixD cov(evecs.T() * invevals * evecs);
+        mini.cov = new TMatrixDSym(cov.GetNcols());
+        for(int i=0; i<cov.GetNcols(); ++i){
+          for(int j=0; j<cov.GetNcols(); ++j){
+            (*mini.cov)(i,j) = cov(i,j);
+          }
+        }
+      }
     }
   }
   
