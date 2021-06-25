@@ -51,7 +51,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser("plot pulls of parameters")
     parser.add_argument('--range',nargs=2,default=[-5,5],help="range to plot",type=float)    
-    parser.add_argument('--scaleimpacts',default=1,help="Scale impacts for better visualization",type=float)
+    parser.add_argument('--scaleimpacts',default=None,help="Scale impacts for better visualization",type=float)
     parser.add_argument("--top-N",dest="topN",help="plot only top N ranked NPs",default=15)
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.json'),help="json files with the input information",default=[])
     parser.add_argument('--impacts',action='append',nargs="+",metavar=('POI','file.json'),help="json files with the input information for ranking the nuisance parameters",default=[])
@@ -93,24 +93,29 @@ if __name__ == '__main__':
     else:
         filtallpars = filterparameters(parset,args.blacklist)
     allpars = sortparameters(filtallpars,rankings)
+    parwidth = max(map(len,allpars))    
     if args.topN and len(allpars)>args.topN: allpars = allpars[:args.topN]
     npar = len(allpars)
 
     with open(args.output,"wt") as outfile:
         from RooFitUtils.pgfplotter import writehead,writefoot,writeparameters,writeparametershead,writepullsfoot,writepull,writepullnumbers,writeranking,writerankinghead
         writehead(outfile,args.atlas)
-        writeparametershead(args,outfile)    
-        writerankinghead(args,outfile,allpars,args.scaleimpacts)
+        writeparametershead(args,outfile)
+        scale = args.scaleimpacts
+        if not scale:
+            from RooFitUtils.util import roundAutoUp
+            scale = roundAutoUp(1./max(map(lambda x: max(map(abs,x)),rankings[poiname].values())))
+        writerankinghead(args,outfile,allpars,scale)
         for np in range(0,npar):
             for poi,ranking in rankings.items():
                 if allpars[np] in ranking.keys():
                     npname = allpars[np]
-                    writeranking(args,rankings[poiname][npname],outfile,np-npar,args.scaleimpacts)
+                    writeranking(args,rankings[poiname][npname],outfile,np-npar,scale)
             for inset in args.input:
                 label = inset[0]
                 if allpars[np] in pullresults['MLE'][label].keys():
                     writepull(args,pullresults['MLE'][label],outfile,allpars[np],np-npar,True,label)
-                    writepullnumbers(args,pullresults['MLE'][label],outfile,allpars[np],np-npar,args.labels,args.numbers)
+                    writepullnumbers(args,pullresults['MLE'][label],outfile,allpars[np],np-npar,0.17*parwidth,args.numbers)
         writeparameters(args,outfile,allpars,args.labels)        
         writepullsfoot(args,outfile,allpars)        
         writefoot(outfile)

@@ -530,7 +530,7 @@ def writeranking(args,ranking,outfile,ypos,impscale=1,ysize="5pt"):
     outfile.write("  \\fill[myyellow] ($({:.5f},{:.2f})+(0,-{:s})$) rectangle ($({:.5f},{:.2f})+(0,{:s})$);".format(0, ypos,ysize,float(impscale*up),ypos,ysize))
     outfile.write("\n")
         
-def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False):
+def writepullnumbers(args,results,outfile,parname,ypos,hoffset,numbers=False):
     from math import isnan
     res = results[parname]
     ires = 0
@@ -550,9 +550,7 @@ def writepullnumbers(args,results,outfile,parname,ypos,labels="r",numbers=False)
     snom = "{:.4f}".format(cv)
     ires = ires+1
     hpos = args.range[1]
-    hoffset = 5*float(ires)
-    if labels == "r":
-        hoffset += 3
+    hoffset += 5*float(ires)
     outfile.write("  \\node[lbl,xshift="+str(hoffset)+"cm,anchor=east] at ("+str(hpos)+","+str(ypos)+") ")
     if numbers:
         outfile.write(" {$"+snom+"^{"+seup+"}_{"+sedn+"}$};")
@@ -623,9 +621,10 @@ def writepulls(args,results,outfile,allpars=None,offset=True,labels="r",numbers=
     writeparametershead(args,outfile)    
     writeparameters(args,outfile,allpars,labels)
     npar = len(allpars)
+    parwidth = max(map(len,allpars))
     for np in range(0,npar):
         writepull(args,results,outfile,allpars[np],np-npar,offset)
-        writepullnumers(args,results,outfile,allpars[np],np-npar,labels,numbers)
+        writepullnumers(args,results,outfile,allpars[np],np-npar,0.1*parwidth,numbers)
     writepullsfoot(args,outfile,allpars)        
     writefoot(outfile)   
 

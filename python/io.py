@@ -399,7 +399,10 @@ def collectimpacts(rankings,files,poiname):
     fits = results["MLE"]
     if not "nominal" in fits.keys():
         raise RuntimeError("cannot create ranking without nominal result!")
-    nomval = fits["nominal"][poiname]["val"]
+    try:
+        nomval = fits["nominal"][poiname]["val"]
+    except KeyError:
+        raise RuntimeError("unable to retrieve result for POI '{:s}', available POIs are: {:s}".format(poiname,",".join(fits["nominal"].keys())))
     if not poiname in rankings.keys():
         rankings[poiname] = {}
     for par in allvars:

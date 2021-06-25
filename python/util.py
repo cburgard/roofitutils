@@ -514,6 +514,11 @@ def findSignificantDigits(x):
     else:
         return max(0,-scale-1)
 
+def roundAutoUp(m):
+    from math import log10
+    unit = int(log10(m))
+    return pow(10,unit) * (int(m / pow(10,unit))+1)
+    
 def formatPDG(x,xup,xdn,lap=False,show="v+-"):
     from math import isnan
     if isnan(x): return "NaN"
