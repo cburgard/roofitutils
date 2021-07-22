@@ -5,9 +5,12 @@ if ! command -v pip &> /dev/null; then
     python get-pip.py --user   
 fi
 
-USER="--user"
-if [[ $(whoami) == "root" ]]; then
-   USER=""
+PYTHON_ENV=$(python -c "import sys; sys.stdout.write('1') if hasattr(sys, 'real_prefix') else sys.stdout.write('0')")
+
+if $PYTHON_ENV; then
+    USER="--user"
+else
+    USER=""
 fi
 
 python -c "import scipy"   || python -m pip install $USER scipy
