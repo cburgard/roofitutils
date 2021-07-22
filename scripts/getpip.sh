@@ -7,7 +7,7 @@ fi
 
 PYTHON_ENV=$(python -c "import sys; sys.stdout.write('1') if hasattr(sys, 'real_prefix') else sys.stdout.write('0')")
 
-if $PYTHON_ENV; then
+if [ $PYTHON_ENV -eq 1 ]; then
     USER="--user"
 else
     USER=""
