@@ -13,6 +13,6 @@ else
     USER=""
 fi
 
-python -c "import scipy"   || python -m pip install $USER scipy
-python -c "import skimage" || python -m pip install $USER scikit-image
+python -c "import scipy"   &> /dev/null || python -m pip install --user scipy         || python -m pip install scipy
+python -c "import skimage" &> /dev/null || python -m pip install --user scikit-image  || python -m pip install scikit-image
    
