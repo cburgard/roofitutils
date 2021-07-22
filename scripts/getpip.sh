@@ -5,6 +5,11 @@ if ! command -v pip &> /dev/null; then
     python get-pip.py --user   
 fi
 
-python -c "import scipy" || python -m pip install --user scipy
-python -c "import skimage" || python -m pip install --user scikit-image
+USER="--user"
+if [[ $(whoami) == "root" ]]; then
+   USER=""
+fi
+
+python -c "import scipy"   || python -m pip install $USER scipy
+python -c "import skimage" || python -m pip install $USER scikit-image
    
