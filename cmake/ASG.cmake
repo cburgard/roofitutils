@@ -28,7 +28,7 @@ IF(${AnalysisBase_FOUND})
   # this section reflects the standard ASG way of configuring CMake
   # it is executed when compiling within an ASG environment
   find_package( GTest )
-  set(CMAKE_INSTALL_PREFIX /InstallArea/x86_64-slc6-gcc62-opt)
+  set(CMAKE_INSTALL_PREFIX /InstallArea/${BINARY_TAG})
   atlas_add_root_dictionary( RooFitUtils RooFitUtilsCintDict
     ROOT_HEADERS ${RooFitUtilsHeaders} ${RooFitUtilsLinkDef}
     EXTERNAL_PACKAGES ROOT )
