@@ -16,6 +16,7 @@ def make_parser():
             "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
             "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),            
             "FloatParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\+/-\s+(?P<err>"+NUM+")"),
+            "FloatParameterNoErr":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")"),        
             "ConstParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)"),            
         }
 
@@ -31,6 +32,12 @@ def make_parser():
         "lowTolerance":       Parser(r".*VariableMetric.*\s*Tolerance is not sufficient, continue the minimization",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*Edm\s*is\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")")
         })),
+        "iterationsFinishNoConvergence": Parser(r".*VariableMetric.*\s*iterations finish without convergence",MetaParser({
+            "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*: \s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),
+            "edmreq":            Parser(r"Info in\s*requested\s*: edmval\s*=\s*(?P<edmreq>"+NUM+")"),
+            "invalid":            Parser(r"Info in\s*(?P<Label>\w+)\s*: INVALID function minimum - edm is above tolerance.*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),
+            "reqtol":            Parser(r"Info in\s*(?P<Label>\w+)\s*: Required tolerance\s*is 10 x edmval\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),            
+        })),
         "DavidonErrorUpdator": Parser(r".*DavidonErrorUpdator: delgam < 0 : first derivatives increasing along search line"),
         "NoImprovementInLineSearch": Parser(r".*VariableMetricBuilder: no improvement in line search"),
         "Iteration":          Parser(r".*VariableMetric.*\s*(?P<it>\d+)\s+-\s+FCN\s+=\s+(?P<FCN>"+NUM+")\s+Edm\s+=\s+(?P<Edm>"+NUM+")\s+NCalls\s+=\s+(?P<NCalls>\d+)"),
@@ -39,6 +46,13 @@ def make_parser():
         "runHesse":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
         "hesseCalls":         Parser(r".*Hesse [Uu]sing max-calls (?P<maxcalls>\d+)"),
         "hesseInfo":          Parser(r".*::Hesse[ :]*Hesse is (?P<hesseStatus>\w+) - matrix is (?P<matrixStatus>\w+)",MetaParser(minimum)),
+        "hesseNonPosDef": Parser(r".*VariableMetricBuilder: matrix not pos.def. : edm is < 0. Make pos def...",MetaParser({        
+            "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")")
+        })),
+        "hesseNonPosDefGDel": Parser(r".*VariableMetricBuilder: matrix not pos.def, gdel > 0",MetaParser({        
+            "gdel":Parser(r"Info: gdel = (?P<gdel>"+NUM+")"),
+            "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")")            
+        })),
         "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser({
             "MinVal":Parser(r"\s+Minimum value\s+: (?P<val>"+NUM+")"),
             "Edm":Parser(r"\s+Edm\s+: (?P<val>"+NUM+")"),
@@ -67,6 +81,16 @@ def make_parser():
         "mnminos":Parser(r".*MnMinos Determination of (?P<direction>\w+) Minos error for parameter (?P<parno>\d+)"),
         "mncross":       Parser(r".*MnFunctionCross: parameter 0 set to (?P<val>"+NUM+")",MetaParser(minimization)),
         "end":           Parser(r".*MnMinos end of Minos scan for (?P<direction>\w+) interval for parameter (?P<parname>.*)"),
+        "error":         Parser(r".*MnMinos could not find (?P<direction>\w+) Value for Parameter\s*:\s*par_name = (?P<parname>.*)"),
+        "invalid":       Parser(r".*Minos:\s*Invalid (?P<direction>\w+) error for parameter (?P<parname>.*)"),
+        "matinvfail":    Parser(r".*MnGlobalCorrelationCoeff: inversion of matrix fails."),
+        "newmin":        Parser(r".*Minos[:]?\s*[Nn]ew Minimum found while looking for Parameter\s*: par_name = (?P<parname>.*)"),
+        "newmin2":       Parser(r".*Minos[:]?\s*[Nn]ew Minimum found while running Minos for (?P<direction>\w+) error for parameter (?P<parname>.*)"),
+        "rerun":         Parser(r".*Minuit2Minimizer::GetMinosError : Found a new minimum: run again the Minimization\s*starting from the new\s*point",MetaParser({
+            "newmin":      Parser(r"New minimum point found by Minos\s*:",MetaParser(minimum)),
+        })),
+        "limit":       Parser(r".*Minos\s*Parameter is at (?P<direction>\w+) limit. : par_name = (?P<parname>.*)"),
+        "limit2":       Parser(r".*Minos:\s*Parameter\s*:\s*(?P<parname>.*)\s*is at (?P<direction>\w+) limit"),                        
         "mncross-migrad":Parser(r".*MnFunctionCross[: ]+Run Migrad [again (2nd)]*with fixed parameters:",MetaParser(minos_migrad)),
         "result":Parser(r"Minos: (?P<direction>\w+) error for parameter (?P<parname>.+)\s+:\s+(?P<val>"+NUM+")"),
         "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
@@ -89,7 +113,9 @@ def make_parser():
             }))
         })),
         "minos":      Parser(r".*GetMinosError for parameter (?P<parno>\d+) (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
-        "minos2":      Parser(r".*GetMinosError - Run MINOS (?P<direction>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
+        "minos2":     Parser(r".*GetMinosError - Run MINOS (?P<direction>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
+        "minos2bidir": Parser(r".*GetMinosError - Run MINOS (?P<direction1>\w+) and (?P<direction2>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
+        "minosrerun":Parser(r".*Minuit2Minimizer::GetMinosError : Run now again Minos from the new found Minimum",MetaParser(minos)),
         "minimization":Parser(r"Minuit2Minimizer: Minimize with max-calls (?P<MaxCalls>\d+) convergence for edm < (?P<Edm>"+NUM+") strategy (?P<Strategy>\d)",MetaParser(minimization)),
         "quickfit-snapshot":Parser(r"REGTEST: Loading snapshot (?P<Snapshot>.*)"),        
         "quickfit-preparing":Parser(r"Preparing parameters of interest\s*:\s*(?P<poiset>.*)",MetaParser({
@@ -114,7 +140,8 @@ def make_parser():
                 "time":Parser("NLL built in (?P<cputime>.*) min \(cpu\), (?P<realtime>.*) min \(real\)")
             }))
         })),
-        "sframework-initialize-parameter":Parser(r".*SFramework/(?P<appname>.*): initializing parameter '(?P<name>.*)' to '(?P<value>"+NUM+")'"),        
+        "sframework-initialize-parameter":Parser(r".*SFramework/(?P<appname>.*): initializing parameter '(?P<name>.*)' to '(?P<value>"+NUM+")'"),
+        "sframework-initialize-parameter-error":Parser(r".*unable to initialize parameter '(?P<name>.*)'.*"),                
         "sframework-loadsnapshot":Parser(r".*SFramework/(?P<appname>.*): loaded snapshot '(?P<snapshot>.*)' for Nll construction, (?P<npar>\d+) parameters floating"),
         "sframework-createnll":Parser(r".*SFramework/(?P<appname>.*): constructed Nll with (?P<npar>\d+) floating parameters and starting value (?P<nllval>"+NUM+")"),        
         "robustminimizer-start":Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.)*\): starting minimization with strategy (?P<Strategy>\d+)"),
