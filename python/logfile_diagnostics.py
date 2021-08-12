@@ -162,15 +162,17 @@ minimization_issue_handlers = [
 ]
 
 minos_issue_handlers = [
+    Handler("newmin", severity = Severity.WARNING, info="while running Minos, a new (better) minimum was found, causing minos to restart. consider putting a lower Edm!"),
 ]
 
 def diagnose_minimizations(minimizations):
     handle_issues("minimizations",minimizations,minimization_issue_handlers)
 
 def diagnose_minos(minos):
-    from RooFitUtils.util import flattened
+    from RooFitUtils.util import flattened    
+    handle_issues("minos runs",minos,minos_issue_handlers)
     messages = flattened([ message["mncross"] for message in minos if "mncross" in message.keys() ])
-    handle_issues("minos",messages,minimization_issue_handlers+minos_issue_handlers)    
+    handle_issues("minos minimizations",messages,minimization_issue_handlers)    
 
 def handle_issues(label,messages,issue_handlers,context=None):
     # diagnose all the messages for any severe issues
@@ -207,13 +209,13 @@ def handle_issues(label,messages,issue_handlers,context=None):
             for elem in summary["messages"]:
                 if elem:
                     print("    "+elem)
-        if len(warnings) > 0:
-            print("some "+label+" encountered warnings:")
-            for key,summary in warnings.items():
-                print("  {:d} instances of {:s}. {:s}".format(len(summary["messages"]),key,summary["info"]))
-                for elem in summary["messages"]:
-                    if elem:
-                        print("    "+elem)                    
+    if len(warnings) > 0:
+        print("some "+label+" encountered warnings:")
+        for key,summary in warnings.items():
+            print("  {:d} instances of {:s}. {:s}".format(len(summary["messages"]),key,summary["info"]))
+            for elem in summary["messages"]:
+                if elem:
+                    print("    "+elem)                    
     
 def diagnose_minima(minima):
     # diagnose all the messages from the minima branch for any severe issues    
