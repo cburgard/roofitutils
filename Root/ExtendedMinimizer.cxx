@@ -876,7 +876,7 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
   if(!this->fNll){
     clearContents(fNllCmdList,true);
     inverseFilterCmdList(cmdList, fNllCmdList,
-			 "NumCPU,Constrained,Constrain,CloneData,"
+			 "NumCPU,BatchMode,Constrained,Constrain,CloneData,"
 			 "GlobalObservables,GlobalObservablesTag,"
 			 "OffsetLikelihood",true);
   } else {
