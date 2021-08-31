@@ -84,6 +84,7 @@ if __name__ == "__main__":
     arglist.append(roofit.add_argument( "--no-hesse"      , action='store_false',   dest="hesse"         , help="disable HESSE", default=False ))
     arglist.append(roofit.add_argument( "--strategy"      , type=int,     dest="defaultStrategy"            , help="Default strategy.", default=1 ))
     arglist.append(roofit.add_argument( "--num-cpu", "--numCPU"        , type=int,     dest="numCPU"                     , help="Number of CPUs.", default=1 ))
+    arglist.append(roofit.add_argument( "--batch-mode", "--batchMode"        , action='store_true',     dest="batchMode"                     , help="Enable batch computations with vectorisation", default=False ))
     arglist.append(roofit.add_argument( "--mp-strategy", "--mpStrategy"    , type=int,     dest="mpStrategy"                 , help="Multi-Processing strategy.", default=3 ))
     arglist.append(roofit.add_argument( "--offset"        , action='store_true',   dest="offsetting"                 , help="Offset likelihood.", default=True ))
     arglist.append(roofit.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=0.05 ))

@@ -160,6 +160,8 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
+    if args.get("batchMode"):
+        argelems.append(ROOT.RooFit.BatchMode(args.get("batchMode")))
     if args.get("findSigma",False):
         argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.FindSigma(poiset))
     elif args.get("minos",True):
