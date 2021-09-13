@@ -47,7 +47,7 @@ file(GLOB pyfiles "scripts/*")
 foreach(pyfile ${pyfiles})
   install(FILES
     ${pyfile}
-    PERMISSIONS OWNER_EXECUTE
+    PERMISSIONS PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE WORLD_READ WORLD_EXECUTE GROUP_READ GROUP_EXECUTE
     DESTINATION bin
     )
 endforeach()
