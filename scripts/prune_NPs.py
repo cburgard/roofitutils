@@ -25,7 +25,7 @@ def runPruning(args):
 
   pcts = []
   for pct in args.pct:
-    pcts.append(makepctstring(pois,args.pct))
+    pcts.append(makepctstring(pois,pct))
   
   order = ROOT.std.set("pair<double,std::string>")()
   for rankfile in args.orderfiles[0]:
