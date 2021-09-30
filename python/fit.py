@@ -111,9 +111,12 @@ def buildMinimizer(args,model):
     nuis = model.GetNuisanceParameters()
     pois = model.GetParametersOfInterest()
     globs = model.GetGlobalObservables()
-    ROOT.RooFitUtils.addArgSet(allparams, nuis)
-    ROOT.RooFitUtils.addArgSet(allparams, pois)
-    ROOT.RooFitUtils.addArgSet(allparams, globs)
+    if nuis:
+        ROOT.RooFitUtils.addArgSet(allparams, nuis)
+    if pois:
+        ROOT.RooFitUtils.addArgSet(allparams, pois)
+    if globs:
+        ROOT.RooFitUtils.addArgSet(allparams, globs)
     obs = model.GetObservables()
     if args.get("makeParameterSnapshots",False):
        # Save the snapshots of nominal parameters
