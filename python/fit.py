@@ -300,11 +300,10 @@ def createScanJobs(args,arglist):
     if args["refineScan"]:
         from RooFitUtils.io import collectresults
         prescans = {}
-        preresults = {}
-        collectresults(prescans,preresults,args["refineScan"],"dummy")
+        collectresults(prescans,args["refineScan"],"dummy")
         from RooFitUtils.interpolate import findcontours
         coords = []
-        for parnamelist,scan in prescans.items():
+        for parnamelist,scan in prescans["scans"].items():
             for labels,points in scan.items():
                 # for now, use as many points for the new scan as for the old one
                 npoints = 1000
@@ -317,20 +316,21 @@ def createScanJobs(args,arglist):
                         thresholds = args["refineScanThresholds"]
                     else:
                         thresholds = [0.5*2.28,0.5*5.99]
-                    contours,minimum = findcontours(points,thresholds,False)
+                    contours,minimum = findcontours(points,thresholds,False,100)
                     # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
                     nEach = int(1 * npoints / len(contours))
                     for contour in contours:
                         for graph in contour:
-                            distributePointsAroundLine(parnamelist,coords,graph,nEach)
+                            distributePointsAroundLine(parnamelist,coords,graph,nEach,args["refineScanSpread"])
                     # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
-                    #distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.001)
+                    distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.05*args["refineScanSpread"])
                 else:
                     if args["refineScanThresholds"]:
                         thresholds = args["refineScanThresholds"]
                     else:
                         thresholds = [0.5,2]
                     for t in thresholds:
+                        from RooFitUtils.interpolate import findcrossings
                         cv,down,up = findcrossings(points,t)
                         distributePointsAroundPoint(parnamelist,coords,down,npoints/4,0.1)
                         distributePointsAroundPoint(parnamelist,coords,up,npoints/4,0.1)
@@ -356,11 +356,13 @@ def createScanJobs(args,arglist):
             if  idx % args["writeSubmitPoints"] == 0:
                 pointspath =outpath+"/coords" +"_"+str(idx)+".txt"
                 clearfile(pointspath)
+                from os.path import splitext,exists
+                outfilename,outfileext = splitext(args["outFileName"])
+                ofname = outfilename + ".part"+str(idx)+outfileext
                 options[" --no-findSigma --points"]=pointspath
-                options["--output"]=args["outFileName"]+".part"+str(idx)
+                options["--output"]=ofname
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
-                if not os.path.exists(args["outFileName"]+".part"+str(idx)):
-                    jobs.write(submitCommand+" "+cmd+"\n")
+                jobs.write(submitCommand+" "+cmd+"\n")
             idx = idx + 1
             with open(pointspath,"a") as coordlist:
                 point = makepoint(coord)

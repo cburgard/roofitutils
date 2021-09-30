@@ -76,7 +76,12 @@ def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
     th2.Draw("CONTLIST")
     c.Update()
 
-    root_contours = ROOT.gROOT.GetListOfSpecials().FindObject("contours")
+    specials = ROOT.gROOT.GetListOfSpecials()
+    from RooFitUtils.util import nodel
+    nodel(specials)
+    if not specials:
+        raise RuntimeError("unable to obtain list of specials!")
+    root_contours = specials.FindObject("contours")
     allcontours = []
     for ic in range(0,root_contours.GetEntries()):
         graphlist = root_contours.At(ic)

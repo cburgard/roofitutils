@@ -430,13 +430,13 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
                 morepoints = [ s[pnamelist][drawopts] for s in otherscans2d if pnamelist in s.keys() ]
                 writescan2d(points,outfile,percent_thresholds,parsedict(drawopts),npoints,morepoints=morepoints,flipAxes=flipAxes,contourAlg=contourAlg,smooth=smooth)
         for drawopts,points in extrapoints.items():
-            writepoints2d(args,points,outfile,parsedict(drawopts))
+            writepoints2d(points,outfile,parsedict(drawopts),flipAxes)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writepoints2d(args,points,outfile,style):
+def writepoints2d(points,outfile,style,flipAxes=False):
     outfile.write("\\addplot[mark=x,mark options={scale=.5},only marks,draw="+style.get("color","black")+"] coordinates {\n")
     i = 0
     red = int(style.get("reduce",0))
@@ -445,7 +445,7 @@ def writepoints2d(args,points,outfile,style):
         i = i + 1
         if red > 0 and randint(0, red) != 0: continue
         keys = sorted(list(point.keys()))
-        if args.flipAxes:
+        if flipAxes:
             outfile.write("    ({:f},{:f})\n".format(point[keys[1]],point[keys[0]]))
         else:
             outfile.write("    ({:f},{:f})\n".format(point[keys[0]],point[keys[1]]))
