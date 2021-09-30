@@ -1010,7 +1010,9 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setMaxFunctionCalls(fMaxCalls);
     fMinimizer->setMaxIterations(fMaxIterations);
     fMinimizer->setPrintLevel(fPrintLevel);
-    fMinimizer->optimizeConst(fOptConst);
+    if(ndim > 0){
+      fMinimizer->optimizeConst(fOptConst);
+    }
     fMinimizer->setMinimizerType(fMinimizerType.c_str());
     fMinimizer->setEvalErrorWall(fDoEEWall);
     fMinimizer->setOffsetting(fOffset);
@@ -1022,6 +1024,8 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
     double nllval = 0.;
     RooFitResult* fitres = 0;
+    bool minimize = fMinimize;
+
     
     //fNll->printTree(std::cout);
     bool ok = false;    
@@ -1030,7 +1034,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
       fitres = 0;
       this->SetNllDirty();      
       fMinimizer->setStrategy(strategy);
-      if(fMinimize){
+      if(minimize){
         // the following line is nothing but
         // int ndim = fMinimizer->getNPar();
         if(ndim > 0){
@@ -1042,6 +1046,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         } else {
           std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                     << "): skipping minimization, no free parameters given!" << std::endl;
+          minimize = false;
           ok = true;
           status = 0;
         }
@@ -1056,11 +1061,14 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
         std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
                                  GetName(), fData->GetName());
-        fitres = fMinimizer->save(name.c_str(), title.c_str());
+        if(minimize){
+          fitres = fMinimizer->save(name.c_str(), title.c_str());
+        }
         
 #ifdef USE_ROOFITRESULT_NLL
         nllval = fitres ? fitres->minNll() : nan;
-        if(!fMinimize){
+        if(!minimize){
+          this->SetNllDirty();          
           nllval = fNll->getVal();
         }
 #else
@@ -1192,6 +1200,7 @@ void RooFitUtils::ExtendedMinimizer::SetNllDirty(){
     for(auto p:params){
       p->setValueDirty();
     }
+    fNll->setValueDirty();
   }
 }
 
