@@ -33,6 +33,11 @@ ClassImp(RooFitUtils::ExtendedMinimizer)
 #include "Minuit2/Minuit2Minimizer.h"
 #include "TMinuit.h"
 
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+typedef RooAbsMinimizerFcn RooMinimizerFcn;
+#endif
+
+
 namespace {
   //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar.
   template <typename RooMinimizerTag>
