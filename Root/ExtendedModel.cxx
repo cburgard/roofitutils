@@ -7,6 +7,7 @@
 #include "RooGaussian.h"
 #include "RooRealSumPdf.h"
 #include "RooRealVar.h"
+#include "RooNameSet.h"
 
 #include "RooFitUtils/ExtendedModel.h"
 #include "RooFitUtils/Log.h"
