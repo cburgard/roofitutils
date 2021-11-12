@@ -34,7 +34,7 @@ ClassImp(RooFitUtils::ExtendedMinimizer)
 #include "TMinuit.h"
 
 #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
-typedef RooAbsMinimizerFcn RooMinimizerFcn;
+typedef RooMinimizerFcn RooAbsMinimizerFcn;
 #endif
 
 
