@@ -10,6 +10,7 @@
 #include "TMath.h"
 #include "TRandom.h"
 #include "TMatrixDSymEigen.h"
+#include "RooMinimizerFcn.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
@@ -31,6 +32,11 @@ ClassImp(RooFitUtils::ExtendedMinimizer)
 #include "TMinuitMinimizer.h"
 #include "Minuit2/Minuit2Minimizer.h"
 #include "TMinuit.h"
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+typedef RooMinimizerFcn RooAbsMinimizerFcn;
+#endif
+
 
 namespace {
   //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar.
@@ -153,7 +159,7 @@ namespace {
 namespace {
   class RooMinimizerHack : public RooMinimizer{
   public:
-    RooMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
+    RooAbsMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
   };
 }
 
@@ -199,7 +205,7 @@ namespace {
   int countFloatParams(RooMinimizer* minimizer){
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
-  RooMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
+  RooAbsMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
     return ((::RooMinimizerHack*) minimizer)->getFitterFcn();
   }
   bool init(ROOT::Fit::Fitter* fitter){
@@ -263,7 +269,7 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     std::cout << "ExtendedMinimizer::runHesse(" << fName << ") running standalone (this might take a while) ... "<<std::endl;        
     auto* fcn = fitterFcn(fMinimizer);
     fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
-    fitter->SetFCN(*fcn);
+    fitter->SetFCN(*dynamic_cast<RooMinimizerFcn*>(fcn));
     fitter->EvalFCN();          
     init(fitter);
     minimizer = fitter->GetMinimizer();
