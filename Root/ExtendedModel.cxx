@@ -8,6 +8,12 @@
 #include "RooRealSumPdf.h"
 #include "RooRealVar.h"
 
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+#include "RooNameSet.h"
+#else
+#include "RooFitLegacy/RooNameSet.h"
+#endif
+
 #include "RooFitUtils/ExtendedModel.h"
 #include "RooFitUtils/Log.h"
 #include "RooFitUtils/Utils.h"

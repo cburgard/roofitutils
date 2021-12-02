@@ -10,6 +10,7 @@
 #include "TMath.h"
 #include "TRandom.h"
 #include "TMatrixDSymEigen.h"
+#include "RooMinimizerFcn.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
@@ -31,6 +32,11 @@ ClassImp(RooFitUtils::ExtendedMinimizer)
 #include "TMinuitMinimizer.h"
 #include "Minuit2/Minuit2Minimizer.h"
 #include "TMinuit.h"
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+typedef RooMinimizerFcn RooAbsMinimizerFcn;
+#endif
+
 
 namespace {
   //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar.
@@ -153,7 +159,7 @@ namespace {
 namespace {
   class RooMinimizerHack : public RooMinimizer{
   public:
-    RooMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
+    RooAbsMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
   };
 }
 
@@ -199,7 +205,7 @@ namespace {
   int countFloatParams(RooMinimizer* minimizer){
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
-  RooMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
+  RooAbsMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
     return ((::RooMinimizerHack*) minimizer)->getFitterFcn();
   }
   bool init(ROOT::Fit::Fitter* fitter){
@@ -263,7 +269,7 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     std::cout << "ExtendedMinimizer::runHesse(" << fName << ") running standalone (this might take a while) ... "<<std::endl;        
     auto* fcn = fitterFcn(fMinimizer);
     fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
-    fitter->SetFCN(*fcn);
+    fitter->SetFCN(*dynamic_cast<RooMinimizerFcn*>(fcn));
     fitter->EvalFCN();          
     init(fitter);
     minimizer = fitter->GetMinimizer();
@@ -876,7 +882,7 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
   if(!this->fNll){
     clearContents(fNllCmdList,true);
     inverseFilterCmdList(cmdList, fNllCmdList,
-			 "NumCPU,Constrained,Constrain,CloneData,"
+			 "NumCPU,BatchMode,Constrained,Constrain,CloneData,"
 			 "GlobalObservables,GlobalObservablesTag,"
 			 "OffsetLikelihood",true);
   } else {
@@ -1010,7 +1016,9 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setMaxFunctionCalls(fMaxCalls);
     fMinimizer->setMaxIterations(fMaxIterations);
     fMinimizer->setPrintLevel(fPrintLevel);
-    fMinimizer->optimizeConst(fOptConst);
+    if(ndim > 0){
+      fMinimizer->optimizeConst(fOptConst);
+    }
     fMinimizer->setMinimizerType(fMinimizerType.c_str());
     fMinimizer->setEvalErrorWall(fDoEEWall);
     fMinimizer->setOffsetting(fOffset);
@@ -1022,6 +1030,8 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
 
     double nllval = 0.;
     RooFitResult* fitres = 0;
+    bool minimize = fMinimize;
+
     
     //fNll->printTree(std::cout);
     bool ok = false;    
@@ -1030,7 +1040,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
       fitres = 0;
       this->SetNllDirty();      
       fMinimizer->setStrategy(strategy);
-      if(fMinimize){
+      if(minimize){
         // the following line is nothing but
         // int ndim = fMinimizer->getNPar();
         if(ndim > 0){
@@ -1042,6 +1052,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         } else {
           std::cout << "ExtendedMinimizer::robustMinimize(" << fName
                     << "): skipping minimization, no free parameters given!" << std::endl;
+          minimize = false;
           ok = true;
           status = 0;
         }
@@ -1056,11 +1067,14 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         std::string name = Form("fitresult_%s_%s", GetName(), fData->GetName());
         std::string title = Form("Result of fit of p.d.f. %s to dataset %s",
                                  GetName(), fData->GetName());
-        fitres = fMinimizer->save(name.c_str(), title.c_str());
+        if(minimize){
+          fitres = fMinimizer->save(name.c_str(), title.c_str());
+        }
         
 #ifdef USE_ROOFITRESULT_NLL
         nllval = fitres ? fitres->minNll() : nan;
-        if(!fMinimize){
+        if(!minimize){
+          this->SetNllDirty();          
           nllval = fNll->getVal();
         }
 #else
@@ -1192,6 +1206,7 @@ void RooFitUtils::ExtendedMinimizer::SetNllDirty(){
     for(auto p:params){
       p->setValueDirty();
     }
+    fNll->setValueDirty();
   }
 }
 

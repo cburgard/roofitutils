@@ -94,7 +94,6 @@ def writeResultTxt(out,result,writecorrmat):
             out.write(" ".join([ str(scan.parValues[i][j]) for j in range(0,len(scan.parNames)) ]) + " "+str(scan.nllValues[i])+" "+str(scan.fitStatus[i]) + " " + " ".join([ str(scan.extraParValues[i][j]) for j in range(0,len(scan.extraParNames)) ]) + "\n")
 
 def collectpoints(points,files,label):
-    print("collecting")
     import glob
     filenames = []
     for expression in files:
@@ -105,7 +104,8 @@ def collectpoints(points,files,label):
     from RooFitUtils.util import parsedict
     allpoints = []
     for filename in filenames:
-        if os.path.isfile(filename):
+        from os.path import isfile
+        if isfile(filename):
             with open(filename,'r') as infile:
                 for line in infile:
                     point = parsedict(line,float)

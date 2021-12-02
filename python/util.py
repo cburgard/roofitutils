@@ -297,12 +297,12 @@ def orthogonal(a):
     # by deliberately swapping sin and cos, we introduce a shift by 90 deg.
     return [ sin(angle),cos(angle) ]
 
-def distributePointsAroundLine(dimlabels,coords,contour,npoints):
+def distributePointsAroundLine(dimlabels,coords,contour,npoints,spread=0.005):
     """distribute points randomly around a line"""
     # closed contours have the first and the last point equal
     closed = equal(contour[0],contour[-1])
     lengths = lineSegmentLengths(contour)
-    distpar = 0.005*sum(lengths)
+    distpar = spread*sum(lengths)
     for p in range(0,npoints):
         # pick a segment randomly by length
         segment = weighted_choice(lengths)
