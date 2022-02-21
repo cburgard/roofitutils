@@ -91,10 +91,13 @@ void RooFitUtils::ExtendedModel::initialise() {
       thekey = k;
       ss << "    '" << k->GetName() << "' (" << k->GetClassName() << ")\n";
     }
-    if(onlyOne){
+    if(thekey && onlyOne){
+      thekey->Print();
       ws = thekey->ReadObj();
       coutW(InputArguments) << "unable to load object '" << fWsName << "', but found only one RooWorkspace in the file - using '" << ws->GetName() << "' instead!" << std::endl;
-    } else {
+    }
+    if(!thekey) ss << "    (none)";
+    if(!ws){
       throw std::runtime_error(ss.str());
     }
   }
@@ -132,40 +135,6 @@ void RooFitUtils::ExtendedModel::initialise() {
         arg->setAttribute("MAIN_MEASUREMENT");
         coutI(InputArguments)
             << "Component " << arg->GetName() << " is a CMS main measurement";
-      }
-    }
-  }
-
-  //   if (fixMulti) {
-  //     coutP(InputArguments) << "De-activating level 2 constant term
-  //     optimization for RooMultiPdf" << std::endl;
-  //     RooFIter iter = fWorkspace->components().fwdIterator();
-  //     RooAbsArg* arg;
-  //     while ((arg = iter.next())) {
-  //       if (arg->IsA() == RooMultiPdf::Class()) {
-  //         arg->setAttribute("NOCacheAndTrack");
-  //         coutI(InputArguments) << "De-activation of level 2 constant term
-  //         optimization for " << arg->GetName() << std::endl;
-  //       }
-  //     }
-  //   }
-
-  if (kTRUE) {
-    coutP(InputArguments)
-        << "De-activating level 2 constant term optimization for specified pdfs"
-        << std::endl;
-    RooFIter iter = fWorkspace->components().fwdIterator();
-    RooAbsArg *arg;
-    int n = 0;
-    while ((arg = iter.next())) {
-      TString aname(arg->GetName());
-      if (arg->InheritsFrom(RooAbsPdf::Class()) &&
-          (aname.EndsWith("_mm") || aname.Contains("mumu_atlas"))) {
-        n++;
-        arg->setAttribute("NOCacheAndTrack");
-        coutI(InputArguments)
-            << "De-activation of level 2 constant term optimization for "
-            << arg->GetName();
       }
     }
   }
