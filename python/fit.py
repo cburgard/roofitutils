@@ -360,6 +360,7 @@ def createScanJobs(args,arglist):
                 outfilename,outfileext = splitext(args["outFileName"])
                 ofname = outfilename + ".part"+str(idx)+outfileext
                 options[" --no-findSigma --points"]=pointspath
+                if "-o" in options.keys(): del options["-o"]
                 options["--output"]=ofname
                 cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
                 jobs.write(submitCommand+" "+cmd+"\n")
@@ -396,6 +397,7 @@ def createImpactJobs(args,arglist):
     options["--no-findSigma"] = ""
     
     with open(pjoin(outpath,outfile),"w") as jobs:
+        if "-o" in options.keys(): del options["-o"]        
         options["--output"]=pjoin(outpath,"impact.nominal.json")
         cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
         jobs.write(submitCommand+" "+cmd+"\n")
@@ -434,6 +436,7 @@ def createBreakdownJobs(args,arglist):
     outfile = "jobs.txt"
     with open(pjoin(outpath,outfile),"w") as jobs:
         options["--findSigma"] = ""
+        if "-o" in options.keys(): del options["-o"]        
         options["--output"]=pjoin(outpath,"breakdown.nominal.txt")
         cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
         jobs.write(submitCommand+" "+cmd+"\n")
