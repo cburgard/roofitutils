@@ -253,7 +253,7 @@ def collectresult_json(results,filename,label):
 
 def collectresult_root(results,filename,label):
     if not "scans" in results.keys():
-        results["scans"] = {}
+        results["scans"] = []
     scans = results["scans"]
     if not "limits" in results.keys():
         results["limits"] = {}
@@ -280,14 +280,25 @@ def collectresult_root(results,filename,label):
             rdf = ROOT.RDataFrame(obj)
             nparr = rdf.AsNumpy()
             key = basename(filename)
-            limit = { k:float(arr[0]) for k,arr in nparr.items() if "upperlimit" in k }
-            limit["info"] = {"status":float(nparr["fit_status"])}
-            limit["obs"] = { k:float(arr[0]) for k,arr in nparr.items() if "_obs" in k and not "param_" in k and not "hat" in k}
-            limit["med"] = { k:float(arr[0]) for k,arr in nparr.items() if "_med" in k and not "param_" in k and not "hat" in k}
-            limit["parameters_med"] = { k:float(arr[0]) for k,arr in nparr.items() if "_med" in k and "param_" in k}
-            limit["parameters_hat"] = { k:float(arr[0]) for k,arr in nparr.items() if "_hat" in k and "param_" in k}            
-            limit["parameters_const"] = { k:float(arr[0]) for k,arr in nparr.items() if not k in allkeys(limit) }
-            limits[key] = {label:limit}
+            
+            if obj.GetName() == "nllscan":
+                scan = { "label":key, "points":[] }
+                for pname,values in nparr.items():
+                    for i in range(0,len(values)):
+                        if len(scan["points"]) <= i:
+                            scan["points"].append({})
+                        scan["points"][i][pname] = {"val":float(values[i])}
+                scans.append(scan)
+            else:
+                limit = { k:float(arr[0]) for k,arr in nparr.items() if "upperlimit" in k }
+                if "fit_status" in nparr.keys():
+                    limit["info"] = {"status":float(nparr["fit_status"])}
+                limit["obs"] = { k:float(arr[0]) for k,arr in nparr.items() if "_obs" in k and not "param_" in k and not "hat" in k}
+                limit["med"] = { k:float(arr[0]) for k,arr in nparr.items() if "_med" in k and not "param_" in k and not "hat" in k}
+                limit["parameters_med"] = { k:float(arr[0]) for k,arr in nparr.items() if "_med" in k and "param_" in k}
+                limit["parameters_hat"] = { k:float(arr[0]) for k,arr in nparr.items() if "_hat" in k and "param_" in k}            
+                limit["parameters_const"] = { k:float(arr[0]) for k,arr in nparr.items() if not k in allkeys(limit) }
+                limits[key] = {label:limit}
 
 
 def collectresult_txt(results,filename,label):
