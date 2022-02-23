@@ -1241,10 +1241,16 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
               << std::endl;
     if (r->min.covqual != 0 && r->min.ndim>1 && r->min.fit) {
       const TMatrixDSym origCov = r->min.fit->covarianceMatrix();
+      
+      if(origCov.GetNcols() != r->min.ndim){
+        throw std::runtime_error(TString::Format("inconsistency detected: correlation matrix size %d inconsistent with number float parameters %d!",origCov.GetNcols(),r->min.ndim).Data());
+      }
+      
       TMatrixDSym origG(::reduce(origCov));
       
-      if(origG.GetNcols() != r->min.ndim){
-        throw std::runtime_error(TString::Format("inconsistency detected: correlation matrix size %d inconsistent with number float parameters %d!",origG.GetNcols(),r->min.ndim).Data());
+      if(origG.GetNcols() != origCov.GetNcols()){
+        std::cout   << "ExtendedMinimizer::minimize(" << fName
+                    << "): removed " << origCov.GetNcols() - origG.GetNcols() << " dimensions from covariance matrix due to degeneration! " << std::endl;
       }
       
       TMatrixDSym G = origG.Invert(&determ);
