@@ -252,12 +252,6 @@ def collectresult_json(results,filename,label):
 
 
 def collectresult_root(results,filename,label):
-    if not "scans" in results.keys():
-        results["scans"] = []
-    scans = results["scans"]
-    if not "limits" in results.keys():
-        results["limits"] = {}
-    limits = results["limits"]        
     import ROOT
     infile = ROOT.TFile.Open(filename,"READ")
     for key in infile.GetListOfKeys():
@@ -282,14 +276,28 @@ def collectresult_root(results,filename,label):
             key = basename(filename)
             
             if obj.GetName() == "nllscan":
+                if not "scans" in results.keys():
+                    results["scans"] = []
+                scans = results["scans"]            
                 scan = { "label":key, "points":[] }
                 for pname,values in nparr.items():
                     for i in range(0,len(values)):
                         if len(scan["points"]) <= i:
                             scan["points"].append({})
-                        scan["points"][i][pname] = {"val":float(values[i])}
+                        point = scan["points"][i]
+                        if pname == "nll":
+                            point["nll"] = float(values[i])
+                        elif pname == "status":
+                            point["minimizer"] = {"status":int(values[i])}
+                        else:
+                            if not "parameters" in point.keys():
+                                point["parameters"] = []
+                            point["parameters"].append({"name":pname,"val":float(values[i])})
                 scans.append(scan)
             else:
+                if not "limits" in results.keys():
+                    results["limits"] = {}
+                limits = results["limits"]                        
                 limit = { k:float(arr[0]) for k,arr in nparr.items() if "upperlimit" in k }
                 if "fit_status" in nparr.keys():
                     limit["info"] = {"status":float(nparr["fit_status"])}
