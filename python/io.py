@@ -219,7 +219,7 @@ def readsummary(infilename,form={"cv":("Central","Tot lo","Tot hi"),"stat":("Cen
                 results[k][parname] = tuple([float(parts[translations[key]]) for key in form[k]])
     return results
 
-def collectresult_json(results,filename,label):
+def collectresult_json(results,filename,label,**kwargs):
     if not "scans" in results.keys():
         results["scans"] = {}
     scans = results["scans"]
@@ -235,7 +235,10 @@ def collectresult_json(results,filename,label):
                 key = tuple(scan["label"].split(","))
                 scans[key] = {label:{}}
                 for point in scan["points"]:
-                    pvals = tuple([ p["val"] for p in point["parameters"]])
+                    if "filterScans" in kwargs.keys():
+                        pvals = tuple([ p["val"] for p in point["parameters"] if p["name"] in kwargs["filterScans"] ])
+                    else:
+                        pvals = tuple([ p["val"] for p in point["parameters"]])
                     nll = point["nll"]
                     scans[key][label][pvals] = nll
         if "MLE" in js.keys():
@@ -251,7 +254,7 @@ def collectresult_json(results,filename,label):
                 results["cov"][label] = { params[i]:{params[j]:matrix[i][j] for j in range(len(params))} for i in range(len(params)) }
 
 
-def collectresult_root(results,filename,label):
+def collectresult_root(results,filename,label,**kwargs):
     import ROOT
     infile = ROOT.TFile.Open(filename,"READ")
     for key in infile.GetListOfKeys():
@@ -309,7 +312,7 @@ def collectresult_root(results,filename,label):
                 limits[key] = {label:limit}
 
 
-def collectresult_txt(results,filename,label):
+def collectresult_txt(results,filename,label,**kwargs):
     if not "scans" in results.keys():
         results["scans"] = {}
     scans = results["scans"]
@@ -374,15 +377,15 @@ def collectresult_txt(results,filename,label):
             scans[p][label][MLEs[p][label][0]]=minnll;
     
                 
-def collectresult(results,filename,label):
+def collectresult(results,filename,label,**kwargs):
     import re
     if os.path.isfile(filename):
         if filename.endswith(".json"):
-            collectresult_json(results,filename,label)
+            collectresult_json(results,filename,label,**kwargs)
         elif filename.endswith(".root"):
-            collectresult_root(results,filename,label)
+            collectresult_root(results,filename,label,**kwargs)
         else:
-            collectresult_txt(results,filename,label)
+            collectresult_txt(results,filename,label,**kwargs)
 
 def collectfilenames(files):
     if isinstance(files, str): files = [files]
@@ -466,11 +469,11 @@ def collectbreakdowns(rankings,files,poiname):
     return allvars
         
     
-def collectresults(results,files,label="default"):
+def collectresults(results,files,label="default",**kwargs):
     """collect a set of results files and return the contents as a dictionary"""
     filenames = collectfilenames(files)
     for filename in filenames:
-        collectresult(results,filename,label)
+        collectresult(results,filename,label,**kwargs)
 
 def readcsv2dict(filename):
     import csv

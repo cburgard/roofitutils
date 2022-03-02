@@ -300,10 +300,15 @@ def createScanJobs(args,arglist):
     if args["refineScan"]:
         from RooFitUtils.io import collectresults
         prescans = {}
-        collectresults(prescans,args["refineScan"],"dummy")
+        if "scan" in args.keys():
+            parnamelist = [ s[0] for s in args["scan"] ]
+        else:
+            parnamelist = None
+        collectresults(prescans,args["refineScan"],"dummy",filterScans=parnamelist)
         from RooFitUtils.interpolate import findcontours
         coords = []
-        for parnamelist,scan in prescans["scans"].items():
+        for label,scan in prescans["scans"].items():
+            if not parnamelist: parnamelist = label
             for labels,points in scan.items():
                 # for now, use as many points for the new scan as for the old one
                 npoints = 1000
