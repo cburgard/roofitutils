@@ -106,6 +106,7 @@ if __name__ == "__main__":
     arglist.append(multi.add_argument( "--breakdown"     , type=str,     dest="breakdown"                  , help="nuisance parameter groups to perform breakdown on.", metavar="REGEX", default=None,nargs="+",action="append"))
     arglist.append(multi.add_argument( "--impacts"       , type=str,     dest="impacts"                    , help="nuisance parameters to calculate impacts of.", metavar="REGEX", default=None,nargs="+"))
     arglist.append(multi.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))
+    arglist.append(multi.add_argument( "--refine-scan-points", type=int,     dest="refineScanPoints", help="Number of points to generate for the refinement.", default=1000))        
     arglist.append(multi.add_argument( "--refine-scan-spread", type=float,     dest="refineScanSpread", help="Likelihood thresholds to use to refine previous scan.", default=0.005))    
     arglist.append(multi.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))
     arglist.append(multi.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))

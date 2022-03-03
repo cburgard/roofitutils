@@ -311,7 +311,7 @@ def createScanJobs(args,arglist):
             if not parnamelist: parnamelist = label
             for labels,points in scan.items():
                 # for now, use as many points for the new scan as for the old one
-                npoints = 1000
+                npoints = args["refineScanPoints"]
                 if len(parnamelist) == 2:
                     # 1 sigma (=68.26895% CL):  2.296
                     # 2 sigma (=95.44997% CL):  6.180
