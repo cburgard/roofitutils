@@ -232,7 +232,10 @@ def collectresult_json(results,filename,label,**kwargs):
         js = json.load(infile)
         if "scans" in js.keys():
             for scan in js["scans"]:
-                key = tuple(scan["label"].split(","))
+                if type(scan["label"]) == str:
+                    key = tuple(scan["label"].split(","))
+                else:
+                    key = tuple(scan["label"])
                 scans[key] = {label:{}}
                 for point in scan["points"]:
                     if "filterScans" in kwargs.keys():
@@ -275,9 +278,13 @@ def collectresult_root(results,filename,label,**kwargs):
             from os.path import basename
             from RooFitUtils.util import allkeys
             rdf = ROOT.RDataFrame(obj)
-            nparr = rdf.AsNumpy()
-            key = basename(filename)
-            
+            if "filterScans" in kwargs.keys():
+                pois = kwargs["filterScans"]
+                key = tuple(pois)
+                nparr = rdf.AsNumpy(columns=pois + ["nll","status"])                
+            else:
+                key = basename(filename)
+                nparr = rdf.AsNumpy()
             if obj.GetName() == "nllscan":
                 if not "scans" in results.keys():
                     results["scans"] = []

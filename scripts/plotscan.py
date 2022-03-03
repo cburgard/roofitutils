@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from RooFitUtils.pgfplotter import writescans1d,writescans2d
-from RooFitUtils.io import collectresults,collectpoints,texify
+from RooFitUtils.io import collectresults,collectpoints
 from RooFitUtils.util import getPercent
 
 def getPercentages(args,ndim):
@@ -77,13 +77,13 @@ if __name__ == '__main__':
                 labels = list(scans1d.keys())[0]
             else:
                 labels = args.labels
-            writescans1d(args.atlas,texify(labels[0]),scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})])
+            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})])
         elif len(scans2d) > 0:
             if not args.labels:
                 labels = list(scans2d.keys())[0]
             else:
                 labels = args.labels            
-            writescans2d(args.atlas,[texify(l) for l in labels],scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})])
+            writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})])
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")

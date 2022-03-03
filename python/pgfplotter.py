@@ -400,6 +400,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
 def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_thresholds,plotlabels=[],otherscans2d=[],flipAxes=False,contourAlg="skimage",smooth=False):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
+    from RooFitUtils.io import texify    
     with open(outfilename,"w") as outfile:
         writehead(outfile)
         if atlas:
@@ -417,26 +418,25 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
             outfile.write("yticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
         if len(labels) == 2:
             if flipAxes:
-                outfile.write("    ylabel=$"+labels[0].strip("$")+"$,\n")
-                outfile.write("    xlabel=$"+labels[1].strip("$")+"$,\n")
+                outfile.write("    ylabel=$"+texify(labels[0]).strip("$")+"$,\n")
+                outfile.write("    xlabel=$"+texify(labels[1]).strip("$")+"$,\n")
             else:
-                outfile.write("    xlabel=$"+labels[0].strip("$")+"$,\n")
-                outfile.write("    ylabel=$"+labels[1].strip("$")+"$,\n")
+                outfile.write("    xlabel=$"+texify(labels[0]).strip("$")+"$,\n")
+                outfile.write("    ylabel=$"+texify(labels[1]).strip("$")+"$,\n")
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)
-
         for pnamelist,scan in scans2d.items():
             for drawopts,points in scan.items():
                 morepoints = [ s[pnamelist][drawopts] for s in otherscans2d if pnamelist in s.keys() ]
                 writescan2d(points,outfile,percent_thresholds,parsedict(drawopts),npoints,morepoints=morepoints,flipAxes=flipAxes,contourAlg=contourAlg,smooth=smooth)
         for drawopts,points in extrapoints.items():
-            writepoints2d(points,outfile,parsedict(drawopts),flipAxes)
+            writepoints2d(points,outfile,parsedict(drawopts),flipAxes=flipAxes,keys=labels)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
         print("wrote "+outfilename)
 
-def writepoints2d(points,outfile,style,flipAxes=False):
+def writepoints2d(points,outfile,style,flipAxes=False,keys=None):
     outfile.write("\\addplot[mark=x,mark options={scale=.5},only marks,draw="+style.get("color","black")+"] coordinates {\n")
     i = 0
     red = int(style.get("reduce",0))
@@ -444,7 +444,8 @@ def writepoints2d(points,outfile,style,flipAxes=False):
     for point in points:
         i = i + 1
         if red > 0 and randint(0, red) != 0: continue
-        keys = sorted(list(point.keys()))
+        if not keys:
+            keys = sorted(list(point.keys()))
         if flipAxes:
             outfile.write("    ({:f},{:f})\n".format(point[keys[1]],point[keys[0]]))
         else:

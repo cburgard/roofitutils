@@ -336,15 +336,20 @@ def distributePointsAroundLine(dimlabels,coords,contour,npoints,spread=0.005):
             prev_segment_forward = normalized(subtract(contour[before],contour[start]))
             this_segment_reverse = normalized(subtract(contour[end],contour[start]))
             prevector   = normalized(add(prev_segment_forward,this_segment_reverse))
+            if length(prevector) == 0:
+                prevector = normalized(orthogonal(subtract(contour[end],contour[start])))                
         else:
             prevector = normalized(orthogonal(subtract(contour[end],contour[start])))
         if after != None:
             next_segment_reverse = normalized(subtract(contour[after],contour[end]))
             this_segment_forward = normalized(subtract(contour[start],contour[end]))
             postvector  = normalized(add(this_segment_forward,next_segment_reverse))
+            if length(postvector) == 0:
+                postvector = normalized(orthogonal(subtract(contour[end],contour[start])))
         else:
             postvector = normalized(orthogonal(subtract(contour[end],contour[start])))
         # calculate the shift by interpolating between the pre- and post-vector and scaling it randomly
+        print(prevector,postvector)
         shift = scale(normalized(interpolate(prevector,postvector,pos)),distpar*random.gauss(0,1))
         # put everything together
         coord = add(linepoint,shift)
