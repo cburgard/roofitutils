@@ -349,7 +349,6 @@ def distributePointsAroundLine(dimlabels,coords,contour,npoints,spread=0.005):
         else:
             postvector = normalized(orthogonal(subtract(contour[end],contour[start])))
         # calculate the shift by interpolating between the pre- and post-vector and scaling it randomly
-        print(prevector,postvector)
         shift = scale(normalized(interpolate(prevector,postvector,pos)),distpar*random.gauss(0,1))
         # put everything together
         coord = add(linepoint,shift)
