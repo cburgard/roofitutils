@@ -232,8 +232,8 @@ def collectresult_json(results,filename,label,**kwargs):
         js = json.load(infile)
         if "scans" in js.keys():
             for scan in js["scans"]:
-                if type(scan["label"]) == str:
-                    key = tuple(scan["label"].split(","))
+                if type(scan["label"]) in [str,unicode]:
+                    key = tuple(map(str,scan["label"].split(",")))
                 else:
                     key = tuple(scan["label"])
                 scans[key] = {label:{}}
