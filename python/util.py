@@ -9,9 +9,15 @@ try:
         """test if an object is a string"""
         return isinstance(s, basestring)
 except NameError:
-    def isstr(s):
-        """test if an object is a string"""
-        return isinstance(s, str)
+    try:
+        isinstance(u"", unicode)
+        def isstr(s):
+            """test if an object is a string"""
+            return isinstance(s, str) or isinstance(s, unicode)
+    except NameError:
+        def isstr(s):
+            """test if an object is a string"""
+            return isinstance(s, str)
 
 def flipped(l,flip=True):
     if flip:

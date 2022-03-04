@@ -220,6 +220,7 @@ def readsummary(infilename,form={"cv":("Central","Tot lo","Tot hi"),"stat":("Cen
     return results
 
 def collectresult_json(results,filename,label,**kwargs):
+    from RooFitUtils.util import isstr
     if not "scans" in results.keys():
         results["scans"] = {}
     scans = results["scans"]
@@ -232,7 +233,7 @@ def collectresult_json(results,filename,label,**kwargs):
         js = json.load(infile)
         if "scans" in js.keys():
             for scan in js["scans"]:
-                if type(scan["label"]) in [str,unicode]:
+                if isstr(scan["label"]):
                     key = tuple(map(str,scan["label"].split(",")))
                 else:
                     key = tuple(scan["label"])
