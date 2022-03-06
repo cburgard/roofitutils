@@ -2,7 +2,7 @@
 from RooFitUtils.util import getThreshold
 histocolors = ["blue!50","red","green","gray","orange","violet!20","cyan","violet","brown"]
 thresholdColors = ["blue","green","yellow","orange","red"]
-thresholdStyles = ["solid","dashed","loosely dashed","dotted","loosely dotted"]
+thresholdStyles = ["solid,fill,opacity=.5","dashed","loosely dashed","dotted","loosely dotted"]
 
 
 def writehead(stream,atlas=True,varwidth=None):
