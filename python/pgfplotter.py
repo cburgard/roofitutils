@@ -20,6 +20,7 @@ def writehead(stream,atlas=True,varwidth=None):
     if varwidth: stream.write("varwidth="+varwidth)
     stream.write("]{standalone}\n")
     stream.write("\\usepackage{scalerel}\n")
+    stream.write("\\usepackage{xcolor}\n")    
     stream.write("\\usepackage{pgfplots,tikz}\n")
     stream.write("\\usepackage{iftex}\n")
     stream.write("\\usetikzlibrary{calc}\n")
@@ -399,6 +400,11 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
+def ishexcolor(s):
+    if len(s) == 6 and all(c in "1234567890ABCDEFabcdef" for c in s):
+        return True
+    return False
+       
 def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_thresholds,plotlabels=[],otherscans2d=[],flipAxes=False,contourAlg="skimage",smooth=False,axis_options=[]):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
@@ -409,6 +415,13 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
             outfile.write("\\renewcommand\\sfdefault{phv}\n")
             outfile.write("\\renewcommand\\rmdefault{phv}\n")
             outfile.write("\\renewcommand\\ttdefault{pcr}\n")
+        for pnamelist,scan in scans2d.items():
+            for drawopts in scan.keys():
+                opts = parsedict(drawopts)
+                if "color" in opts.keys():
+                    color = opts["color"]
+                    if ishexcolor(color):
+                        outfile.write("\\definecolor{"+color+"}{HTML}{"+color.upper()+"}\n")
         outfile.write("\\begin{tikzpicture}[\n")
         if atlas:
             outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
