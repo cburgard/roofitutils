@@ -108,7 +108,7 @@ if __name__ == "__main__":
     arglist.append(multi.add_argument( "--refine-scan"   , type=str,     dest="refineScan"                 , help="Previous scan results to refine.", default=None,nargs="+"))
     arglist.append(multi.add_argument( "--refine-scan-points", type=int,     dest="refineScanPoints", help="Number of points to generate for the refinement.", default=1000))        
     arglist.append(multi.add_argument( "--refine-scan-spread", type=float,     dest="refineScanSpread", help="Likelihood thresholds to use to refine previous scan.", default=0.005))    
-    arglist.append(multi.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=None,nargs="+"))
+    arglist.append(multi.add_argument( "--refine-scan-thresholds", type=float,     dest="refineScanThresholds", help="Likelihood thresholds to use to refine previous scan.", default=[68.,95.],nargs="+"))
     arglist.append(multi.add_argument( "--points"        , type=str,     dest="points"                     , help="Points to scan the Nll at.", metavar="points.txt", default=None))
     arglist.append(multi.add_argument( "--singlepoint"   , type=str,     dest="point"                      , help="A single point to scan the Nll at.", metavar="POI_A=1,POI_B=0", default=None))
     arglist.append(multi.add_argument( "--write-submit", "--writeSubmit"   , type=str,     dest="writeSubmit"                , help="Instead of fitting, write a job definition file.", metavar="jobs.txt" ))

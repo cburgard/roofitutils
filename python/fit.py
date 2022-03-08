@@ -315,16 +315,13 @@ def createScanJobs(args,arglist):
                 # for now, use as many points for the new scan as for the old one
                 npoints = args["refineScanPoints"]
                 if len(parnamelist) == 2:
-                    # 1 sigma (=68.26895% CL):  2.296
-                    # 2 sigma (=95.44997% CL):  6.180
-#                    thresholds = [0.5*2.296,0.5*6.180]
-#                    thresholds = [0.5*2.28]
-                    if args["refineScanThresholds"]:
-                        thresholds = args["refineScanThresholds"]
-                    else:
-                        thresholds = [0.5*2.28,0.5*5.99]
+                    percent_thresholds = args["refineScanThresholds"]
+                    from RooFitUtils.util import getThreshold
+                    thresholds = [ getThreshold(p/100,2)*0.5 for p in percent_thresholds ]
                     contours,minimum = findcontours(points,values=thresholds,smooth=False,npoints=100,ranges=ranges)
                     # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
+                    if len(contours) == 0:
+                        raise RuntimeError("cannot refine: no contours found!")
                     nEach = int(1 * npoints / len(contours))
                     for contour in contours:
                         for graph in contour:
@@ -334,10 +331,8 @@ def createScanJobs(args,arglist):
                     if not ranges or inarea(minimum,ranges):
                         distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.05*args["refineScanSpread"])
                 else:
-                    if args["refineScanThresholds"]:
-                        thresholds = args["refineScanThresholds"]
-                    else:
-                        thresholds = [0.5,2]
+                    percent_thresholds = args["refineScanThresholds"]
+                    thresholds = [ getThreshold(p/100,1)*0.5 for p in percent_thresholds ]                    
                     for t in thresholds:
                         from RooFitUtils.interpolate import findcrossings
                         cv,down,up = findcrossings(points,t)

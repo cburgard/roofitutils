@@ -69,8 +69,10 @@ def find_contours_root(xvals,yvals,grid_z,offset,thresholds,smooth,npoints,debug
     for i in range(0,npoints):
         for j in range(0,npoints):
             th2.SetBinContent(i+1,j+1,grid_z[i][j]-offset)
-            
-    c = ROOT.TCanvas("c","c",400,400)
+
+    from datetime import datetime
+    now = datetime.now()
+    c = ROOT.TCanvas("c_"+str(now),"c",400,400)
     c.cd()
     if debugfile:
         th2clone = th2.Clone()
