@@ -321,7 +321,7 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,minval=-1,maxval=1,rotatelabels=45,axlabel="$\\rho(X,Y)$",flip=True,showall=True)
 
-def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[],otherscans1d=[]):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[],otherscans1d=[],axis_options=[]):
     from RooFitUtils.util import make1dscan
 
     for otherscan in otherscans1d:
@@ -336,6 +336,8 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         outfile.write("\\begin{tikzpicture}\n")
         outfile.write("\\begin{axis}[\n")
         outfile.write("    ymin=0,\n")
+        for opt in axis_options:
+            outfile.write("    "+opt+",\n")            
         if ymax:
             outfile.write("    ymax="+str(ymax)+",\n")
         outfile.write("    "+domain+",\n")
@@ -397,7 +399,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
-def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_thresholds,plotlabels=[],otherscans2d=[],flipAxes=False,contourAlg="skimage",smooth=False):
+def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_thresholds,plotlabels=[],otherscans2d=[],flipAxes=False,contourAlg="skimage",smooth=False,axis_options=[]):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     from RooFitUtils.io import texify    
@@ -411,7 +413,9 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
         if atlas:
             outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
         outfile.write("]\n")
-        outfile.write("\\begin{axis}[clip=false,minor tick num=4,\n")
+        outfile.write("\\begin{axis}[,\n")
+        for opt in axis_options:
+            outfile.write("  "+opt+",\n")
         if atlas:
             outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")
             outfile.write("xticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")

@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--merge-input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="more files with input information",default=[])
     parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
     parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points on 1d curve")
+    parser.add_argument("--options",nargs="+",help="additional options to pass to the axis",default=[])
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=None)
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
@@ -77,13 +78,13 @@ if __name__ == '__main__':
                 labels = list(scans1d.keys())[0]
             else:
                 labels = args.labels
-            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})])
+            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})],axis_options=args.options)
         elif len(scans2d) > 0:
             if not args.labels:
                 labels = list(scans2d.keys())[0]
             else:
                 labels = args.labels            
-            writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})])
+            writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})],axis_options=args.options)
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")

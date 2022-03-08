@@ -56,7 +56,7 @@ def griddata_gp(xyvals,zvals,grids, options={}):
     interp = gp.predict(grid)
     return [ [ interp[i+len(grids[0])*j] for i in range(0,len(grids[0])) ] for j in range(0,len(grids[1])) ]
 
-def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
+def find_contours_root(xvals,yvals,grid_z,offset,thresholds,smooth,npoints,debugfile=None):
     import sys
     from math import isnan
     sys.argv = []
@@ -68,26 +68,39 @@ def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
 
     for i in range(0,npoints):
         for j in range(0,npoints):
-            th2.SetBinContent(i+1,j+1,grid_z[i][j])
-
+            th2.SetBinContent(i+1,j+1,grid_z[i][j]-offset)
+            
     c = ROOT.TCanvas("c","c",400,400)
     c.cd()
+    if debugfile:
+        th2clone = th2.Clone()
+        
     th2.SetContour(len(thresholds),array("d",thresholds))
     th2.Draw("CONTLIST")
     c.Update()
-
+   
     specials = ROOT.gROOT.GetListOfSpecials()
     from RooFitUtils.util import nodel
     nodel(specials)
     if not specials:
         raise RuntimeError("unable to obtain list of specials!")
     root_contours = specials.FindObject("contours")
+
+    if debugfile:
+        c2 = ROOT.TCanvas("debug","debug",400,400)        
+        c2.cd()
+        th2clone.SetMaximum(2*max(thresholds))
+        th2clone.Draw("COLZSAME")        
+    
     allcontours = []
     for ic in range(0,root_contours.GetEntries()):
         graphlist = root_contours.At(ic)
         contours = []
         for ig in range(0,graphlist.GetEntries()):
             g = graphlist.At(ig)
+            if debugfile:
+                g.SetLineColor(1)
+                g.Draw("SAME")
             contour = []
             for i in range(g.GetN()):
                 x = g.GetX()[i]
@@ -98,15 +111,22 @@ def find_contours_root(xvals,yvals,grid_z,thresholds,smooth,npoints):
                 contours.append(contour)
         if len(contours) > 0:
             allcontours.append(contours)
+
+    del c
+            
+    if debugfile:
+        c2.SaveAs(debugfile)
+        del c2
+            
     return allcontours
 
 
-def find_contours_skimage(xvals,yvals,grid_z,thresholds,smooth,npoints):
+def find_contours_skimage(xvals,yvals,grid_z,offset,thresholds,smooth,npoints):
     from math import isnan
     from skimage import measure
     allcontours = []
     for v in thresholds:
-        imgcontours = measure.find_contours(grid_z, v)
+        imgcontours = measure.find_contours(grid_z, offset+v)
         contours = []
         for c in imgcontours:
             realc = []
@@ -162,7 +182,7 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[]):
     else:
         print("unknown contour finding algorithm '"+algorithm+"'")
 
-    allcontours = thefunc(grid["xvals"],grid["yvals"],grid["zgrid"],[ grid["minZ"] + v for v in values ],smooth,npoints)
+    allcontours = thefunc(grid["xvals"],grid["yvals"],grid["zgrid"],grid["minZ"],values,smooth,npoints)
     return allcontours,grid["minXY"]
 
 def scipy_interpolate(xvals,yvals):
