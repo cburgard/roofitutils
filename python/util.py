@@ -723,3 +723,12 @@ def getunc(indict,name="asm up"):
         uncer.append(0.5*(indict[par][name+"up"]+abs(indict[par][name+"down"])))
     return uncer
 
+def inrange(val,therange):
+    if val < therange[0] or val> therange[1]: return False
+    return True
+
+def inarea(point,ranges):
+    for i in range(len(point)):
+        if not inrange(point[i],ranges[i]):
+            return False
+    return True

@@ -168,8 +168,9 @@ def mergegrid(grid,othergrid,npoints):
                     grid["zgrid"][i][j] = min(grid["zgrid"][i][j],othergrid["zgrid"][i][j])
 
 
-def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[]):
+def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[],ranges=None):
     """find the contours in a 2d graph"""
+    from RooFitUtils.util import inarea
     grid = makegrid(points,npoints)
     for p in morepoints:
         othergrid = makegrid(p,npoints)
@@ -183,7 +184,24 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[]):
         print("unknown contour finding algorithm '"+algorithm+"'")
 
     allcontours = thefunc(grid["xvals"],grid["yvals"],grid["zgrid"],grid["minZ"],values,smooth,npoints)
-    return allcontours,grid["minXY"]
+
+    finalcontours = []
+    for contourset in allcontours:
+        finalset = []
+        for contour in contourset:
+            finalcontour = []
+            for point in contour:
+                if not ranges or inarea(point,ranges):
+                    finalcontour.append(point)
+                elif len(finalcontour) > 0:
+                    finalset.append(finalcontour)
+                    finalcontour = []
+            if len(finalcontour) > 0:
+                finalset.append(finalcontour)
+        if len(finalset) > 0:
+            finalcontours.append(finalset)
+
+    return finalcontours,grid["minXY"]
 
 def scipy_interpolate(xvals,yvals):
     from scipy.interpolate import PchipInterpolator as interpolate

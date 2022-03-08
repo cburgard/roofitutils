@@ -239,7 +239,7 @@ def collectresult_json(results,filename,label,**kwargs):
                     key = tuple(scan["label"])
                 scans[key] = {label:{}}
                 for point in scan["points"]:
-                    if "filterScans" in kwargs.keys():
+                    if "filterScans" in kwargs.keys() and kwargs["filterScans"]:
                         pvals = tuple([ p["val"] for p in point["parameters"] if p["name"] in kwargs["filterScans"] ])
                     else:
                         pvals = tuple([ p["val"] for p in point["parameters"]])

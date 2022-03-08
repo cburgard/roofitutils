@@ -300,10 +300,12 @@ def createScanJobs(args,arglist):
     if args["refineScan"]:
         from RooFitUtils.io import collectresults
         prescans = {}
-        if "scan" in args.keys():
+        if "scan" in args.keys() and args["scan"]:
             parnamelist = [ s[0] for s in args["scan"] ]
+            ranges = [(float(s[2]),float(s[3])) for s in args["scan"]]
         else:
             parnamelist = None
+            ranges = None
         collectresults(prescans,args["refineScan"],"dummy",filterScans=parnamelist)
         from RooFitUtils.interpolate import findcontours
         coords = []
@@ -321,14 +323,16 @@ def createScanJobs(args,arglist):
                         thresholds = args["refineScanThresholds"]
                     else:
                         thresholds = [0.5*2.28,0.5*5.99]
-                    contours,minimum = findcontours(points,thresholds,False,100)
+                    contours,minimum = findcontours(points,values=thresholds,smooth=False,npoints=100,ranges=ranges)
                     # for now, assign 10% of the points to the minimum, divide the rest evenly among the contours
                     nEach = int(1 * npoints / len(contours))
                     for contour in contours:
                         for graph in contour:
                             distributePointsAroundLine(parnamelist,coords,graph,nEach,args["refineScanSpread"])
-                    # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it
-                    distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.05*args["refineScanSpread"])
+                    # the distpar argument needs to be tuned to fit the coodinate sytem, TODO: come up with a smart way of guessing it#
+                    from RooFitUtils.util import inarea
+                    if not ranges or inarea(minimum,ranges):
+                        distributePointsAroundPoint(parnamelist,coords,minimum,int(0.1*npoints),0.05*args["refineScanSpread"])
                 else:
                     if args["refineScanThresholds"]:
                         thresholds = args["refineScanThresholds"]
