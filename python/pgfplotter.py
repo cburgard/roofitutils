@@ -29,7 +29,7 @@ def writehead(stream,atlas=True,varwidth=None):
         stream.write("\\else\n\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\n\\fi\n")
         stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
-    stream.write("\\usetikzlibrary{shapes.misc,positioning,patterns}\n")
+    stream.write("\\usetikzlibrary{shapes,positioning,patterns}\n")
     stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
     stream.write("\\pgfplotsset{every axis legend/.append style={draw=none},")
     stream.write("    /pgfplots/area legend/.style={\n")
