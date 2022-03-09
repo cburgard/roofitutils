@@ -447,7 +447,7 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
                 morepoints = [ s[pnamelist][drawopts] for s in otherscans2d if pnamelist in s.keys() ]
                 writescan2d(points,outfile,percent_thresholds,parsedict(drawopts),npoints,morepoints=morepoints,flipAxes=flipAxes,contourAlg=contourAlg,smooth=smooth)
         for drawopts,points in extrapoints.items():
-            writepoints2d(points,outfile,parsedict(drawopts),flipAxes=flipAxes,keys=labels)
+            writepoints2d(points,outfile,parsedict(drawopts),flipAxes=flipAxes)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
@@ -462,7 +462,7 @@ def writepoints2d(points,outfile,style,flipAxes=False,keys=None):
         i = i + 1
         if red > 0 and randint(0, red) != 0: continue
         if not keys:
-            keys = sorted(list(point.keys()))
+            keys = list(point.keys())
         if flipAxes:
             outfile.write("    ({:f},{:f})\n".format(point[keys[1]],point[keys[0]]))
         else:
