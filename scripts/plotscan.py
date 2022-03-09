@@ -4,6 +4,14 @@ from RooFitUtils.pgfplotter import writescans1d,writescans2d
 from RooFitUtils.io import collectresults,collectpoints
 from RooFitUtils.util import getPercent
 
+def addscanpoints(scans,points):
+    for k, v in scans.items():
+        for style,scan in v.items():
+            points[style] = []
+            for point in scan.keys():
+                points[style].append({ k[i]:point[i] for i in range(len(k))})
+
+
 def getPercentages(args,ndim):
     if args.show_percent == True or (args.show_percent == None and ndim == 2 and not args.show_sigma):
         return [0.01 * p for p in args.percent_levels ]
@@ -24,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="files with input information",required=True)
     parser.add_argument('--merge-input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="more files with input information",default=[])
     parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
-    parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points on 1d curve")
+    parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points used")
     parser.add_argument("--options",nargs="+",help="additional options to pass to the axis",default=[])
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=None)
@@ -83,7 +91,9 @@ if __name__ == '__main__':
             if not args.labels:
                 labels = list(scans2d.keys())[0]
             else:
-                labels = args.labels            
+                labels = args.labels
+            if args.drawpoints:
+                addscanpoints(scans2d,points)
             writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})],axis_options=args.options)
         else:
             for p in pois:
