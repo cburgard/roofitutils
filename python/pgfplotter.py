@@ -333,7 +333,7 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,minval=-1,maxval=1,rotatelabels=45,axlabel="$\\rho(X,Y)$",flip=True,showall=True)
 
-def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[],otherscans1d=[],axis_options=[]):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[],otherscans1d=[],axis_options=[],append=None):
     from RooFitUtils.util import make1dscan
 
     for otherscan in otherscans1d:
@@ -365,7 +365,10 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
                 print("writing scan for "+pnamelist[0])
                 writescan1d(pnamelist[0],par,make1dscan(scan),options,outfile,percent_thresholds,drawpoints,ymax)
         outfile.write("\\addplot[gray,densely dashed,thick] {1};\n")
-        outfile.write("\\addplot[gray,densely dashed,thick] {4};\n") 
+        outfile.write("\\addplot[gray,densely dashed,thick] {4};\n")
+        if append:
+            for line in append:            
+                outfile.write(append)
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
@@ -416,7 +419,7 @@ def ishexcolor(s):
         return True
     return False
        
-def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_thresholds,plotlabels=[],otherscans2d=[],flipAxes=False,contourAlg="skimage",smooth=False,axis_options=[]):
+def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_thresholds,plotlabels=[],otherscans2d=[],flipAxes=False,contourAlg="skimage",smooth=False,axis_options=[],append=None):
     """write a bunch of 2d scans to a pgfplots tex file"""
     from RooFitUtils.util import parsedict
     from RooFitUtils.io import texify    
@@ -455,6 +458,9 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
                 writescan2d(points,outfile,percent_thresholds,parsedict(drawopts),npoints,morepoints=morepoints,flipAxes=flipAxes,contourAlg=contourAlg,smooth=smooth)
         for drawopts,points in extrapoints.items():
             writepoints2d(points,outfile,parsedict(drawopts),flipAxes=flipAxes)
+        if append:
+            for line in append:
+                outfile.write(line)            
         outfile.write("\\end{axis}\n")
         outfile.write("\\end{tikzpicture}\n")
         writefoot(outfile)
@@ -491,10 +497,20 @@ def writescan2d(allpoints,outfile,percent_thresholds,style,npoints,morepoints=[]
 
     first = True
     i = 0
+    ignore = [ c.split("/") for c in style.get("ignore_contours","").split(";") if c ]
     for v,conts in zip(thresholds,contours):
         icont = 0
+        skip = False
         for c in conts:
-            outfile.write("% contour {:d} of {:f}\n".format(icont,v))
+            skip = False
+            for elem in ignore:
+                if (elem[0] == '*' or int(elem[0]) == i) and (elem[1] == '*' or int(elem[1]) == icont):
+                    skip = True
+            if skip:
+                outfile.write("% contour {:d} of {:f} skipped\n".format(icont,v))                
+                continue
+            icont = icont+1
+            outfile.write("% contour {:d} of {:f}\n".format(icont-1,v))
             outfile.write("\\addplot[color="+style.get("color","black")+","+thresholdStyles[i]+",mark=none,smooth")
             if not first: outfile.write(",forget plot")
             outfile.write("] coordinates {\n")
@@ -507,7 +523,6 @@ def writescan2d(allpoints,outfile,percent_thresholds,style,npoints,morepoints=[]
             if first and "title" in style.keys():
                 outfile.write("\\addlegendentry{"+style["title"]+"};\n")
             first=False
-            icont = icont+1
         i = i+1
 
 def getColorDefStringLaTeX(name,color):

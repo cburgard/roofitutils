@@ -4,6 +4,14 @@ from RooFitUtils.pgfplotter import writescans1d,writescans2d
 from RooFitUtils.io import collectresults,collectpoints
 from RooFitUtils.util import getPercent
 
+def readfile(thefile):
+    if not thefile:
+        return None
+    with open(thefile) as infile:
+        data = infile.readlines()
+        return data
+        
+
 def addscanpoints(scans,points):
     for k, v in scans.items():
         for style,scan in v.items():
@@ -28,16 +36,17 @@ def parseInput(inset):
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    parser = ArgumentParser("plot a likelihood scan")
-    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="files with input information",required=True)
-    parser.add_argument('--merge-input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="more files with input information",default=[])
-    parser.add_argument("--points",action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with some additional points",required=False,default=[])
+    parser = ArgumentParser(description="plot a likelihood scan")
+    parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.json'),help="files with input information",required=True)
+    parser.add_argument('--merge-input',action='append',nargs="+",metavar=('opt=val,opt2=val,...','file.json'),help="more files with input information",default=[])
+    parser.add_argument("--points",action='append',nargs="+",metavar=('opt1=val,opt2=val,...','file.json'),help="text files with some additional points",required=False,default=[])
     parser.add_argument("--drawpoints",action="store_true",default=False,help="draw scan points used")
     parser.add_argument("--options",nargs="+",help="additional options to pass to the axis",default=[])
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
     parser.add_argument("--labels",type=str,help="label(s) of the parameter axis",nargs="*",default=None)
     parser.add_argument("--poi",type=str,help="POIs to select",nargs="*",default=[])
     parser.add_argument("-o","--output",type=str,help="output file name",default="scan.tex",required=True)
+    parser.add_argument("--append",type=str,help="append the contents of another tex file",default=None)    
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
     parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False,help="flip X and Y axes")
     parser.add_argument("--smooth",action="store_true",default=False,help="apply smoothing")
@@ -86,7 +95,7 @@ if __name__ == '__main__':
                 labels = list(scans1d.keys())[0]
             else:
                 labels = args.labels
-            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})],axis_options=args.options)
+            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})],axis_options=args.options,append=readfile(args.append))
         elif len(scans2d) > 0:
             if not args.labels:
                 labels = list(scans2d.keys())[0]
@@ -94,7 +103,7 @@ if __name__ == '__main__':
                 labels = args.labels
             if args.drawpoints:
                 addscanpoints(scans2d,points)
-            writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})],axis_options=args.options)
+            writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})],axis_options=args.options,append=readfile(args.append))
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")
