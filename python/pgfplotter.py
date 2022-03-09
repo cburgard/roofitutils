@@ -25,12 +25,21 @@ def writehead(stream,atlas=True,varwidth=None):
     stream.write("\\usepackage{iftex}\n")
     stream.write("\\usetikzlibrary{calc}\n")
     if atlas:
-        stream.write("\\ifPDFTeX\\usepackage[scaled=1]{helvet}\\fi\n")
-        stream.write("\\ifXeTeX\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\\fi\n")        
+        stream.write("\\ifPDFTeX\n\\usepackage[scaled=1]{helvet}\n")
+        stream.write("\\else\n\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\n\\fi\n")
         stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
     stream.write("\\usetikzlibrary{shapes.misc,positioning,patterns}\n")
     stream.write("\\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},cross/.default={3pt}}\n")
+    stream.write("\\pgfplotsset{every axis legend/.append style={draw=none},")
+    stream.write("    /pgfplots/area legend/.style={\n")
+    stream.write("      /pgfplots/legend image code/.code={\n")
+    stream.write("        \\fill[draw] (0pt,0pt) ellipse [x radius=\\pgfplotbarwidth,y radius=0.3em];\n")
+    stream.write("        \\draw (1.5pt,1.5pt) -- (-1.5pt,-1.5pt);\n")
+    stream.write("        \\draw (1.5pt,-1.5pt) -- (-1.5pt,1.5pt);\n")      
+    stream.write("}, },\n")
+    stream.write("}\n")
+    
     stream.write("\\pgfplotsset{compat=newest}\n")
     stream.write("\\begin{document}\n")
     stream.write("\\pgfplotsset{scaled x ticks=false}\n")
@@ -43,10 +52,12 @@ def writehead(stream,atlas=True,varwidth=None):
             atlaslabel = "Internal"
         else:
             atlaslabel = atlas
-        stream.write("\\providecommand\\ATLASlabel{"+str(atlaslabel)+"}\n")        
+        stream.write("\\providecommand\\ATLASlabel{"+str(atlaslabel)+"}\n")
+        stream.write("\\ifpdftex\n")
         stream.write("\\renewcommand\\sfdefault{phv}\n")
         stream.write("\\renewcommand\\rmdefault{phv}\n")
         stream.write("\\renewcommand\\ttdefault{pcr}\n")
+        stream.write("\\fi\n")
         stream.write("\\font\\greekcapstenrm=cmr10\n")
         stream.write("\\font\\greekcapssevenrm=cmr7\n")
         stream.write("\\font\\greekcapsfiverm=cmr5\n")
@@ -411,10 +422,6 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
     from RooFitUtils.io import texify    
     with open(outfilename,"w") as outfile:
         writehead(outfile)
-        if atlas:
-            outfile.write("\\renewcommand\\sfdefault{phv}\n")
-            outfile.write("\\renewcommand\\rmdefault{phv}\n")
-            outfile.write("\\renewcommand\\ttdefault{pcr}\n")
         for pnamelist,scan in scans2d.items():
             for drawopts in scan.keys():
                 opts = parsedict(drawopts)
@@ -426,11 +433,11 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
         if atlas:
             outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
         outfile.write("]\n")
-        outfile.write("\\begin{axis}[,\n")
+        outfile.write("\\begin{axis}[area legend,\n")
         for opt in axis_options:
             outfile.write("  "+opt+",\n")
         if atlas:
-            outfile.write("legend pos=outer north east,legend style={anchor=south east,draw=none},\n")
+            outfile.write("legend pos=north east,legend style={draw=none,fill=none},,\n")
             outfile.write("xticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
             outfile.write("yticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
         if len(labels) == 2:
