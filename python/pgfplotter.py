@@ -440,7 +440,7 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
         for opt in axis_options:
             outfile.write("  "+opt+",\n")
         if atlas:
-            outfile.write("legend pos=north east,legend style={draw=none,fill=none},,\n")
+            outfile.write("legend pos=north east,legend style={draw=none,fill=none},legend cell align={left},\n")
             outfile.write("xticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
             outfile.write("yticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
         if len(labels) == 2:
