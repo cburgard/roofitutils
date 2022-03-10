@@ -35,6 +35,30 @@ def python_version():
     import sys
     return sys.version_info[0]
 
+def try_int(i, fallback=None):
+    try:
+        return int(i)
+    except ValueError:
+        pass
+    except TypeError:
+        pass
+    return fallback
+
+def ver_as_list(a):
+    import re
+    num_split_re = re.compile(r'([0-9]+|[^0-9]+)')
+    return [try_int(i, i) for i in num_split_re.findall(a)]
+
+def version_greater(a, b):
+    a_ls = ver_as_list(a)
+    b_ls = ver_as_list(b)
+    return a_ls > b_ls
+
+def version_greater_equal(a, b):
+    a_ls = ver_as_list(a)
+    b_ls = ver_as_list(b)
+    return a_ls >= b_ls
+
 def println():
     if python_version() <= 2:
         print
