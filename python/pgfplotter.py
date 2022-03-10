@@ -25,7 +25,7 @@ def writehead(stream,atlas=True,varwidth=None):
     stream.write("\\usepackage{iftex}\n")
     stream.write("\\usetikzlibrary{calc}\n")
     if atlas:
-        stream.write("\\ifPDFTeX\n\\usepackage[scaled=1]{helvet}\n")
+        stream.write("\\ifPDFTeX\n\\usepackage[scaled=1]{helvet}\\usepackage{sansmath}\n")
         stream.write("\\else\n\\usepackage{fontspec}\\setsansfont{TeX Gyre Heros}\n\\fi\n")
         stream.write("\\usepackage[helvet]{sfmath}\n")
     stream.write("\\usepackage{amsmath,latexsym}\n")
@@ -184,8 +184,8 @@ def writepois(atlas,pois,allsets_input,outfilename,plotlabels=[],range=[-2,2],sm
         outfile.write("    minor tick num=4,\n")
         outfile.write("    ytick style={draw=none},\n")
         outfile.write("    yticklabels=\empty,\n")
-        outfile.write("    enlarge x limits=true,\n")        
-        outfile.write("    xticklabel style={/pgf/number format/fixed},\n")
+        outfile.write("    enlarge x limits=true,\n")
+        outfile.write("    xticklabel style={/pgf/number format/fixed,font=\sffamily},\n")
         outfile.write("    scaled ticks=false,\n")
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)            
@@ -253,7 +253,7 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
         writehead(outfile)
         outfile.write("\\begin{tikzpicture}[\n")
         if atlas:
-            outfile.write("  font={\\fontfamily{qhv}\\selectfont},\n")
+            outfile.write("  font={\sffamily},\n")
         from RooFitUtils.util import sgnstr,formatNumber
         outfile.write("  map color/.code={\\pgfmathparse{"+str(int(-minval*(1000./(maxval-minval))))+" + "+str(int(1000./(maxval-minval)))+"*#1}\\pgfplotscolormapdefinemappedcolor{\\pgfmathresult}},\n")
         outfile.write("  meta/.style={map color=#1,minimum size=3em,fill=mapped color}\n")        
@@ -434,7 +434,7 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
                         outfile.write("\\definecolor{"+color+"}{HTML}{"+color.upper()+"}\n")
         outfile.write("\\begin{tikzpicture}[\n")
         if atlas:
-            outfile.write("  font={\\fontfamily{qhv}\\selectfont}\n")
+            outfile.write("  font={\sffamily}\n")
         outfile.write("]\n")
         outfile.write("\\begin{axis}[area legend,\n")
         for opt in axis_options:
@@ -723,8 +723,8 @@ def plotBarPanel(outfile,data,layout,showlabels,xwidth):
     outfile.write("    xtick={" + ",".join(coords)+"},\n")    
     outfile.write("    scaled ticks=false,\n")
     outfile.write("    y label style={yshift=1.5em,at={(0,0.5)},minimum size=1em,anchor=base,font=\\footnotesize},\n")        
-    outfile.write("    y tick label style={/pgf/number format/fixed,scale=0.5},\n")    
-    outfile.write("    x tick label style={anchor=north east,rotate=60,major tick length=0pt,minor tick length=0pt,scale=0.7},\n")
+    outfile.write("    y tick label style={/pgf/number format/fixed,scale=0.5,font=\sffamily},\n")    
+    outfile.write("    x tick label style={anchor=north east,rotate=60,major tick length=0pt,minor tick length=0pt,scale=0.7,font=\sffamily},\n")
     if showlabels:
         outfile.write("    xticklabels={" + ",".join([ "{$"+b+"$}" if b else "" for b in labels]) + "},\n")
     else:
