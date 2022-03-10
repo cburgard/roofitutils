@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 def getResult_fromROOT(inResult,poinames,tag):
     from RooFitUtils.io import getFitResult

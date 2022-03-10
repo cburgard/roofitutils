@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 def main(args):
     from RooFitUtils.io import texdict,collecthistograms
     from RooFitUtils.util import flattened,keys

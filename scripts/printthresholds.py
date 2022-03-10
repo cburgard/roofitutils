@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from scipy.stats import chi2,multivariate_normal
 import numpy as np
 

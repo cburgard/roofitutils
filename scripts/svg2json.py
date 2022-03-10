@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 prefix = "{http://www.w3.org/2000/svg}"
 
