@@ -890,6 +890,8 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
   }
   return fNllCmdList.GetSize();
 }
+template
+int RooFitUtils::ExtendedMinimizer::parseNllConfig<RooLinkedList>(const RooLinkedList &cmdList);
 
 // ____________________________________________________________________________|__________
 
@@ -973,6 +975,8 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
 
   return fFitCmdList.GetSize();
 }
+template
+int RooFitUtils::ExtendedMinimizer::parseFitConfig<RooLinkedList>(const RooLinkedList &cmdList);
 
 // ____________________________________________________________________________|__________
 RooFitUtils::ExtendedMinimizer::Result::Eigen *
