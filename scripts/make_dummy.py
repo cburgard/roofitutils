@@ -32,8 +32,6 @@ def randomize_embedded(d):
                 else:
                     d[k] = uniform(1-2*(1-v),1)
 
-                
-
             
 def remove_keys(d,keys):
     if not isinstance(d, (dict, list)):
@@ -54,12 +52,13 @@ def main(args):
                     if not type(region) == dict:
                         continue
                     randomize_data(region)
-        if "pdfs" in ws.keys():
-            for pdf in ws["pdfs"].values():
-                randomize_embedded(pdf)
-        if "functions" in ws.keys():
-            for pdf in ws["functions"].values():
-                randomize_embedded(pdf)                
+        if args.randomize_embedded:
+            if "pdfs" in ws.keys():
+                for pdf in ws["pdfs"].values():
+                    randomize_embedded(pdf)
+            if "functions" in ws.keys():
+                for pdf in ws["functions"].values():
+                    randomize_embedded(pdf)                
 
     with open(args.output,"wt") as outfile:
         json.dump(ws,outfile)
@@ -68,6 +67,7 @@ def main(args):
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(description="convert a JSON workspace to a dummy version of it")
+    parser.add_argument("--randomize-embedded",default=False,action="store_true",help="randomize embedded data")
     parser.add_argument("input",help="input workspace in JSON format")
     parser.add_argument("output",help="output workspace in JSON format")    
     main(parser.parse_args())
