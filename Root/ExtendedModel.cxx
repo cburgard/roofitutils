@@ -217,7 +217,14 @@ void RooFitUtils::ExtendedModel::initialise() {
          ++i_snapshot) {
       std::string thisSnapshot = parsedSnapshots[i_snapshot];
       coutI(InputArguments) << "Loading snapshot " << thisSnapshot << std::endl;
-      fWorkspace->loadSnapshot(thisSnapshot.c_str());
+      if(!fWorkspace->loadSnapshot(thisSnapshot.c_str())){
+	std::stringstream ss;
+	ss << "unable to load snapshot '" << thisSnapshot << "', available snapshots are are \n";
+	for(const auto& snsh : fWorkspace->getSnapshots()){
+	  ss << "  " << snsh->GetName() << "\n";
+	}
+	throw std::runtime_error(ss.str().c_str());
+      }
     }
   }
 }
