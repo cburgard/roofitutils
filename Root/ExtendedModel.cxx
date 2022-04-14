@@ -219,10 +219,13 @@ void RooFitUtils::ExtendedModel::initialise() {
       coutI(InputArguments) << "Loading snapshot " << thisSnapshot << std::endl;
       if(!fWorkspace->loadSnapshot(thisSnapshot.c_str())){
 	std::stringstream ss;
-	ss << "unable to load snapshot '" << thisSnapshot << "', available snapshots are are \n";
+	ss << "unable to load snapshot '" << thisSnapshot << "'";
+#if ROOT_VERSION_CODE > ROOT_VERSION(6,25,0)	
+	ss << ", available snapshots are are \n";
 	for(const auto& snsh : fWorkspace->getSnapshots()){
 	  ss << "  " << snsh->GetName() << "\n";
 	}
+#endif
 	throw std::runtime_error(ss.str().c_str());
       }
     }
