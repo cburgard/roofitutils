@@ -57,7 +57,7 @@ if __name__ == "__main__":
     arglist.append(basic.add_argument( "-d", "--data"    , type=str,     dest="dataName"                   , help="Data to use.", default="combData" ))
     arglist.append(basic.add_argument( "-w","--workspace"     , type=str,     dest="wsName"                     , help="WS to grab." , default="combWS" ))
     arglist.append(basic.add_argument( "--poi"           , type=str,     dest="pois"                       , help="POIs to measure.", metavar="POI", nargs="+", default=[]))
-    arglist.append(basic.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="nominalNuis" ))
+    arglist.append(basic.add_argument( "--snapshot"      , type=str,     dest="snapshot"                   , help="Initial snapshot.", default="" ))
     arglist.append(basic.add_argument( "--make-snapshots", action="store_true",    dest="makeParameterSnapshots"     , help="Make parameter snapshots." ))
     arglist.append(basic.add_argument('--fit',                           dest='fit', action='store_true'   , help="Actually run the fit.", default=True ))
     arglist.append(basic.add_argument('--no-fit',                        dest='fit', action='store_false'  , help="Do not run the fit.", default=False ))

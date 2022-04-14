@@ -43,12 +43,12 @@ public:
               const std::string &WorkspaceName = "",
               const std::string &ModelConfigName = "",
               const std::string &DataName = "",
-              const std::string &SnapshotName = "nominalNuis",
+              const std::string &SnapshotName = "",
               bool BinnedLikelihood = kTRUE);
   Measurement(const std::string &MeasurementName, RooWorkspace *ws,
               const std::string &ModelConfigName = "",
               const std::string &DataName = "",
-              const std::string &SnapshotName = "nominalNuis",
+              const std::string &SnapshotName = "",
               bool BinnedLikelihood = kTRUE);
   ~Measurement();
 

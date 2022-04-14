@@ -52,7 +52,7 @@ def buildModel(args):
 
 
     model = ROOT.RooFitUtils.ExtendedModel("model", args["inFileName"], args["wsName"],
-                                           args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot","nominalNuis"),
+                                           args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot",""),
                                            args.get("binnedLikelihood",True))
 
     pois = args.get("poi",None)
