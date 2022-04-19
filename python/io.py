@@ -279,7 +279,7 @@ def collectresult_root(results,filename,label,**kwargs):
             from os.path import basename
             from RooFitUtils.util import allkeys
             rdf = ROOT.RDataFrame(obj)
-            if "filterScans" in kwargs.keys():
+            if "filterScans" in kwargs.keys() and kwargs["filterScans"]:
                 pois = kwargs["filterScans"]
                 key = tuple(pois)
                 nparr = rdf.AsNumpy(columns=pois + ["nll","status"])                
