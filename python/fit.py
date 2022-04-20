@@ -272,8 +272,9 @@ def fit(args,model,minimizer):
                 writeResult(out,result,args.get("correlationMatrix",True))
             print("wrote output to "+outFileName)
         if args.get("writeResult",False):
-            outpath,outfile = os.path.split(outFileName.replace(".txt",""))
-            result.min.fit.SaveAs(outfile+"_fitresult.root")
+            outpath,outfile = os.path.split(outFileName)
+            fitresfile = os.path.join(outpath,os.path.splitext(outfile)[0]+".root")
+            result.min.fit.SaveAs(fitresfile)
         if args.get("printResult",True):
             for poi in makelist(pois):
                 p = result.min.fit.floatParsFinal().find(poi)
