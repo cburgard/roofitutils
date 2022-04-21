@@ -414,6 +414,12 @@ def getPercent(nsigma):
 def make1dscan(scan):
     return {k[0]:v for k,v in scan.items()}
 
+def closest(lst, k):
+    import numpy as np
+    lst = np.asarray(lst)
+    idx = (np.abs(lst - k)).argmin()
+    return lst[idx]
+
 def mergescan1d(scanvals1, scanvals2):
     import numpy as np
 
@@ -425,6 +431,8 @@ def mergescan1d(scanvals1, scanvals2):
     # don't extrapolate,
     xmin = max(min(x1),min(x2))
     xmax = min(max(x1),max(x2))
+    xlo = min(min(x1), min(x2))
+    xhi = max(max(x1), max(x2))
     # grid granularity is finer than the inputs
     nx = 10*len(x1+x2)
 
@@ -437,6 +445,24 @@ def mergescan1d(scanvals1, scanvals2):
     # find minima of the two curves in the 1d-grid
     for i in range(len(x_inter)):
         mergevals[(x_inter[i],)] = float(min(y1_inter[i],y2_inter[i]))
+
+    all_x = sorted(x1+x2)
+    if xlo in x1:
+        for x in x1[x1.index(xlo):x1.index(closest(x2,xmin))]:
+            mergevals[(x,)] = float(scanvals1[x])
+ 
+    elif xlo in x2:
+        for x in x2[x2.index(xlo):x2.index(closest(x2,xmin))]:
+            mergevals[(x,)] = float(scanvals2[x])
+ 
+    if xhi in x1:
+        for x in x1[x1.index(closest(x1,xmax)):x1.index(xhi)]:
+            mergevals[(x,)] = float(scanvals1[x])
+    
+    elif xhi in x2:
+        for x in x2[x2.index(closest(x2,xmax)):x2.index(xhi)]:
+            mergevals[(x,)] = float(scanvals2[x])
+ 
 
     return mergevals
 

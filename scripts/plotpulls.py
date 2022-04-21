@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser = ArgumentParser("plot pulls of parameters")
     parser.add_argument('--range',nargs=2,default=[-5,5],help="range to plot",type=float)    
     parser.add_argument('--scaleimpacts',default=None,help="Scale impacts for better visualization",type=float)
-    parser.add_argument("--top-N",dest="topN",help="plot only top N ranked NPs",default=15)
+    parser.add_argument("--top-N",dest="topN",type=int,help="plot only top N ranked NPs",default=15)
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.json'),help="json files with the input information",default=[])
     parser.add_argument('--impacts',action='append',nargs="+",metavar=('POI','file.json'),help="json files with the input information for ranking the nuisance parameters",default=[])
     parser.add_argument('--breakdown',action='append',nargs="+",metavar=('POI','file.txt'),help="text files with the input information for ranking the nuisance parameters",default=[])
