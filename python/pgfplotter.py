@@ -488,6 +488,8 @@ def writescan2d(allpoints,outfile,percent_thresholds,style,npoints,morepoints=[]
     from RooFitUtils.interpolate import findcontours
     thresholds = [ getThreshold(p,2)*0.5 for p in percent_thresholds ]
     contours,minimum = findcontours(allpoints,thresholds,smooth,npoints,algorithm=contourAlg,morepoints=morepoints)
+    if not contours:
+        print("no contours found!")
     outfile.write("\\draw (axis cs:")
     if flipAxes:
         outfile.write("{:f},{:f}".format(minimum[1],minimum[0]))
