@@ -186,7 +186,6 @@ def findcontours(points,values,smooth,npoints,algorithm="ROOT",morepoints=[],ran
         print("unknown contour finding algorithm '"+algorithm+"'")
 
     allcontours = thefunc(grid["xvals"],grid["yvals"],grid["zgrid"],grid["minZ"],values,smooth,npoints)
-
     finalcontours = []
     for contourset in allcontours:
         finalset = []
