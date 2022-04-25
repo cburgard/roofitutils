@@ -235,8 +235,8 @@ def diagnose_minima(minima):
 
 def diagnose(messages):
     # evaluate all known diagnostics
-    diagnose_minima(messages["minimum"])
-    diagnose_minimizations(messages["minimization"])
+    diagnose_minima(messages.get("minimum",[]))
+    diagnose_minimizations(messages.get("minimization",[]))
     diagnose_minos(messages.get("minos",[])+messages.get("minos2",[])+messages.get("minos2bidir",[])+messages.get("minosrerun",[]))
 
     
