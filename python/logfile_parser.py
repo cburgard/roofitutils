@@ -42,6 +42,7 @@ def make_parser():
         "NoImprovementInLineSearch": Parser(r".*VariableMetricBuilder: no improvement in line search"),
         "Iteration":          Parser(r".*VariableMetric.*\s*(?P<it>\d+)\s+-\s+FCN\s+=\s+(?P<FCN>"+NUM+")\s+Edm\s+=\s+(?P<Edm>"+NUM+")\s+NCalls\s+=\s+(?P<NCalls>\d+)"),
         "AfterHessian":       Parser(r".*VariableMetric.*\s*After Hessian"),
+        "ToleranceInsufficent":  Parser(r".*VariableMetric.*Tolerance not sufficient, continue minimization; Edm (?P<edm>"+NUM+") Required (?P<required>"+NUM+")"),        
         "FlatLH":             Parser(r"Minuit2:0: RuntimeWarning: VariableMetricBuilder No improvement in line search"),
         "runHesse":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
         "hesseCalls":         Parser(r".*Hesse [Uu]sing max-calls (?P<maxcalls>\d+)"),
@@ -54,8 +55,8 @@ def make_parser():
             "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")")            
         })),
         "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser({
-            "MinVal":Parser(r"\s+Minimum value\s+: (?P<val>"+NUM+")"),
-            "Edm":Parser(r"\s+Edm\s+: (?P<val>"+NUM+")"),
+            "MinVal":Parser(r"\s*Minimum value\s*:\s*(?P<val>"+NUM+")"),
+            "Edm":Parser(r"\s*Edm\s*:\s*(?P<val>"+NUM+")"),
             "InternalParameters":Parser(r"\s*Internal parameters\s*:",MetaParser({
                 "value":Parser(r"\s*(?P<value>"+NUM+")")
             })),
@@ -141,6 +142,8 @@ def make_parser():
             }))
         })),
         "sframework-initialize-parameter":Parser(r".*SFramework/(?P<appname>.*): initializing parameter '(?P<name>.*)' to '(?P<value>"+NUM+")'"),
+        "sframework-skip-constant-parameter":Parser(r".*WARNING: skipping constant parameter '(?P<name>.*)'"),
+        "sframework-float-parameters":Parser(r".*SFramework/(?P<appname>.*): parameters are: (?P<info>.*)"),                
         "sframework-initialize-parameter-error":Parser(r".*unable to initialize parameter '(?P<name>.*)'.*"),                
         "sframework-loadsnapshot":Parser(r".*SFramework/(?P<appname>.*): loaded snapshot '(?P<snapshot>.*)' for Nll construction, (?P<npar>\d+) parameters floating"),
         "sframework-createnll":Parser(r".*SFramework/(?P<appname>.*): constructed Nll with (?P<npar>\d+) floating parameters and starting value (?P<nllval>"+NUM+")"),        
@@ -149,6 +152,8 @@ def make_parser():
         "robustminimizer-startminos":Parser(r".*ExtendedMinimizer::minimize\((?P<appname>.*)\): Running Minos",MetaParser({
             "stars":Parser("[*]+"),
         })),
+        "robustminimizer-covqual":Parser(r".*ExtendedMinimizer::minimize\((?P<appname>.*)\): Covariance quality is (?P<covqual>"+NUM+")"),
+        "robustminimizer-invert":Parser(r".*ExtendedMinimizer::minimize\((?P<appname>.*)\): attempting to invert covariance matrix..."),        
         "robustminimizer-endhesse":Parser(r".*ExtendedMinimizer::runHesse\((?P<appname>.*)\) finished with status (?P<status>\d) \(covqual=(?P<covqual>\d)\)"),
         "robustminimizer-end"  :Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.*)\) fit succeeded with status (?P<Status>\d+)"),
         "roofitutils-close":Parser(r"Fitting time: (?P<Time>"+NUM+")s",MetaParser({
