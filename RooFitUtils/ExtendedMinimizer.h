@@ -181,6 +181,7 @@ public:
 
   // ____________________________________________________________________________|__________
 protected:
+  void writeReproducer(const std::string& name);
   void initialize();
   Result *run();
   int runHesse(Result::Minimization& mini);  

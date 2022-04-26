@@ -757,6 +757,80 @@ RooFitUtils::ExtendedMinimizer::Result RooFitUtils::ExtendedMinimizer::minimize(
 
 // ____________________________________________________________________________|__________
 
+namespace {
+  void printSet(std::ostream& out, const RooArgSet* set, const char* wsname){
+    out << "RooArgSet(";
+    bool first = true;
+    for(const auto& e:*set){
+      if(!first) out << ",";
+      out << "*" << wsname << "->arg(\"" << e->GetName() << "\")";
+      first = false;
+    }
+    out << ")";
+  }
+		
+  void printCmd(std::ostream& out, const RooCmdArg* arg, const char* wsname){
+    out << "RooCmdArg(\"" << arg->GetName() << "\", " <<
+      arg->getInt(0) << ", " << arg->getInt(1) << ", " <<
+      arg->getDouble(0) << ", " << arg->getDouble(1) << ", ";
+    if(arg->getString(0)) out << '"' << arg->getString(0) << '"' << ", ";
+    else out << "\"\", ";
+    if(arg->getString(1)) out << '"' << arg->getString(1) << '"' << ", ";    
+    else out << "\"\", ";
+    if(arg->getObject(0)) const_cast<TObject*>(arg->getObject(0))->SavePrimitive(out);
+    else out << " 0";
+    out << ", ";
+    if(arg->getObject(1)) const_cast<TObject*>(arg->getObject(1))->SavePrimitive(out);
+    else out << " 0";
+    out << ", ";
+    out << " 0, ";
+    if(arg->getString(2)) out << '"' << arg->getString(2) << '"' << ", ";    
+    else out << "\"\", ";    
+    if(arg->getSet(0)){ out << "new "; ::printSet(out,arg->getSet(0),wsname); }
+    else out << " 0";
+    out << ", ";
+    if(arg->getSet(1)){ out << "new "; ::printSet(out,arg->getSet(1),wsname); }
+    else out << " 0";        
+    out << ")";
+  }
+}
+
+void RooFitUtils::ExtendedMinimizer::writeReproducer(const std::string& name) {
+  if(!this->fWorkspace){
+    return;
+  }
+  this->fWorkspace->writeToFile((name+".root").c_str());  
+  std::ofstream out(name+"_fit.C");
+  out << "{\n";
+  out << "  TFile* infile = TFile::Open(\"" << name << ".root\",\"READ\");\n";
+  out << "  RooWorkspace* workspace = (RooWorkspace*)infile->Get(\""<<fWorkspace->GetName()<<"\");\n";
+  out << "  RooAbsPdf* pdf = workspace->pdf(\""<< fPdf->GetName() << "\");\n";
+  out << "  RooAbsData* data = workspace->data(\""<< fData->GetName() << "\");\n";
+  out << "  RooAbsReal* nll = pdf->createNLL(*data";
+  for(const auto& arg:fNllCmdList){
+    out << ",\n    ";
+    ::printCmd(out,dynamic_cast<RooCmdArg*>(arg),"workspace");
+  }
+  out << "  );\n";
+  out << "  RooMinimizer mini(*nll);\n";
+  out << "  mini.setMaxFunctionCalls("<<fMaxCalls<<");\n";
+  out << "  mini.setMaxIterations("<<fMaxIterations<<");\n";
+  out << "  mini.setPrintLevel("<<fPrintLevel<<");\n";
+  out << "  mini.optimizeConst("<<fOptConst<<");\n";
+  out << "  mini.setEvalErrorWall("<<fDoEEWall<<");\n";
+  out << "  mini.setOffsetting("<<fOffset<<");\n";
+  out << "  mini.setPrintEvalErrors("<<fNumee<<");\n";
+  out << "  mini.setVerbose("<<fVerbose<<");\n";
+  out << "  mini.setProfile("<<fTimer<<");\n";
+  out << "  mini.setStrategy("<<fDefaultStrategy<<");\n";
+  out << "  mini.setEps("<<fEps<<");\n";
+  out << "  mini.minimize(\"" << fMinimizerType << "\",\"" << fMinimizerAlgo << "\");";
+  out << "}\n";
+}
+
+
+// ____________________________________________________________________________|__________
+
 void RooFitUtils::ExtendedMinimizer::setup() {
   // initialization
   if (!fPdf) {
