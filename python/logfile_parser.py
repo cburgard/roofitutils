@@ -20,6 +20,22 @@ def make_parser():
             "ConstParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)"),            
         }
 
+
+    hessestate = {
+        "MinVal":Parser(r"\s*Minimum value\s*:\s*(?P<val>"+NUM+")"),
+        "Edm":Parser(r"\s*Edm\s*:\s*(?P<val>"+NUM+")"),
+        "InternalParameters":Parser(r"\s*Internal parameters\s*:",MetaParser({
+            "value":Parser(r"\s*(?P<value>"+NUM+")")
+        })),
+        "InternalGradient":Parser(r"\s*Internal gradient\s*:",MetaParser({
+            "value":Parser(r"\s*(?P<value>"+NUM+")")
+        })),
+        "InternalCovMat":Parser(r"\s*Internal covariance matrix\s*:",MetaParser({
+            "value":Parser(r"\s*(?P<value>"+NUM+"\s*)+")
+        })),
+        "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")"),
+        "hesseposdef":Parser(r"Info: MnHesse: matrix was forced pos. def.")
+    }
     
     minimization = {
         "DefaultOptionChange":Parser(r"Minuit2Minimizer::Minuit\s+-\s+Changing default.*options",MetaParser({
@@ -32,19 +48,22 @@ def make_parser():
         "lowTolerance":       Parser(r".*VariableMetric.*\s*Tolerance is not sufficient, continue the minimization",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*Edm\s*is\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")")
         })),
-        "iterationsFinishNoConvergence": Parser(r".*VariableMetric.*\s*iterations finish without convergence",MetaParser({
+        "iterationsFinishNoConvergence": Parser(r".*VariableMetric.*\s*[Ii]terations finish without convergence.*",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*: \s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),
             "edmreq":            Parser(r"Info in\s*requested\s*: edmval\s*=\s*(?P<edmreq>"+NUM+")"),
             "invalid":            Parser(r"Info in\s*(?P<Label>\w+)\s*: INVALID function minimum - edm is above tolerance.*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),
             "reqtol":            Parser(r"Info in\s*(?P<Label>\w+)\s*: Required tolerance\s*is 10 x edmval\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),            
         })),
-        "DavidonErrorUpdator": Parser(r".*DavidonErrorUpdator: delgam < 0 : first derivatives increasing along search line"),
+        "MinimumInvalidTry2": Parser(r".*VariableMetricBuilder FunctionMinimum is invalid after second try"),
+        "DavidonErrorUpdator": Parser(".*DavidonErrorUpdator[:]?\s*delgam\s*<\s*0\s*:\s*first derivatives increasing along search line.*"),
         "NoImprovementInLineSearch": Parser(r".*VariableMetricBuilder: no improvement in line search"),
         "Iteration":          Parser(r".*VariableMetric.*\s*(?P<it>\d+)\s+-\s+FCN\s+=\s+(?P<FCN>"+NUM+")\s+Edm\s+=\s+(?P<Edm>"+NUM+")\s+NCalls\s+=\s+(?P<NCalls>\d+)"),
         "AfterHessian":       Parser(r".*VariableMetric.*\s*After Hessian"),
-        "ToleranceInsufficent":  Parser(r".*VariableMetric.*Tolerance not sufficient, continue minimization; Edm (?P<edm>"+NUM+") Required (?P<required>"+NUM+")"),        
+        "ToleranceInsufficent":  Parser(r".*VariableMetric.*Tolerance not sufficient, continue minimization; Edm (?P<edm>"+NUM+") Required (?P<required>"+NUM+")"),
+        "NotConverged" :      Parser(r".*Minimization did NOT converge, Edm is above max"),
         "FlatLH":             Parser(r"Minuit2:0: RuntimeWarning: VariableMetricBuilder No improvement in line search"),
-        "runHesse":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
+        "runHesseVerbose":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
+        "runHesse":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:",MetaParser(hessestate)),
         "hesseCalls":         Parser(r".*Hesse [Uu]sing max-calls (?P<maxcalls>\d+)"),
         "hesseInfo":          Parser(r".*::Hesse[ :]*Hesse is (?P<hesseStatus>\w+) - matrix is (?P<matrixStatus>\w+)",MetaParser(minimum)),
         "hesseNonPosDef": Parser(r".*VariableMetricBuilder: matrix not pos.def. : edm is < 0. Make pos def...",MetaParser({        
@@ -54,21 +73,7 @@ def make_parser():
             "gdel":Parser(r"Info: gdel = (?P<gdel>"+NUM+")"),
             "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")")            
         })),
-        "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser({
-            "MinVal":Parser(r"\s*Minimum value\s*:\s*(?P<val>"+NUM+")"),
-            "Edm":Parser(r"\s*Edm\s*:\s*(?P<val>"+NUM+")"),
-            "InternalParameters":Parser(r"\s*Internal parameters\s*:",MetaParser({
-                "value":Parser(r"\s*(?P<value>"+NUM+")")
-            })),
-            "InternalGradient":Parser(r"\s*Internal gradient\s*:",MetaParser({
-                "value":Parser(r"\s*(?P<value>"+NUM+")")
-            })),
-            "InternalCovMat":Parser(r"\s*Internal covariance matrix\s*:",MetaParser({
-                "value":Parser(r"\s*(?P<value>"+NUM+"\s*)+")
-            })),
-            "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")"),
-            "hesseposdef":Parser(r"Info: MnHesse: matrix was forced pos. def.")
-        }))}
+        "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser(hessestate))}
 
     minos_migrad = extend({
         "parameter":Parser(r"Pos (?P<pos>\d+): (?P<parname>.*) = (?P<val>"+NUM+")"),
@@ -104,7 +109,7 @@ def make_parser():
             "copyright":Parser(r"Copyright \(C\) (?P<Years>[\d-]+) NIKHEF, University of California & Stanford University"),
             "rights":Parser(r"All rights reserved, please read http://roofit.sourceforge.net/license.txt")
         })),
-        "minimum":Parser(r"Minuit2Minimizer : (?P<State>\w+) minimum - status = (?P<Status>\d+)",MetaParser(minimum)),
+        "minimum":Parser(r".*Minuit2Minimizer\s*:\s*(?P<State>\w+) [Mm]inimum - status = (?P<Status>\d+)",MetaParser(minimum)),
         "roofitresult":Parser(r"RooFitResult: minimized FCN value: (?P<FCN>"+NUM+"), estimated distance to minimum: (?P<edm>"+NUM+")",MetaParser({
             "covqual":Parser(r"covariance matrix quality: (?P<status>.*)"),
             "status":Parser(r"Status : (?P<tags>.*)"),
@@ -156,6 +161,8 @@ def make_parser():
         "robustminimizer-invert":Parser(r".*ExtendedMinimizer::minimize\((?P<appname>.*)\): attempting to invert covariance matrix..."),        
         "robustminimizer-endhesse":Parser(r".*ExtendedMinimizer::runHesse\((?P<appname>.*)\) finished with status (?P<status>\d) \(covqual=(?P<covqual>\d)\)"),
         "robustminimizer-end"  :Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.*)\) fit succeeded with status (?P<Status>\d+)"),
+        "robustminimizer-retry"  :Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.*)\) fit failed with status (?P<Status>[-]?\d+). [Rr]etrying with strategy (?P<Strategy>\d+)",MetaParser(minimization)),
+        "robustminimizer-giveup"  :Parser(r".*ExtendedMinimizer::robustMinimize\((?P<appname>.*)\) fit failed with status (?P<Status>[-]?\d+)[, giving up.]?"),
         "roofitutils-close":Parser(r"Fitting time: (?P<Time>"+NUM+")s",MetaParser({
             "nll":Parser(r"NLL after minimisation: (?P<Time>"+NUM+")"),
             "poi":Parser(r"(?P<poiname>.*) = (?P<val>"+NUM+") (?P<uperr>"+NUM+") (?P<dnerr>"+NUM+")"),
