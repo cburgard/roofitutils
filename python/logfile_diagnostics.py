@@ -1,3 +1,14 @@
+
+statusCodes = {
+    0 : "OK",
+    1 : "Covariance was made pos defined",
+    2 : "Hesse is invalid",
+    3 : "Edm is above max",
+    4 : "Reached call limit",
+    5 : "Unknown failure"
+}
+
+
 class MetaParser:
     # a MetaParser is a class intended to parse a block of logfile lines
     # a MetaParser owns a colleciton of subparsers
@@ -105,6 +116,7 @@ class Parser:
         if self.debug:
             print(self.label + " parsed line '"+line.strip()+"'")
         keys = typecast(match.groupdict())
+        keys[".line"] = line.strip()
         try:
             next(lines)
         except StopIteration:
@@ -158,7 +170,9 @@ minimization_issue_handlers = [
     Handler("hesseNonPosDefGDel", severity = Severity.WARNING, info="your Hesse matrix is not positive definite (gdel > 0)",
             message = "the second derivative matrix was made invertible by adding {posdef[0][padd]} to the diagonal."),
     Handler("lowTolerance",severity = Severity.WARNING, info="the minimization needed to be prolonged as the minimum was not yet reached",
-            message = "the estimated distances to minimum were recorded as {edminfo[0][edm]} ({edminfo[0][Label]}) and {edminfo[1][edm]} ({edminfo[1][Label]})."),        
+            message = "the estimated distances to minimum were recorded as {edminfo[0][edm]} ({edminfo[0][Label]}) and {edminfo[1][edm]} ({edminfo[1][Label]})."),
+    Handler("lowTolerance2",severity = Severity.WARNING, info="the minimization needed to be prolonged as the minimum was not yet reached",
+            message = "the estimated distances to minimum were recorded as {edm} (estimated) and {required} (required)."),        
 ]
 
 minos_issue_handlers = [
@@ -223,8 +237,9 @@ def diagnose_minima(minima):
     nOk = 0
     for minimum in minima:
         i += 1
-        if int(minimum["Status"]) != 0:
-            print("minimum {:d} has status {:d} ".format(i,int(minimum["Status"])))
+        status = int(minimum["Status"])
+        if status != 0:
+            print("minimum {:d} has status {:d}: {:s} (NLL={:g}, edm={:g}, Nfcn={:d}, time={:s})".format(i,status,statusCodes[status],minimum["NLL"][0]["VAL"],minimum["Edm"][0]["VAL"],minimum["Nfcn"][0]["VAL"],minimum["Timing"][0]["RealTime"]))
         else:
             nOk += 1
     if nOk == i:

@@ -48,6 +48,7 @@ def make_parser():
         "lowTolerance":       Parser(r".*VariableMetric.*\s*Tolerance is not sufficient, continue the minimization",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*Edm\s*is\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")")
         })),
+        "lowTolerance2":  Parser(r".*VariableMetric.*Tolerance not sufficient, continue minimization; Edm (?P<edm>"+NUM+") Required (?P<required>"+NUM+")"),
         "iterationsFinishNoConvergence": Parser(r".*VariableMetric.*\s*[Ii]terations finish without convergence.*",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*: \s*edm[val]*\s*=\s*(?P<edm>"+NUM+")"),
             "edmreq":            Parser(r"Info in\s*requested\s*: edmval\s*=\s*(?P<edmreq>"+NUM+")"),
@@ -59,7 +60,6 @@ def make_parser():
         "NoImprovementInLineSearch": Parser(r".*VariableMetricBuilder: no improvement in line search"),
         "Iteration":          Parser(r".*VariableMetric.*\s*(?P<it>\d+)\s+-\s+FCN\s+=\s+(?P<FCN>"+NUM+")\s+Edm\s+=\s+(?P<Edm>"+NUM+")\s+NCalls\s+=\s+(?P<NCalls>\d+)"),
         "AfterHessian":       Parser(r".*VariableMetric.*\s*After Hessian"),
-        "ToleranceInsufficent":  Parser(r".*VariableMetric.*Tolerance not sufficient, continue minimization; Edm (?P<edm>"+NUM+") Required (?P<required>"+NUM+")"),
         "NotConverged" :      Parser(r".*Minimization did NOT converge, Edm is above max"),
         "FlatLH":             Parser(r"Minuit2:0: RuntimeWarning: VariableMetricBuilder No improvement in line search"),
         "runHesseVerbose":           Parser(r".*MnSeedGenerator[:]? run Hesse\s*-\s*new state:\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
