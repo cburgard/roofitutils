@@ -76,8 +76,9 @@ def make_parser():
         "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser(hessestate))}
 
     minos_migrad = extend({
+        "parameter_fixed":Parser(r"\s*- parameter (?P<paridx>\d+) fixed to (?P<val>"+NUM+")"),
         "parameter":Parser(r"Pos (?P<pos>\d+): (?P<parname>.*) = (?P<val>"+NUM+")"),
-        "result":Parser(r".*MnFunctionCross Result after [()23rndMigrad: ]* FCN =\s+(?P<FCN>"+NUM+")\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>\d+)",MetaParser({
+        "result":Parser(r".*MnFunctionCross Result after [new()23rndMigrad: ]* FCN =\s+(?P<FCN>"+NUM+")\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>\d+)",MetaParser({
             "header":Parser(r"Pos\s+\|\s+Name\s+\|\s+type\s+\|\s+Value\s+\|\s+Error\s+[+]/[-]"),
             "parameter":Parser(r"(?P<Pos>\d+)\s+\|\s+(?P<Name>.*)\s+\|\s+(?P<type>\w+)\s+\|\s+(?P<Value>"+NUM+")\s+\|\s+(?P<Error>"+NUM+")")
         })),
@@ -97,7 +98,7 @@ def make_parser():
         })),
         "limit":       Parser(r".*Minos\s*Parameter is at (?P<direction>\w+) limit. : par_name = (?P<parname>.*)"),
         "limit2":       Parser(r".*Minos:\s*Parameter\s*:\s*(?P<parname>.*)\s*is at (?P<direction>\w+) limit"),                        
-        "mncross-migrad":Parser(r".*MnFunctionCross[: ]+Run Migrad [again (23rnd)]*with fixed parameters:",MetaParser(minos_migrad)),
+        "mncross-migrad":Parser(r".*MnFunctionCross[: ]+Run Migrad .*:",MetaParser(minos_migrad)),
         "result":Parser(r"Minos: (?P<direction>\w+) error for parameter (?P<parname>.+)\s+:\s+(?P<val>"+NUM+")"),
         "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
         "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),
