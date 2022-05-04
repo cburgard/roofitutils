@@ -75,6 +75,10 @@ void RooFitUtils::ExtendedModel::initialise() {
     throw std::runtime_error(
         TString::Format("unable to open file '%s'", fFileName.c_str()).Data());
   }
+  
+  if(!fPenalty) {
+    fPenalty = new RooArgSet();
+  }
 
   TObject *ws = fFile->Get(fWsName.c_str());
   if (!ws) {

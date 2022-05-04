@@ -50,7 +50,6 @@ def buildModel(args):
     # Load the model
     import ROOT
 
-
     model = ROOT.RooFitUtils.ExtendedModel("model", args["inFileName"], args["wsName"],
                                            args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot",""),
                                            args.get("binnedLikelihood",True))
@@ -59,7 +58,7 @@ def buildModel(args):
     if pois: model.GetModelConfig().SetParametersOfInterest(",".join(pois))
     
     if args.get("penalty",False):
-        npens = len(args.penalty)
+        npens = len(args["penalty"])
         ws = model.GetWorkspace()
         if npens > 0:
             for ipens in range(0, npens):
