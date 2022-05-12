@@ -58,6 +58,9 @@ if __name__ == '__main__':
     parser.add_argument( "--no-show-sigma", action='store_false', dest="show_sigma", help="Do not show sigma levels.")
     parser.add_argument( "--show-percent", action='store_true', dest="show_percent", help="Show percent levels.", default=None)
     parser.add_argument( "--no-show-percent", action='store_false', dest="show_percent", help="Do not show percent levels.")
+    parser.add_argument( "--write-hepdata", dest="hepdata", action="store_true", help="Write the hepdata entry to the given filename.", default=False)
+    parser.add_argument( "--write-hepdata-contours", dest="hepdata_contours", action="store_true", help="Write the contours as a hepdata entry to the given filename.", default=False)        
+    
 
     args = parser.parse_args()
 
@@ -96,6 +99,9 @@ if __name__ == '__main__':
             else:
                 labels = args.labels
             writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})],axis_options=args.options,append=readfile(args.append))
+            if args.hepdata:
+                from RooFitUtils.hepdatawriter import writescans as scans2hepdata
+                scans2hepdata(scans1d)
         elif len(scans2d) > 0:
             if not args.labels:
                 labels = list(scans2d.keys())[0]
@@ -104,6 +110,12 @@ if __name__ == '__main__':
             if args.drawpoints:
                 addscanpoints(scans2d,points)
             writescans2d(args.atlas,labels,scans2d,args.output,points,args.npoints,getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth,flipAxes=args.flipAxes,otherscans2d=[mergeresults.get("scans",{})],axis_options=args.options,append=readfile(args.append))
+            if args.hepdata_contours:
+                from RooFitUtils.hepdatawriter import writecontours as contours2hepdata
+                contours2hepdata(scans2d,npoints=args.npoints,percent_thresholds=getPercentages(args,2),contourAlg=args.contourAlg,smooth=args.smooth)
+            elif args.hepdata:
+                from RooFitUtils.hepdatawriter import writescans as scans2hepdata
+                scans2hepdata(scans2d)            
         else:
             for p in pois:
                 print("no scans found for pois '"+",".join(p)+"'")
