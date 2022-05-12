@@ -445,11 +445,11 @@ def writescans2d(atlas,labels,scans2d,outfilename,extrapoints,npoints,percent_th
             outfile.write("yticklabel={\\pgfmathprintnumber[fixed,assume math mode=true]{\\tick}},\n")
         if len(labels) == 2:
             if flipAxes:
-                outfile.write("    ylabel=$"+texify(labels[0]).strip("$")+"$,\n")
-                outfile.write("    xlabel=$"+texify(labels[1]).strip("$")+"$,\n")
-            else:
-                outfile.write("    xlabel=$"+texify(labels[0]).strip("$")+"$,\n")
-                outfile.write("    ylabel=$"+texify(labels[1]).strip("$")+"$,\n")
+                outfile.write("    ylabel={"+texify(labels[0],math=True)+"},\n")
+                outfile.write("    xlabel={"+texify(labels[1],math=True)+"},\n")
+            else:                                           
+                outfile.write("    xlabel={"+texify(labels[0],math=True)+"},\n")
+                outfile.write("    ylabel={"+texify(labels[1],math=True)+"},\n")
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)
         for pnamelist,scan in scans2d.items():

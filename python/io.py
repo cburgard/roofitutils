@@ -11,10 +11,13 @@ def texdef(a,b):
     global latex_aliases
     latex_aliases[a] = b
 
-def texify(string):
+def texify(string,math=False):
     if string in latex_aliases.keys():
         return latex_aliases[string]
-    return string.replace("_","\\_")
+    if math:
+        return "\\ensuremath{"+string.strip("$")+"}"
+    else:
+        return string.replace("_","\\_")
 
 def dict2mat(mat,parnames=None):
     if not parnames:
