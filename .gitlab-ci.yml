@@ -37,7 +37,7 @@ variables:
     entrypoint: [""]
   before_script:
     - apt-get update
-    - apt-get install -y python-minimal
+    - apt-get install -y python-is-python3
     
 .atlstats: &atlstats
   image: 
