@@ -183,7 +183,12 @@ namespace {
 namespace {
   class RooMinimizerHack : public RooMinimizer{
   public:
-    auto* getFitterFcn(){ return this->fitterFcn(); }
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,10,0)
+    RooMinimizerFcn*
+#else
+    auto*
+#endif
+    getFitterFcn(){ return this->fitterFcn(); }
   };
 }
 #endif
