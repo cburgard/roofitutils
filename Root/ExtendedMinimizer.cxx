@@ -33,11 +33,6 @@ ClassImp(RooFitUtils::ExtendedMinimizer)
 #include "Minuit2/Minuit2Minimizer.h"
 #include "TMinuit.h"
 
-#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
-typedef RooMinimizerFcn RooAbsMinimizerFcn;
-#endif
-
-
 namespace {
   //somewhat complex but apparently standard conform hack to access RooMinimizer::getNPar.
   template <typename RooMinimizerTag>
@@ -157,13 +152,6 @@ namespace {
 
 
 namespace {
-  class RooMinimizerHack : public RooMinimizer{
-  public:
-    RooAbsMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
-  };
-}
-
-namespace {
   //somewhat complex but apparently standard conform hack to access RooAbsPdf::_norm.
   template <typename RooAbsPdfTag>
   struct RooAbsPdfHackResult {
@@ -190,6 +178,17 @@ namespace {
   template class RooAbsPdfRob<RooAbsPdf_norm, &RooAbsPdf::_norm>;
 }
 
+ 
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+namespace {
+  class RooMinimizerHack : public RooMinimizer{
+  public:
+    RooAbsMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
+  };
+}
+#endif
+
+
 namespace {
   int countFloatParams(RooArgSet* args){
     int n = 0;
@@ -205,8 +204,12 @@ namespace {
   int countFloatParams(RooMinimizer* minimizer){
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
-  RooAbsMinimizerFcn* fitterFcn(RooMinimizer* minimizer){
+  auto* fitterFcn(RooMinimizer* minimizer){
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
     return ((::RooMinimizerHack*) minimizer)->getFitterFcn();
+#else
+    return ((::RooMinimizer*) minimizer)->getMultiGenFcn();
+#endif
   }
   bool init(ROOT::Fit::Fitter* fitter){
     return (fitter->*RooFitterHackResult<RooFitterInit>::ptr)();    
@@ -268,7 +271,9 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     // the more complicated case - not at minimum, need to do some gynmastics to get access to hesse matrix
     std::cout << "ExtendedMinimizer::runHesse(" << fName << ") running standalone (this might take a while) ... "<<std::endl;        
     auto* fcn = fitterFcn(fMinimizer);
+    #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
     fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
+    #endif
     fitter->SetFCN(*dynamic_cast<RooMinimizerFcn*>(fcn));
     fitter->EvalFCN();          
     init(fitter);
