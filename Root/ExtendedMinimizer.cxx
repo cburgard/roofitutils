@@ -183,7 +183,7 @@ namespace {
 namespace {
   class RooMinimizerHack : public RooMinimizer{
   public:
-    RooAbsMinimizerFcn* getFitterFcn(){ return this->fitterFcn(); };
+    auto* getFitterFcn(){ return this->fitterFcn(); }
   };
 }
 #endif
