@@ -4,5 +4,7 @@ try:
     ROOT.gSystem.Load("libRooFitUtils.so")
     ExtendedModel = ROOT.RooFitUtils.ExtendedModel
     ExtendedMinimizer = ROOT.RooFitUtils.ExtendedMinimizer
-except ImportError as err:
+except AttributeError:
+    pass
+except ImportError:
     pass

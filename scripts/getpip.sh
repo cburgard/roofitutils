@@ -3,7 +3,7 @@ if ! command -v pip &> /dev/null; then
     python -c "import sys; from RooFitUtils.util import version_greater_equal ; exit(version_greater_equal(sys.argv[1],sys.argv[2]))" $PYTHONVER 3.7
     PYTHONVER_GE_37=$?
     rm -rf get-pip.py
-    if [ -eq ${PYTHONVER_GE_37} 1 ]; then
+    if [  ${PYTHONVER_GE_37} -eq 1 ]; then
 	wget -nv https://bootstrap.pypa.io/pip/get-pip.py
     else
 	wget -nv https://bootstrap.pypa.io/pip/$PYTHONVER/get-pip.py
