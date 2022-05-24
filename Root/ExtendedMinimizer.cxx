@@ -178,17 +178,19 @@ namespace {
   template class RooAbsPdfRob<RooAbsPdf_norm, &RooAbsPdf::_norm>;
 }
 
- 
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,10,0)
+#define FitterFcn RooMinimizerFcn
+#else
+#define FitterFcn auto
+#endif
+
+
 #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
 namespace {
   class RooMinimizerHack : public RooMinimizer{
   public:
-#if ROOT_VERSION_CODE < ROOT_VERSION(6,10,0)
-    RooMinimizerFcn*
-#else
-    auto*
-#endif
-    getFitterFcn(){ return this->fitterFcn(); }
+    FitterFcn* getFitterFcn(){ return this->fitterFcn(); }
   };
 }
 #endif
@@ -209,7 +211,7 @@ namespace {
   int countFloatParams(RooMinimizer* minimizer){
     return (minimizer->*RooMinimizerHackResult<RooMinimizergetNPar>::ptr)();
   }
-  auto* fitterFcn(RooMinimizer* minimizer){
+  FitterFcn* fitterFcn(RooMinimizer* minimizer){
 #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
     return ((::RooMinimizerHack*) minimizer)->getFitterFcn();
 #else
