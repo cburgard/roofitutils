@@ -96,7 +96,6 @@ void RooFitUtils::ExtendedModel::initialise() {
       ss << "    '" << k->GetName() << "' (" << k->GetClassName() << ")\n";
     }
     if(thekey && onlyOne){
-      thekey->Print();
       ws = thekey->ReadObj();
       coutW(InputArguments) << "unable to load object '" << fWsName << "', but found only one RooWorkspace in the file - using '" << ws->GetName() << "' instead!" << std::endl;
     }

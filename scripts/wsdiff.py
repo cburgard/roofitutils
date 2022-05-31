@@ -113,8 +113,8 @@ def compare(first,second):
     f = removeAll(first,ignoreComponents)
     s = removeAll(second,ignoreComponents)
     if f == s: return True
-    if f.startswith(s): return True
-    if s.startswith(f): return True
+    if f.startswith(s) and f[len(s)]=="_": return True
+    if s.startswith(f) and s[len(f)]=="_": return True
     return False
 
 def compareNames(first,second):
@@ -144,7 +144,7 @@ def findByName(somelist,name):
             return obj
     return None
 
-def diffObjects(label,firstvars,secondvars):
+def diffObjects(objtype,label,firstvars,secondvars):
     missing_in_second = []
     for firstvar in firstvars:
         secondvar = findByName(secondvars,firstvar.GetName())
@@ -152,7 +152,7 @@ def diffObjects(label,firstvars,secondvars):
             missing_in_second.append(firstvar.GetName())
 
     if len(missing_in_second)>0:
-        print("the following objects are missing in "+label+":")
+        print("the following "+objtype+" are missing in "+label+":")
         print(",".join(sorted(missing_in_second)))
 
 def diffVarVariations(firstlabel,firstvars,firstpdf,firstnset,secondlabel,secondvars,secondpdf,secondnset):
@@ -179,8 +179,6 @@ def diffVarVariations(firstlabel,firstvars,firstpdf,firstnset,secondlabel,second
         a.setVal(aval)
         b.setVal(bval)
         if not isclose(na,nb,tolerance) or not isclose(nahi,nbhi,tolerance) or not isclose(nalo,nblo,tolerance):
-            firstpdf.Print("t")
-            print(firstpdf.getVal(),secondpdf.getVal())
             print("{:s}/{:s}:{:s}/{:s} {:f} {:f} {:f} : {:f} {:f} {:f}".format(firstpdf.GetName(),secondpdf.GetName(),a.GetName(),b.GetName(),na,nahi-na,nalo-na,nb,nbhi-nb,nblo-nb))
 
 
@@ -444,9 +442,9 @@ if __name__ == "__main__":
 
     if args.models:
         print("== models ==")
-        diffObjects(first.GetTitle(),secondmodels,firstmodels)
+        diffObjects("Models",first.GetTitle(),secondmodels,firstmodels)
         print("")
-        diffObjects(second.GetTitle(),firstmodels,secondmodels)
+        diffObjects("Models",second.GetTitle(),firstmodels,secondmodels)
         print("")
         for firstmc,secondmc in zip(firstmodels,secondmodels):
             diffPdfTrees(firstmc.GetPdf(),secondmc.GetPdf())
@@ -454,13 +452,13 @@ if __name__ == "__main__":
             print("POIs:")
             firstpois = makelist(firstmc.GetParametersOfInterest())
             secondpois = makelist(secondmc.GetParametersOfInterest())
-            diffObjects(first.GetTitle(),firstpois,secondpois)
-            diffObjects(second.GetTitle(),secondpois,firstpois)
+            diffObjects("POIs",first.GetTitle(),firstpois,secondpois)
+            diffObjects("POIs",second.GetTitle(),secondpois,firstpois)
             print("NPs:")
             firstnps = makelist(firstmc.GetNuisanceParameters())
             secondnps = makelist(secondmc.GetNuisanceParameters())
-            diffObjects(first.GetTitle(),firstnps,secondnps)
-            diffObjects(second.GetTitle(),secondnps,firstnps)
+            diffObjects("NPs",first.GetTitle(),firstnps,secondnps)
+            diffObjects("NPs",second.GetTitle(),secondnps,firstnps)
             print("Obs.:")
             firstobs = makelist(firstmc.GetObservables())
             secondobs = makelist(secondmc.GetObservables())
@@ -476,16 +474,16 @@ if __name__ == "__main__":
                     obs.setConstant(True)
                 if obs.InheritsFrom(ROOT.RooAbsCategory.Class()):
                     obs.setIndex(0)
-            diffObjects(first.GetTitle(),firstobs,secondobs)
-            diffObjects(second.GetTitle(),secondobs,firstobs)
+            diffObjects("Obs",first.GetTitle(),firstobs,secondobs)
+            diffObjects("Obs",second.GetTitle(),secondobs,firstobs)
 
     if args.vars:
         print("\n\n== variables ==")
         firstvars = makelist(first.allVars())
         secondvars = makelist(second.allVars())
-        diffObjects(first.GetTitle(),secondvars,firstvars)
+        diffObjects("Variables",first.GetTitle(),secondvars,firstvars)
         print("")
-        diffObjects(second.GetTitle(),firstvars,secondvars)
+        diffObjects("Variables",second.GetTitle(),firstvars,secondvars)
         print("")
         if args.variations:
             for firstmc,secondmc in zip(firstmodels,secondmodels):
@@ -495,28 +493,19 @@ if __name__ == "__main__":
         print("\n\n== functions ==")
         firstfuncs = makelist(first.allFunctions())
         secondfuncs = makelist(second.allFunctions())
-        diffObjects(second.GetTitle(),firstfuncs,secondfuncs)
+        diffObjects("Functions",second.GetTitle(),firstfuncs,secondfuncs)
         print("")
-        diffObjects(first.GetTitle(),secondfuncs,firstfuncs)
+        diffObjects("Functions",first.GetTitle(),secondfuncs,firstfuncs)
         print("")
         diffFuncVals(first.GetTitle(),firstfuncs,second.GetTitle(),secondfuncs)
 
     if args.data:
-        print("\n\n== embedded datasets ==")
-        firstdata = first.allEmbeddedData()
-        seconddata = second.allEmbeddedData()
-#        diffObjects(second.GetTitle(),firstdata,seconddata)
-        print("")
-#        diffObjects(first.GetTitle(),seconddata,firstdata)
-        print("")
-        diffDataVals(first.GetTitle(),firstdata,second.GetTitle(),seconddata,first,second)
-
         print("\n\n== datasets ==")
         firstdata = first.allData()
         seconddata = second.allData()
-        diffObjects(second.GetTitle(),firstdata,seconddata)
+        diffObjects("Datasets",second.GetTitle(),firstdata,seconddata)
         print("")
-        diffObjects(first.GetTitle(),seconddata,firstdata)
+        diffObjects("Datasets",first.GetTitle(),seconddata,firstdata)
         print("")
         diffDataVals(first.GetTitle(),firstdata,second.GetTitle(),seconddata,first,second)
 
@@ -524,7 +513,7 @@ if __name__ == "__main__":
         print("\n\n== generic objects ==")
         firstfuncs = makelist(first.allGenericObjects())
         secondfuncs = makelist(second.allGenericObjects())
-        diffObjects(second.GetTitle(),firstfuncs,secondfuncs)
+        diffObjects("Objects",second.GetTitle(),firstfuncs,secondfuncs)
         print("")
-        diffObjects(first.GetTitle(),secondfuncs,firstfuncs)
+        diffObjects("Objects",first.GetTitle(),secondfuncs,firstfuncs)
 
