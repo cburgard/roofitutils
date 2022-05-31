@@ -175,7 +175,7 @@ def buildMinimizer(args,model):
     arglist = ROOT.RooLinkedList()
     for arg in argelems: arglist.Add(arg)
 
-    minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model,arglist)
+    minimizer = ROOT.RooFitUtils.ExtendedMinimizer("minimizer", model, arglist)
     return minimizer
 
 

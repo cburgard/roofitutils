@@ -890,7 +890,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
         RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
         fNll = nllpen;
       }
-      
+
       nllval = fNll->getVal();
     } catch (std::exception& ex){
       throw ex;
