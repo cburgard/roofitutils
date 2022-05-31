@@ -676,8 +676,10 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
   fModel = model;
   // Constructor
   RooLinkedList newargList(argList);
-  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-  newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  if(model->GetGlobalObservables()){
+    fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+    newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  }
   fPenaltyMini = model->GetPenalty();
   parseNllConfig(newargList);
   parseFitConfig(newargList);
@@ -693,10 +695,12 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
   fModel = model;
   // Constructor
   RooLinkedList argList;
-  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-  argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
-  parseNllConfig(argList);
+  if(model->GetGlobalObservables()){  
+    fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+    argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  }
   fPenaltyMini = model->GetPenalty();
+  parseNllConfig(argList);
 }
 
 

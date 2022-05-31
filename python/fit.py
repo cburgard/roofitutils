@@ -154,14 +154,16 @@ def buildMinimizer(args,model):
                 ROOT.RooFitUtils.ExtendedMinimizer.MaxIterations(50*pdf.getVariables().getSize()),
                 ROOT.RooFitUtils.ExtendedMinimizer.MaxCalls(5000*pdf.getVariables().getSize()),                
                 ROOT.RooFitUtils.ExtendedMinimizer.Verbose(verbosity[args.get("loglevel","DEBUG")]),
-                ROOT.RooFit.Constrain(nuis),
-                ROOT.RooFit.GlobalObservables(globs),
                 ROOT.RooFit.NumCPU(args.get("numCPU",1), args.get("mpStrategy",3)),
                 ROOT.RooFit.Offset(args.get("offsetting",True)),
                 ROOT.RooFit.Optimize(constOpt),
                 ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
+    if globs:
+        argelems.append(ROOT.RooFit.GlobalObservables(globs))
+    elif nuis:
+        argelems.append(ROOT.RooFit.Constrain(nuis))
     if args.get("batchMode"):
         argelems.append(ROOT.RooFit.BatchMode(args.get("batchMode")))
     if args.get("findSigma",False):
