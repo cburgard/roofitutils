@@ -55,7 +55,7 @@ def main(args):
         if "name" in channel.keys(): key = channel["name"]
         channelname = stripname(key,args.strip_name_components)
         for c in channelnames:
-            if c.beginswith(channelname):
+            if c.startswith(channelname):
                 channelname = c
                 
         out_channel = {"name":channelname,"samples":[]}
@@ -80,6 +80,7 @@ def main(args):
             modifiernames = set()
             if "histogramSystematics" in sample.keys():
                 for key,histoSys in sample["histogramSystematics"].items():
+                    if any([ re.match(b,key) for b in args.sys_blacklist]): continue
                     nps.add(key)
                     if args.defactorize and "overallSystematics" in sample.keys() and key in sample["overallSystematics"].keys():
                         overallSys = sample["overallSystematics"][key]
@@ -92,7 +93,8 @@ def main(args):
                         out_sample["modifiers"].append({"type":"histosys","name":key,"data":{"hi_data":histoSys["dataHigh"]["counts"],"lo_data":histoSys["dataLow"]["counts"]}})
             if "overallSystematics" in sample.keys():
                 for key,overallSys in sample["overallSystematics"].items():
-                    if key in modifiernames: continue
+                    if any([ re.match(b,key) for b in args.sys_blacklist]): continue
+                    if args.defactorize and key in modifiernames: continue
                     nps.add(key)
                     out_sample["modifiers"].append({"type":"normsys","name":key,"data":{"hi":overallSys["high"],"lo":overallSys["low"]}})
 
@@ -104,11 +106,15 @@ def main(args):
         measurement["config"]["parameters"].append({"bounds":[[0,50]],"fixed":False,"inits":[1.],"name":par})
 
     # some post-processing
-    if args.fix_other_pois:
-        for p in measurement["config"]["parameters"]:
+    for p in measurement["config"]["parameters"]:
+        pname = p["name"]
+        if pname in input_json["variables"].keys():
+            if "const" in input_json["variables"][pname].keys():
+                p["fixed"] = input_json["variables"][pname]["const"]
+        if args.fix_other_pois:
             for poi in pois:
                 if poi == args.poi: continue
-                if p["name"] == poi:
+                if pname == poi:
                     p["fixed"] = True            
 
     # write output
@@ -120,7 +126,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="format converter between ROOT JSON and pyhf JSON")
     parser.add_argument("--poi",default=None)
     parser.add_argument("--fix-other-pois",action="store_true")
-    parser.add_argument("--nf-blacklist",nargs="+",default=["binWidth_.*"],dest="nf_blacklist")
+    parser.add_argument("--nf-blacklist",nargs="+",default=["binWidth_.*","one"],dest="nf_blacklist")
+    parser.add_argument("--sys-blacklist",nargs="+",default=["zero"],dest="sys_blacklist")    
     parser.add_argument("--strip-name-components",nargs="+",default=[])
     parser.add_argument("--defactorize",action="store_true",help="merge OverallSys and HisotSys of the same name",default=False)
     parser.add_argument("input",help="RooFit JSON file")
