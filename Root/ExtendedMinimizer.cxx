@@ -10,7 +10,6 @@
 #include "TMath.h"
 #include "TRandom.h"
 #include "TMatrixDSymEigen.h"
-#include "RooMinimizerFcn.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
@@ -18,6 +17,10 @@
 #include "RooMinimizer.h"
 #include "RooNLLVar.h"
 #include "RooRealVar.h"
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+#include "RooMinimizerFcn.h"
+#endif
 
 #include "RooStats/RooStatsUtils.h"
 
@@ -281,7 +284,7 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
     fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
     #endif
-    fitter->SetFCN(*dynamic_cast<RooMinimizerFcn*>(fcn));
+    fitter->SetFCN(*fcn);
     fitter->EvalFCN();          
     init(fitter);
     minimizer = fitter->GetMinimizer();
