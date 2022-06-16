@@ -10,7 +10,6 @@
 #include "TMath.h"
 #include "TRandom.h"
 #include "TMatrixDSymEigen.h"
-#include "RooMinimizerFcn.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
@@ -21,6 +20,9 @@
 
 #include "RooDataHist.h"
 #include "RooDataSet.h"
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+#include "RooMinimizerFcn.h"
+#endif
 
 #include "RooStats/RooStatsUtils.h"
 
@@ -284,7 +286,7 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
     fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
     #endif
-    fitter->SetFCN(*dynamic_cast<RooMinimizerFcn*>(fcn));
+    fitter->SetFCN(*fcn);
     fitter->EvalFCN();          
     init(fitter);
     minimizer = fitter->GetMinimizer();
@@ -679,8 +681,10 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
   fModel = model;
   // Constructor
   RooLinkedList newargList(argList);
-  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-  newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  if(model->GetGlobalObservables()){
+    fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+    newargList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  }
   fPenaltyMini = model->GetPenalty();
   parseNllConfig(newargList);
   parseFitConfig(newargList);
@@ -696,10 +700,12 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char* minimizerName, Roo
   fModel = model;
   // Constructor
   RooLinkedList argList;
-  fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
-  argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
-  parseNllConfig(argList);
+  if(model->GetGlobalObservables()){  
+    fOwnedArgs.push_back(RooFit::GlobalObservables(*(model->GetGlobalObservables())));
+    argList.Add(&fOwnedArgs.at(fOwnedArgs.size()-1));
+  }
   fPenaltyMini = model->GetPenalty();
+  parseNllConfig(argList);
 }
 
 
@@ -901,7 +907,7 @@ void RooFitUtils::ExtendedMinimizer::setup() {
         RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
         fNll = nllpen;
       }
-      
+
       nllval = fNll->getVal();
     } catch (std::exception& ex){
       throw ex;
