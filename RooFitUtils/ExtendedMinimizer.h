@@ -176,6 +176,9 @@ public:
   static RooCmdArg ReuseNLL(Bool_t flag = kTRUE) {
     return RooCmdArg("ReuseNLL", flag, 0, 0, 0, 0, 0, 0, 0);
   }
+  static RooCmdArg UseChi2(Bool_t flag = kTRUE) {
+    return RooCmdArg("UseChi2", flag, 0, 0, 0, 0, 0, 0, 0);
+  }
   template <class A> int parseFitConfig(const A &cmdList);
   template <class A> int parseNllConfig(const A &cmdList);
 
@@ -228,6 +231,7 @@ protected:
   Int_t fEigen;
   Int_t fReuseMinimizer;
   Int_t fReuseNLL;
+  Int_t fChi2;
   Int_t fMaxCalls;
   Int_t fMaxIterations;  
   Double_t fEps;
