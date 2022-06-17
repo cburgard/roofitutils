@@ -387,11 +387,15 @@ def collectresult_txt(results,filename,label,**kwargs):
         if p in MLEs.keys():
             scans[p][label][MLEs[p][label][0]]=minnll;
     
-                
+def file_starts_with(fname,sequence):
+    with open(fname,"rt") as thefile:
+        return next(thefile).startswith(sequence)
+        
+    
 def collectresult(results,filename,label,**kwargs):
     import re
     if os.path.isfile(filename):
-        if filename.endswith(".json"):
+        if filename.endswith(".json") or file_starts_with(filename,"{"):
             collectresult_json(results,filename,label,**kwargs)
         elif filename.endswith(".root"):
             collectresult_root(results,filename,label,**kwargs)
