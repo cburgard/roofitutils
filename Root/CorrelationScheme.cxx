@@ -87,22 +87,26 @@ void RooFitUtils::CorrelationScheme::CorrelateParameter(
       assert(thisOldParameterNamePlusMeasurement.Contains(")"));
     }
 
-    TObjArray *thisOldParameterNamePlusMeasurementArray =
+    if(thisOldParameterNamePlusMeasurement.Contains("::")){
+      TObjArray *thisOldParameterNamePlusMeasurementArray =
         thisOldParameterNamePlusMeasurement.Tokenize("::");
-    TString thisMeasurement =
+      TString thisMeasurement =
         ((TObjString *)thisOldParameterNamePlusMeasurementArray->At(0))
-            ->GetString();
-    TString thisOldParameter =
+	->GetString();
+      TString thisOldParameter =
         ((TObjString *)thisOldParameterNamePlusMeasurementArray->At(1))
-            ->GetString();
-
-    RenameParameter(thisMeasurement, thisOldParameter, NewParameterName,
-                    thisConstraintType);
-
+	->GetString();
+      RenameParameter(thisMeasurement, thisOldParameter, NewParameterName,
+		      thisConstraintType);
+      thisOldParameterNamePlusMeasurementArray->Delete();
+      delete thisOldParameterNamePlusMeasurementArray;
+    } else {
+      for(auto it:fCorrelationMap){
+	RenameParameter(it.first.c_str(), thisOldParameterNamePlusMeasurement, NewParameterName,
+			thisConstraintType);
+      }
+    }
     itrPars += offset;
-
-    thisOldParameterNamePlusMeasurementArray->Delete();
-    delete thisOldParameterNamePlusMeasurementArray;
   }
 
   allOldParameterNamePlusMeasurementArray->Delete();

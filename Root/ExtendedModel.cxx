@@ -10,8 +10,10 @@
 
 #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
 #include "RooNameSet.h"
-#else
+#elif ROOT_VERSION_CODE < ROOT_VERSION(6,27,0)
 #include "RooFitLegacy/RooNameSet.h"
+#else
+#define HAS_NO_RooNameSet
 #endif
 
 #include "RooFitUtils/ExtendedModel.h"
@@ -597,12 +599,21 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
   // Set initial errors of model parameters depending on constraint terms
   RooArgSet *AllConstraints = new RooArgSet();
 
+#ifndef HAS_NO_RooNameSet
   if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
                            RooNameSet(*fData->get()).content()))) {
     // Retrieve constraints from cache
     const RooArgSet *constr = fWorkspace->set(
         Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
              RooNameSet(*fData->get()).content()));
+#else
+  if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
+                           RooHelpers::getColonSeparatedNameString(*fData->get())))) {
+    // Retrieve constraints from cache
+    const RooArgSet *constr = fWorkspace->set(
+        Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
+             RooHelpers::getColonSeparatedNameString(*fData->get())));
+#endif    
     AllConstraints->add(*constr);
     delete constr;
   } else {

@@ -6,7 +6,7 @@ from RooFitUtils.util import superset
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    parser = ArgumentParser("plot a likelihood scan")
+    parser = ArgumentParser("plot the results of a multi-POI fit")
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.txt'),help="text files with the input information",required=True)
     parser.add_argument("-o", "--output",type=str,help="output file name",default="scan.tex",required=True)
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)

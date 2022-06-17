@@ -7,6 +7,7 @@
 #include "TRegexp.h"
 #include "TString.h"
 
+#include "RooSetProxy.h"
 #include "RooBinning.h"
 #include "RooFitResult.h"
 #include "RooMinimizer.h"

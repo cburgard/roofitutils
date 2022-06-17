@@ -10,7 +10,6 @@
 #include "TMath.h"
 #include "TRandom.h"
 #include "TMatrixDSymEigen.h"
-#include "RooMinimizerFcn.h"
 
 #include "RooCmdConfig.h"
 #include "RooFitResult.h"
@@ -18,6 +17,12 @@
 #include "RooMinimizer.h"
 #include "RooNLLVar.h"
 #include "RooRealVar.h"
+
+#include "RooDataHist.h"
+#include "RooDataSet.h"
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
+#include "RooMinimizerFcn.h"
+#endif
 
 #include "RooStats/RooStatsUtils.h"
 
@@ -281,7 +286,7 @@ int RooFitUtils::ExtendedMinimizer::runHesse(RooFitUtils::ExtendedMinimizer::Res
     #if ROOT_VERSION_CODE < ROOT_VERSION(6,25,0)
     fcn->Synchronize(fitter->Config().ParamsSettings(),fOptConst,0);
     #endif
-    fitter->SetFCN(*dynamic_cast<RooMinimizerFcn*>(fcn));
+    fitter->SetFCN(*fcn);
     fitter->EvalFCN();          
     init(fitter);
     minimizer = fitter->GetMinimizer();
@@ -729,7 +734,7 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
       fOffset(0), fOptConst(2), fVerbose(0), fSave(0), fTimer(1),
       fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinimize(1), fMinos(0),
       fNumee(5), fDoEEWall(1), fRetry(0), fEigen(0), fReuseMinimizer(0),
-      fReuseNLL(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), // 1sigma 1dof
+      fReuseNLL(0), fChi2(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), // 1sigma 1dof
       fMinimizerType("Minuit2"), fMinimizerAlgo("Migrad") {
   // Constructor
 
@@ -880,7 +885,15 @@ void RooFitUtils::ExtendedMinimizer::setup() {
     }
     double nllval = 0.;
     try {
-      fNll = fPdf->createNLL(*fData, fNllCmdList);
+      if(fChi2){
+	if(fData->InheritsFrom(RooDataSet::Class())){
+	  fNll = fPdf->createChi2(*(RooDataSet*)fData, fNllCmdList);
+	} else if(fData->InheritsFrom(RooDataHist::Class())){
+	  fNll = fPdf->createChi2(*(RooDataHist*)fData, fNllCmdList);
+	}
+      } else {
+	fNll = fPdf->createNLL(*fData, fNllCmdList);
+      }
 
       //here goes the penalty 
       if (fPenaltyMini){
@@ -1012,6 +1025,7 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineInt("eigen", "Eigen", 0, fEigen);
   pc.defineInt("reminim", "ReuseMinimizer", 0, fReuseMinimizer);
   pc.defineInt("renll", "ReuseNLL", 0, fReuseNLL);
+  pc.defineInt("usechi2", "UseChi2", 0, fChi2);  
   pc.defineDouble("eps", "Eps", 0, fEps);
   pc.defineString("mintype", "Minimizer", 0, fMinimizerType.c_str());
   pc.defineString("minalg", "Minimizer", 1, fMinimizerAlgo.c_str());
@@ -1057,6 +1071,7 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fEigen = pc.getInt("eigen");
   fReuseMinimizer = pc.getInt("reminim");
   fReuseNLL = pc.getInt("renll");
+  fChi2 = pc.getInt("usechi2");  
   fEps = pc.getDouble("eps");
   fMinosSet = static_cast<RooArgSet *>(pc.getObject("minosSet"));
   fCondSet = static_cast<RooArgSet *>(pc.getObject("condSet"));
