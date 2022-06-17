@@ -160,7 +160,7 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
-    if globs:
+    if globs and globs.getSize() > 0:
         argelems.append(ROOT.RooFit.GlobalObservables(globs))
     elif nuis:
         argelems.append(ROOT.RooFit.Constrain(nuis))
