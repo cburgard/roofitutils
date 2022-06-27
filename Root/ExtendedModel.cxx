@@ -159,7 +159,7 @@ void RooFitUtils::ExtendedModel::initialise() {
     coutP(InputArguments) << "Grabbing the pdf from the ModelConfig" << std::endl;
     fPdf = (RooAbsPdf *)fModelConfig->GetPdf();
   } else {
-    fPdf = fWorkspace->pdf(fPdfName);
+    fPdf = fWorkspace->pdf(fPdfName.c_str());
   }
   if (!fPdf) {
     coutE(InputArguments) << "Something went wrong when loading the pdf - none given in Model Config, and none named '" << fPdfName << "' available"
