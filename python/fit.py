@@ -51,12 +51,12 @@ def buildModel(args):
     import ROOT
 
     model = ROOT.RooFitUtils.ExtendedModel("model", args["inFileName"], args["wsName"],
-                                           args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot",""),
+                                           args.get("modelConfigName","ModelConfig"), args.get("dataName","asimovData"), args.get("snapshot",""), args.get("pdfName","simPdf"),
                                            args.get("binnedLikelihood",True))
 
     pois = args.get("poi",None)
-    if pois: model.GetModelConfig().SetParametersOfInterest(",".join(pois))
-    
+    if pois and model.GetModelConfig(): model.GetModelConfig().SetParametersOfInterest(",".join(pois))
+
     if args.get("penalty",False):
         npens = len(args["penalty"])
         ws = model.GetWorkspace()
@@ -98,14 +98,14 @@ def buildModel(args):
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.get("profile",[])))
- 
+
     return model
 
 def buildMinimizer(args,model):
     import ROOT
     from RooFitUtils.util import makelist
+
     ws = model.GetWorkspace()
-    mc = model.GetModelConfig()
     allparams = ROOT.RooArgSet()
     nuis = model.GetNuisanceParameters()
     pois = model.GetParametersOfInterest()
@@ -117,6 +117,7 @@ def buildMinimizer(args,model):
     if globs:
         ROOT.RooFitUtils.addArgSet(allparams, globs)
     obs = model.GetObservables()
+
     if args.get("makeParameterSnapshots",False):
        # Save the snapshots of nominal parameters
         print("Saving nominal snapshots.")
@@ -124,7 +125,6 @@ def buildMinimizer(args,model):
         ws.saveSnapshot("nominalNuis", nuis)
         ws.saveSnapshot("nominalPois", pois)
         ws.saveSnapshot("nominalAll", allparams)
-
 
     # Collect POIs
     poiset = ROOT.RooArgSet()
@@ -145,7 +145,7 @@ def buildMinimizer(args,model):
     if findSigma and constOpt > 0:
         print("deactivating constant term optimization: incompatible with findSigma")
         constOpt = 0
-    
+
     argelems = [ROOT.RooFit.Minimizer(args.get("minimizerType","Minuit2"), args.get("minimizerAlgo","Migrad")),
                 ROOT.RooFit.Strategy(args.get("defaultStrategy",2)),
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.get("eps",1e-3)),
@@ -160,6 +160,7 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
+
     if globs and globs.getSize() > 0:
         argelems.append(ROOT.RooFit.GlobalObservables(globs))
     elif nuis:
@@ -216,7 +217,6 @@ def fit(args,model,minimizer):
 
         if args.get("makeParameterSnapshots",False):
             ws = model.GetWorkspace()
-            mc = model.GetModelConfig()
             allparams = ROOT.RooArgSet()
             nuis = model.GetNuisanceParameters()
             allparams.add(nuis)

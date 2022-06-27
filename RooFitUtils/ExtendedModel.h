@@ -29,7 +29,7 @@ public:
   // Constructor and destructor
   ExtendedModel(const std::string &ModelName, const std::string &FileName,
                 const std::string &WsName, const std::string &ModelConfigName,
-                const std::string &DataName, const std::string &SnapshotName,
+                const std::string &DataName, const std::string &SnapshotName, const std::string &PdfName,
                 bool binnedLikelihood = true, RooArgSet* penalty = NULL,
                 const std::string &TagAsMeasurement = "pdf_");
   virtual ~ExtendedModel();
@@ -89,21 +89,22 @@ private:
   std::string fFileName;
   std::string fWsName;
   std::string fModelConfigName;
+  std::string fPdfName;  
   std::string fDataName;
   std::string fSnapshotName;
   bool fBinnedLikelihood;
   std::string fTagAsMeasurement;
 
-  TFile *fFile;
-  RooWorkspace *fWorkspace;
-  RooStats::ModelConfig *fModelConfig;
-  RooAbsPdf *fPdf;
-  RooAbsData *fData;
-  RooArgSet *fNuis;
-  RooArgSet *fGlobs;
-  RooArgSet *fPOIs;
-  RooArgSet *fObs;
-  RooArgSet *fPenalty;
+  TFile *fFile = 0;
+  RooWorkspace *fWorkspace = 0;
+  RooStats::ModelConfig *fModelConfig = 0;
+  RooAbsPdf *fPdf = 0;
+  RooAbsData *fData = 0;
+  RooArgSet *fNuis = 0;
+  RooArgSet *fGlobs = 0;
+  RooArgSet *fPOIs = 0;
+  RooArgSet *fObs = 0;
+  RooArgSet *fPenalty = 0;
   RooArgSet fAllParams;
  
 

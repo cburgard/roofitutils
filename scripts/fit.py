@@ -71,6 +71,7 @@ if __name__ == "__main__":
     arglist.append(basic.add_argument( "--write-workspace", "--writeWorkspace", type=str,    dest="outWsName"                  , help="Filename of the output workspace." , default=None ))
     arglist.append(basic.add_argument( "--write-result", "--writeResult", action='store_true',   dest="writeResult",help="option to write the RooFitResult and HESSE matrix", default=False ))
     arglist.append(basic.add_argument( "--modelconfig", "--modelConfig"   , type=str,     dest="modelConfigName"            , help="MC to load.", default="ModelConfig" ))
+    arglist.append(basic.add_argument( "--pdf", type=str,     dest="pdfName"            , help="Pdf to use.", default="simPdf" ))    
     arglist.append(basic.add_argument( "--log", "--logsave"       , type=str,    dest="logsave"                    , help="saving output as log" , default=None ))
     arglist.append(basic.add_argument( "--print", action='store_true',   dest="printResult",help="option to print the fit result", default=True ))
     arglist.append(basic.add_argument( "--no-print", action='store_false',   dest="printResult",help="option to print the fit result"))        

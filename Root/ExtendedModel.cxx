@@ -44,10 +44,10 @@ ClassImp(RooFitUtils::ExtendedModel)
 RooFitUtils::ExtendedModel::ExtendedModel(
 					  const std::string &ModelName, const std::string &FileName,
 					  const std::string &WsName, const std::string &ModelConfigName,
-					  const std::string &DataName, const std::string &SnapshotName,
+					  const std::string &DataName, const std::string &SnapshotName, const std::string& PdfName,
 					  bool binnedLikelihood, RooArgSet *penalty, const std::string &TagAsMeasurement)
 : TNamed(ModelName.c_str(), ModelName.c_str()), fFileName(FileName),
-  fWsName(WsName), fModelConfigName(ModelConfigName), fDataName(DataName),
+  fWsName(WsName), fModelConfigName(ModelConfigName), fPdfName(PdfName), fDataName(DataName),
   fSnapshotName(SnapshotName), fBinnedLikelihood(binnedLikelihood),
   fTagAsMeasurement(TagAsMeasurement), fPenalty(penalty) {
   // Constructor
@@ -153,19 +153,20 @@ void RooFitUtils::ExtendedModel::initialise() {
     coutE(InputArguments)
         << "Something went wrong when loading the ModelConfig "
         << fModelConfigName << std::endl;
-    throw std::runtime_error(TString::Format("unable to load ModelConfig '%s'",
-                                             fModelConfigName.c_str())
-                                 .Data());
   }
 
-  coutP(InputArguments) << "Grabbing the pdf from the ModelConfig" << std::endl;
-  fPdf = (RooAbsPdf *)fModelConfig->GetPdf();
+  if(fModelConfig){
+    coutP(InputArguments) << "Grabbing the pdf from the ModelConfig" << std::endl;
+    fPdf = (RooAbsPdf *)fModelConfig->GetPdf();
+  } else {
+    fPdf = fWorkspace->pdf(fPdfName);
+  }
   if (!fPdf) {
-    coutE(InputArguments) << "Something went wrong when loading the pdf"
-                          << std::endl;
+    coutE(InputArguments) << "Something went wrong when loading the pdf - none given in Model Config, and none named '" << fPdfName << "' available"
+			  << std::endl;
     throw std::runtime_error("unable to obtain pdf");
   }
-
+  
   fData = (RooAbsData *)(fWorkspace->data(fDataName.c_str()));
   if (!fData) {
     std::stringstream ss;
@@ -177,44 +178,46 @@ void RooFitUtils::ExtendedModel::initialise() {
     throw std::runtime_error(ss.str());
   }
 
-  coutP(InputArguments) << "Loading the nuisance parameters" << std::endl;
-  fNuis = (RooArgSet *)fModelConfig->GetNuisanceParameters();
-  if (!fNuis) {
-    coutE(InputArguments)
+  if(fModelConfig){
+    coutP(InputArguments) << "Loading the nuisance parameters" << std::endl;
+    fNuis = (RooArgSet *)fModelConfig->GetNuisanceParameters();
+    if (!fNuis) {
+      coutE(InputArguments)
         << "Something went wrong when loading the nuisance parameters"
         << std::endl;
-  } else {
-    fAllParams.add(*fNuis);
-  }
-
-  coutP(InputArguments) << "Loading the global observables" << std::endl;
-  fGlobs = (RooArgSet *)fModelConfig->GetGlobalObservables();
-  if (!fGlobs) {
-    coutE(InputArguments)
+    } else {
+      fAllParams.add(*fNuis);
+    }
+    
+    coutP(InputArguments) << "Loading the global observables" << std::endl;
+    fGlobs = (RooArgSet *)fModelConfig->GetGlobalObservables();
+    if (!fGlobs) {
+      coutE(InputArguments)
         << "Something went wrong when loading the global observables"
         << std::endl;
-  } else {
-    fAllParams.add(*fGlobs);
-  }
-
-  coutP(InputArguments) << "Loading the parameters of interest" << std::endl;
-  fPOIs = (RooArgSet *)fModelConfig->GetParametersOfInterest();
-  if (!fPOIs) {
-    coutE(InputArguments)
+    } else {
+      fAllParams.add(*fGlobs);
+    }
+    
+    coutP(InputArguments) << "Loading the parameters of interest" << std::endl;
+    fPOIs = (RooArgSet *)fModelConfig->GetParametersOfInterest();
+    if (!fPOIs) {
+      coutE(InputArguments)
         << "Something went wrong when loading the parameters of interest"
         << std::endl;
-    throw std::runtime_error("unable to obtain list of parameters of interest");
-  }
-	fAllParams.add(*fPOIs);
+      throw std::runtime_error("unable to obtain list of parameters of interest");
+    }
+    fAllParams.add(*fPOIs);
 
-  coutP(InputArguments) << "Loading the observables" << std::endl;
-  fObs = (RooArgSet *)fModelConfig->GetObservables();
-  if (!fObs) {
-    coutE(InputArguments) << "Something went wrong when loading the observables"
-                          << std::endl;
-    throw std::runtime_error("unable to obtain list of observables");
+    coutP(InputArguments) << "Loading the observables" << std::endl;
+    fObs = (RooArgSet *)fModelConfig->GetObservables();
+    if (!fObs) {
+      coutE(InputArguments) << "Something went wrong when loading the observables"
+			    << std::endl;
+      throw std::runtime_error("unable to obtain list of observables");
+    }
   }
-
+  
   if (fSnapshotName != "") {
     coutP(InputArguments) << "Loading snapshots" << std::endl;
     std::vector<std::string> parsedSnapshots = parseString(fSnapshotName, ",");
@@ -248,21 +251,21 @@ void RooFitUtils::ExtendedModel::floatParametersOfInterest(const std::string &fl
 
 void RooFitUtils::ExtendedModel::floatParametersOfInterest(const std::vector<std::string> &parsed) {
   // Float a subset of the POIs at the specified values
-  floatParameters(parsed,fModelConfig->GetParametersOfInterest());
+  if(fModelConfig) floatParameters(parsed,fModelConfig->GetParametersOfInterest());
 }
 
 // _____________________________________________________________________________
 
 void RooFitUtils::ExtendedModel::floatNuisanceParameters(const std::string &floatName) {
   // Float a subset of the nuisance parameters at the specified values
-  floatNuisanceParameters(parseString(floatName, ","));
+  if(fModelConfig) floatNuisanceParameters(parseString(floatName, ","));
 }
 
 // _____________________________________________________________________________
 
 void RooFitUtils::ExtendedModel::floatNuisanceParameters(const std::vector<std::string> &parsed) {
   // Float a subset of the nuisance parameters at the specified values
-  floatParameters(parsed,fModelConfig->GetNuisanceParameters());
+  if(fModelConfig) floatParameters(parsed,fModelConfig->GetNuisanceParameters());
 }
 
 
@@ -277,7 +280,7 @@ void RooFitUtils::ExtendedModel::fixParametersOfInterest(const std::string &fixN
 
 void RooFitUtils::ExtendedModel::fixParametersOfInterest(const std::vector<std::string> &parsed) {
   // Fix a subset of the POIs at the specified values
-  fixParameters(parsed,fModelConfig->GetParametersOfInterest());
+  if(fModelConfig) fixParameters(parsed,fModelConfig->GetParametersOfInterest());
 }
 
 // _____________________________________________________________________________
@@ -291,7 +294,7 @@ void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::string &fixNam
 
 void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
-  floatParameters(parsed,fModelConfig->GetNuisanceParameters());
+  if(fModelConfig) floatParameters(parsed,fModelConfig->GetNuisanceParameters());
 }
 
 // _____________________________________________________________________________
@@ -305,7 +308,7 @@ void RooFitUtils::ExtendedModel::randomizeParametersOfInterest(const std::string
 
 void RooFitUtils::ExtendedModel::randomizeParametersOfInterest(const std::vector<std::string> &parsed) {
   // Randomize a subset of the POIs at the specified values
-  randomizeParameters(parsed,fModelConfig->GetParametersOfInterest());
+  if(fModelConfig) randomizeParameters(parsed,fModelConfig->GetParametersOfInterest());
 }
 
 // _____________________________________________________________________________
@@ -319,7 +322,7 @@ void RooFitUtils::ExtendedModel::randomizeNuisanceParameters(const std::string &
 
 void RooFitUtils::ExtendedModel::randomizeNuisanceParameters(const std::vector<std::string> &parsed) {
   // Randomize a subset of the nuisance parameters at the specified values
-  randomizeParameters(parsed,fModelConfig->GetNuisanceParameters());
+  if(fModelConfig) randomizeParameters(parsed,fModelConfig->GetNuisanceParameters());
 }
 
 // _____________________________________________________________________________
@@ -618,16 +621,18 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
     delete constr;
   } else {
     // Load information needed to determine attributes from ModelConfig
-    RooAbsPdf *tmpPdf = (RooAbsPdf *)fModelConfig->GetPdf();
-    RooArgSet *tmpAllNuisanceParameters =
+    if(fModelConfig){
+      RooAbsPdf *tmpPdf = (RooAbsPdf *)fModelConfig->GetPdf();
+      RooArgSet *tmpAllNuisanceParameters =
         (RooArgSet *)fModelConfig->GetNuisanceParameters();
-    RooArgSet *tmpAllObservables = (RooArgSet *)fModelConfig->GetObservables();
-
-    // Copies, to keep original sets in place after getAllconstraints call
-    RooArgSet tmpAllNuisanceParameters2 = *tmpAllNuisanceParameters;
-    RooArgSet tmpAllObservables2 = *tmpAllObservables;
-    AllConstraints = tmpPdf->getAllConstraints(
-        tmpAllObservables2, tmpAllNuisanceParameters2, kFALSE);
+      RooArgSet *tmpAllObservables = (RooArgSet *)fModelConfig->GetObservables();
+      
+      // Copies, to keep original sets in place after getAllconstraints call
+      RooArgSet tmpAllNuisanceParameters2 = *tmpAllNuisanceParameters;
+      RooArgSet tmpAllObservables2 = *tmpAllObservables;
+      AllConstraints = tmpPdf->getAllConstraints(
+						 tmpAllObservables2, tmpAllNuisanceParameters2, kFALSE);
+    }
   }
 
   // Take care of the case where we have a product of constraint terms

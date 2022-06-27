@@ -152,6 +152,8 @@ def timestamp(seconds):
 
 def makelist(coll):
     """turn a RooFit collection into a list"""
+    if not coll:
+        return []
     if hasattr(coll,"createIterator"):
         itr = coll.createIterator()
         var = itr.Next()
