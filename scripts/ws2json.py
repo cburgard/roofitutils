@@ -2,7 +2,16 @@
 
 def main(args):
     import ROOT
+
+    for lib in args.libraries:
+        ROOT.gSystem.Load(lib)
+    
     infile = ROOT.TFile.Open(args.infile,"READ")
+
+    if args.recover_file:
+        infile.Recover()
+        infile.ReadStreamerInfo()
+    
     ws = None
     for k in infile.GetListOfKeys():
         if k.GetClassName()=="RooWorkspace":
@@ -29,6 +38,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="turn a workspace into JSON")
     parser.add_argument("infile",help="the ROOT workspace")
     parser.add_argument("outfile",help="the JSON file")
+    parser.add_argument("--load-libraries",nargs="+",type=str,help="load some libraries",dest="libraries",default=[])
+    parser.add_argument("--recover",action="store_true",dest="recover_file",default=False,help="recover corrupted file")    
     parser.add_argument("--no-default-definitions",action="store_false",dest="default_defs")
     parser.add_argument("--default-definitions",action="store_true",dest="default_defs",default=True)
     parser.add_argument("--load-export-definitions",dest="export_defs",nargs="+",default=[])
