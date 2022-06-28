@@ -29,7 +29,11 @@ def main(args):
 
     # setup the main structure
     pois = [ name for name,var in input_json["variables"].items() if "poi" in var["tags"] ]
-    measurement = {"name":"meas","config":{"parameters":[],"poi": args.poi if args.poi else pois[0]}}
+    measurement = {"name":"meas","config":{"parameters":[]}}
+    if args.poi:
+        measurement["config"]["poi"] = args.poi
+    elif len(pois) > 0:
+        measurement["config"]["poi"] = pois[0]
     output_json = {"channels":[],"measurements":[measurement],"observations":[],"version":"1.0.0"}
 
     # some bookkeeping
@@ -38,7 +42,7 @@ def main(args):
     channelnames = []
 
     # define observations / data
-    data = input_json["data"]["obsData"]
+    data = input_json["data"][args.data]
     for key,channel in data.items():
         if type(channel) != dict:
             continue
@@ -57,10 +61,19 @@ def main(args):
         for c in channelnames:
             if c.startswith(channelname):
                 channelname = c
-                
+
         out_channel = {"name":channelname,"samples":[]}
         output_json["channels"].append(out_channel)
+
+        if not "samples" in channel.keys():
+            print(args.input + " is no histfactory workspace")
+            exit(1)
+        
         for key,sample in channel["samples"].items():
+            if not "data" in sample.keys():
+                print(args.input + " no histfactory workspace")
+                exit(1)
+            
             values = sample["data"]["counts"]
 
             out_sample = {"name":stripname(key,args.strip_name_components),"modifiers":[]}
@@ -69,7 +82,10 @@ def main(args):
 
             if sample["statError"]:
                 errors = sample["data"]["errors"]
-                out_sample["modifiers"].append({"name":"staterror_"+channelname,"type":"staterror","data":[e/v for e,v in zip(errors,values)]})
+                try:
+                    out_sample["modifiers"].append({"name":"staterror_"+channelname,"type":"staterror","data":[e/v for e,v in zip(errors,values)]})
+                except ZeroDivisionError:
+                    pass
             
             if "normFactors" in sample.keys():
                 for nf in sample["normFactors"]:
@@ -125,6 +141,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(description="format converter between ROOT JSON and pyhf JSON")
     parser.add_argument("--poi",default=None)
+    parser.add_argument("--data",default="obsData",help="name of the dataset")
     parser.add_argument("--fix-other-pois",action="store_true")
     parser.add_argument("--nf-blacklist",nargs="+",default=["binWidth_.*","one"],dest="nf_blacklist")
     parser.add_argument("--sys-blacklist",nargs="+",default=["zero"],dest="sys_blacklist")    

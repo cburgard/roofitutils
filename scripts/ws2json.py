@@ -28,9 +28,16 @@ def main(args):
         ROOT.RooJSONFactoryWSTool.loadFactoryExpressions(pjoin(etcDir,"RooFitHS3_wsfactoryexpressions.json"))
     for arg in args.export_defs:
         ROOT.RooJSONFactoryWSTool.loadExportKeys(arg)
-    for arg in args.import_defs:
-        ROOT.RooJSONFactoryWSTool.loadFactoryExpressions(arg)        
+
+    if args.print:
+        ws.Print()
+
+    if args.patchMC:
+        mc = ws.obj(args.patchMC)
+        mc.SetWS(ws)
+    
     tool = ROOT.RooJSONFactoryWSTool(ws)
+
     tool.exportJSON(args.outfile)
 
 if __name__ == "__main__":
@@ -40,9 +47,10 @@ if __name__ == "__main__":
     parser.add_argument("outfile",help="the JSON file")
     parser.add_argument("--load-libraries",nargs="+",type=str,help="load some libraries",dest="libraries",default=[])
     parser.add_argument("--recover",action="store_true",dest="recover_file",default=False,help="recover corrupted file")    
-    parser.add_argument("--no-default-definitions",action="store_false",dest="default_defs")
-    parser.add_argument("--default-definitions",action="store_true",dest="default_defs",default=True)
-    parser.add_argument("--load-export-definitions",dest="export_defs",nargs="+",default=[])
-    parser.add_argument("--load-import-definitions",dest="import_defs",nargs="+",default=[])    
+    parser.add_argument("--no-default-definitions",action="store_false",dest="default_defs",help="avoid loading the default definitions")
+    parser.add_argument("--default-definitions",action="store_true",dest="default_defs",default=True,help="load the default definitions")
+    parser.add_argument("--print",action="store_true",dest="print",default=False,help="print the workspace once loaded")
+    parser.add_argument("--patch-model-config",dest="patchMC",default=None,help="Model Config to be patched")    
+    parser.add_argument("--load-definitions",dest="export_defs",nargs="+",default=[],help="load a specific set of definitions")
 
     main(parser.parse_args())    
