@@ -1497,7 +1497,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
   }
   std::vector<RooRealVar *> extraparams;
   std::vector<std::string> extraparnames;  
-  if(fModel){
+  if(fModel && fModel->GetParametersOfInterest()) {
     for (auto par : *fModel->GetParametersOfInterest()) {
       RooRealVar *v = dynamic_cast<RooRealVar *>(attachedSet->find(par->GetName()));
       if (!v) {
