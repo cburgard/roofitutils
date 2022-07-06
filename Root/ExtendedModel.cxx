@@ -611,11 +611,11 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
              RooNameSet(*fData->get()).content()));
 #else
   if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
-                           RooHelpers::getColonSeparatedNameString(*fData->get())))) {
+                           RooHelpers::getColonSeparatedNameString(*fData->get()).c_str()))) {
     // Retrieve constraints from cache
     const RooArgSet *constr = fWorkspace->set(
         Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
-             RooHelpers::getColonSeparatedNameString(*fData->get())));
+             RooHelpers::getColonSeparatedNameString(*fData->get()).c_str()));
 #endif    
     AllConstraints->add(*constr);
     delete constr;
