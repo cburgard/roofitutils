@@ -242,6 +242,8 @@ def collectresult_json(results,filename,label,**kwargs):
                     key = tuple(scan["label"])
                 scans[key] = {label:{}}
                 for point in scan["points"]:
+                    if point["minimizer"]["status"] != 0 and point["minimizer"]["status"] != 1:
+                        continue
                     if "filterScans" in kwargs.keys() and kwargs["filterScans"]:
                         pvals = tuple([ p["val"] for p in point["parameters"] if p["name"] in kwargs["filterScans"] ])
                     else:

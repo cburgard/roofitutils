@@ -1522,17 +1522,15 @@ void RooFitUtils::ExtendedMinimizer::scan(
     }
     fHesse = false;
     auto min = this->robustMinimize();
-    if (min.ok()) {
-      std::vector<double> vals(params.size());
-      for (size_t i = 0; i < params.size(); ++i) {
-        vals[i] = params[i]->getVal();
-      }
-      std::vector<double> extravals(extraparams.size());
-      for (size_t i = 0; i < extraparams.size(); ++i) {
-        extravals[i] = extraparams[i]->getVal();
-      }
-      scan.add(vals, min.status, min.nll, extravals);
+    std::vector<double> vals(params.size());
+    for (size_t i = 0; i < params.size(); ++i) {
+      vals[i] = params[i]->getVal();
     }
+    std::vector<double> extravals(extraparams.size());
+    for (size_t i = 0; i < extraparams.size(); ++i) {
+      extravals[i] = extraparams[i]->getVal();
+    }
+    scan.add(vals, min.status, min.nll, extravals);
   }
   if (scan.nllValues.size() > 0)
     r->scans.push_back(scan);
