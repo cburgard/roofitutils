@@ -1326,15 +1326,15 @@ RooFitUtils::ExtendedMinimizer::Result *RooFitUtils::ExtendedMinimizer::run() {
   Result *r = new Result();
   r->min = robustMinimize();
 
-  if(!r->min.ok() || !r->min.fit){
+  if(!r->min.ok()){
     return r;
   }
   
-  if(r->min.ndim > 0 && r->min.ndim != r->min.fit->floatParsFinal().getSize()){
+  if(r->min.fit  && r->min.ndim > 0 && r->min.ndim != r->min.fit->floatParsFinal().getSize()){
     throw std::runtime_error("dimensionality inconsistency detected between minimizer and final floating parameter list!");
   }
 
-  if(!r->min.hesse){
+  if(r->min.fit && !r->min.hesse){
     // if we don't have a hesse matrix yet, evaluate errors with Hesse
     r->min.covqual = r->min.fit->covQual();
     //if (covqual != -1) {
