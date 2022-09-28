@@ -237,7 +237,7 @@ def fit(args,model,minimizer):
     parnames = None
     coords = None
     scan = args.get("scan",False)
-    if scan:
+    if scan and len(scan)>0:
         from RooFitUtils.util import isstr
         if isstr(scan[0]): scan = [scan]
         from RooFitUtils.util import generateCoordsDict

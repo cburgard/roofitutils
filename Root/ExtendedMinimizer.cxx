@@ -1484,7 +1484,8 @@ void RooFitUtils::ExtendedMinimizer::scan(
   // perform a scan over the given set of points
   this->setup();
   RooArgSet *attachedSet = fNll->getVariables();
-
+  if(!attachedSet) return;
+  
   std::vector<RooRealVar *> params;
   for (auto pname : parnames) {
     RooRealVar *v =
@@ -1495,20 +1496,25 @@ void RooFitUtils::ExtendedMinimizer::scan(
     }
     params.push_back(v);
   }
+
   std::vector<RooRealVar *> extraparams;
   std::vector<std::string> extraparnames;  
   if(fModel){
-    for (auto par : *fModel->GetParametersOfInterest()) {
-      RooRealVar *v = dynamic_cast<RooRealVar *>(attachedSet->find(par->GetName()));
-      if (!v) {
-        throw std::runtime_error(
-                                 TString::Format("unknown parameter name: %s", par->GetName()).Data());
+    auto pois = fModel->GetParametersOfInterest();
+    if(pois){
+      for (auto par : *pois){
+	RooRealVar *v = dynamic_cast<RooRealVar *>(attachedSet->find(par->GetName()));
+	if (!v) {
+	  throw std::runtime_error(
+				   TString::Format("unknown parameter name: %s", par->GetName()).Data());
+	}
+	if(std::find(params.begin(),params.end(),v) != params.end()) continue;
+	extraparams.push_back(v);
+	extraparnames.push_back(v->GetName());      
       }
-      if(std::find(params.begin(),params.end(),v) != params.end()) continue;
-      extraparams.push_back(v);
-      extraparnames.push_back(v->GetName());      
     }
   }
+
   bool hesse = fHesse;
   ExtendedMinimizer::Result::Scan scan(RooFitUtils::concat(parnames),parnames,extraparnames);
 
@@ -1534,6 +1540,7 @@ void RooFitUtils::ExtendedMinimizer::scan(
       scan.add(vals, min.status, min.nll, extravals);
     }
   }
+
   if (scan.nllValues.size() > 0)
     r->scans.push_back(scan);
   fHesse = hesse;

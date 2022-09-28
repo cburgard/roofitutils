@@ -79,7 +79,7 @@ public:
   // _____________________________________________________________________________
 protected:
   void initialise();
-  RooRealVar * parseParameter(const std::string &pname,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary);
+  RooRealVar * parseParameter(const std::string &pname,double& val,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary);
   void fixParameters(const std::vector<std::string> &parsed, const RooArgSet* params);
   void floatParameters(const std::vector<std::string> &parsed, const RooArgSet* params);
   void randomizeParameters(const std::vector<std::string> &parsed, const RooArgSet* params);	  

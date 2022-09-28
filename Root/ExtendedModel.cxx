@@ -470,61 +470,65 @@ void RooFitUtils::ExtendedModel::profileParameters(const std::string &profileNam
 
 RooRealVar * RooFitUtils::ExtendedModel::parseParameter(const std::string &pname) {
   // parse a string parameter definition and return the parameter
-  int sign = 0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;
-  return parseParameter(pname,sign,useRange,lo,hi,useBoundary,boundary);
+  int sign = 0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;double val = 0;
+  return parseParameter(pname,val,sign,useRange,lo,hi,useBoundary,boundary);
 }
 
 
 // _____________________________________________________________________________
 
-RooRealVar * RooFitUtils::ExtendedModel::parseParameter(const std::string &pname,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary) {
+RooRealVar * RooFitUtils::ExtendedModel::parseParameter(const std::string &pname,double& val,int& sign,bool& useRange,double& lo,double& hi,bool& useBoundary,double& boundary) {
   // parse a string parameter definition and return the parameter
   TString thisName(pname);
-  
+
+  // Prepare
+  thisName.ReplaceAll("+", ">0");
+  thisName.ReplaceAll("-", "<0");
+
+  // Get starting values
+  bool has_val = false;
+  if (thisName.Contains("=")){
+    int pos = thisName.First("=");
+    TString val_str = thisName(pos+1,thisName.Length()-pos);
+    val = atof(val_str);
+    thisName.Remove(pos);
+    has_val = true;
+  }
+      
   // Get ranges
   TString range;
   if (thisName.Contains("[")) {
     assert(thisName.Contains("]"));
-    TObjArray *thisNameArray = thisName.Tokenize("[");
-    thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-    range = ((TObjString *)thisNameArray->At(1))->GetString();
-    range.ReplaceAll("]", "");
-    assert(range.Contains(":"));
-    TObjArray *rangeArray = range.Tokenize(":");
-    rangeArray->SetOwner(true);
-    TString s_lo = ((TObjString *)rangeArray->At(0))->GetString();
-    TString s_hi = ((TObjString *)rangeArray->At(1))->GetString();
-    delete rangeArray;
+    int begin = thisName.First("[");
+    int mid = thisName.First(":");    
+    int end = thisName.First("]");
+    TString s_lo = thisName(begin,mid-begin);
+    TString s_hi = thisName(begin,end-mid);    
     lo = atof(s_lo.Data());
     hi = atof(s_hi.Data());
     useRange = kTRUE;
-  }
-
-  // Get sign
-  if (thisName.Contains("+")) {
-    thisName.ReplaceAll("+", ">0");
-  } else if (thisName.Contains("-")) {
-    thisName.ReplaceAll("-", "<0");
+    thisName.Remove(begin,end-begin);
   }
 
   // Get boundaries
   if (thisName.Contains(">")) {
-    TObjArray *thisNameArray = thisName.Tokenize(">");
-    thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-    TString boundary_str = ((TObjString *)thisNameArray->At(1))->GetString();
+    int pos = thisName.First(">");
+    TString boundary_str = thisName(pos+1,thisName.Length()-pos);
     boundary = atof(boundary_str);
     sign = +1;
     useBoundary = true;
+    thisName.Remove(pos);
   } else if (thisName.Contains("<")) {
-    TObjArray *thisNameArray = thisName.Tokenize("<");
-    thisName = ((TObjString *)thisNameArray->At(0))->GetString();
-    TString boundary_str = ((TObjString *)thisNameArray->At(1))->GetString();
+    int pos = thisName.First("<");
+    TString boundary_str = thisName(pos+1,thisName.Length()-pos);
     boundary = atof(boundary_str);
     sign = -1;
     useBoundary = true;
+    thisName.Remove(pos);
   } 
   
   RooRealVar *thisPoi = dynamic_cast<RooRealVar *>(this->fWorkspace->var(thisName));
+  if(!has_val) val = thisPoi->getVal();
   return thisPoi;
 }
 
@@ -535,15 +539,13 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
   // Fix a parameter at the specified value and/or apply ranges and boundaries
   TString thisName(pname.c_str());
 
-  int sign = 0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;
-  RooRealVar* thisPoi = this->parseParameter(pname,sign,useRange,lo,hi,useBoundary,boundary);
+  int sign = 0;double origVal=0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;
+  RooRealVar* thisPoi = this->parseParameter(pname,origVal,sign,useRange,lo,hi,useBoundary,boundary);
   if(!thisPoi){
     coutE(ObjectHandling) << "Parameter " << thisName << " doesn't exist!"
                           << std::endl;
     return NULL;
   }
-  double origVal = thisPoi->getVal();
-
   
   if(useRange){
     thisPoi->setRange(lo, hi);
@@ -554,8 +556,9 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
     }
   }
   
+  thisPoi->setVal(origVal);  
+  
   if (useBoundary) {
-    double forigVal = fabs(thisPoi->getVal());
     bool boundaryIsZero = AlmostEqualUlpsAndAbs(boundary, 0.0, 0.0001, 4);
 
     if (sign > 0) {
@@ -564,7 +567,7 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
         thisPoi->setVal(boundary);
       }
       if (boundaryIsZero && origVal < 0) {
-        thisPoi->setVal(forigVal);
+        thisPoi->setVal(origVal);
       }
     } else if (sign < 0) {
       thisPoi->setMax(boundary);
@@ -572,7 +575,7 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
         thisPoi->setVal(boundary);
       }
       if (boundaryIsZero && origVal > 0) {
-        thisPoi->setVal(-forigVal);
+        thisPoi->setVal(-origVal);
       }
     }
   }
@@ -581,6 +584,7 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
 //  coutI(ObjectHandling) << thisName.Data() << " = " << thisPoi->getVal()
 //                        << " in [" << thisPoi->getMin() << ","
 //                        << thisPoi->getMax() << "]" << std::endl;
+
   return thisPoi;
 }
 
