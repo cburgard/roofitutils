@@ -1190,7 +1190,6 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
         this->SetNllDirty();
         nllval = fNll->getVal();
 #endif
-        
         std::cout
           << "ExtendedMinimizer::robustMinimize(" << fName
           << ") fit succeeded with status " << status << ", NLL=" << nllval;

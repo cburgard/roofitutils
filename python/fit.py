@@ -263,7 +263,7 @@ def fit(args,model,minimizer):
 
     result = minimizer.getResult()
 
-    if result:
+    if result != None:
         outFileName = args.get("outFileName","output.root")
         if outFileName:
             import os

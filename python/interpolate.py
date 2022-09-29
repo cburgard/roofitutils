@@ -266,8 +266,9 @@ def findallminima(points,nllmin,minthreshold=0.05):
 
 def findcrossings(points,nllval,minthreshold=0.05):
     """find the minimum point of a 1d graph and the crossing points with a horizontal line at a given value. returns tuple of central value, lower error and upper error"""
-    xvals = [ x for x,y in points ]
-    yvals = [ y for x,y in points ]
+    from numpy import isnan
+    xvals = [ x for x,y in points if not isnan(y)]
+    yvals = [ y for x,y in points if not isnan(y)]
     i0 = 0
     ymin = inf
     for i in range(0,len(xvals)):
@@ -298,9 +299,14 @@ def findcrossings(points,nllval,minthreshold=0.05):
 def findminimum(points):
     """find the interpolated minimum of a 1d graph"""
     from scipy.optimize import minimize
-    from numpy import array
-    xvals = sorted(points.keys())
-    yvals = [ points[x] for x in xvals ]
+    from numpy import array,isnan
+    xvals = []
+    yvals = []
+    for x in sorted(points.keys()):
+        y = points[x]
+        if not isnan(y):
+            xvals.append(x)
+            yvals.append(y)
     interp = scipy_interpolate(xvals, yvals)
     minimum = minimize(lambda v:interp(v[0]), array([min(xvals)]), bounds=[[min(xvals),max(xvals)]])
     miny = minimum.fun
