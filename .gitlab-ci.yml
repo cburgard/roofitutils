@@ -18,6 +18,7 @@ variables:
   before_script:
     - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
     - set +e && lsetup "python default" && lsetup cmake; set -e
+    - export CMAKE_PREFIX_PATH=$JSONMCPP__HOME:$CMAKE_PREFIX_PATH
     - set +e && lsetup "root recommended"; set -e    
     - export CXX=$(which g++)
     - export CC=$(which gcc)
