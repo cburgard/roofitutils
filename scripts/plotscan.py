@@ -48,6 +48,7 @@ if __name__ == '__main__':
     parser.add_argument("-o","--output",type=str,help="output file name",default="scan.tex",required=True)
     parser.add_argument("--append",type=str,help="append the contents of another tex file",default=None)    
     parser.add_argument("--ymax",type=float,help="y axis maximum",default=None)
+    parser.add_argument("--xrange",type=float,help="range in x",default=None,nargs=2,dest="rangex")
     parser.add_argument("--flip-axes",action="store_true",dest="flipAxes",default=False,help="flip X and Y axes")
     parser.add_argument("--smooth",action="store_true",default=False,help="apply smoothing")
     parser.add_argument("--contour-algorithm",choices=['ROOT', 'skimage'],default="ROOT",dest="contourAlg",help="contour finding algorithm to be used")
@@ -98,7 +99,7 @@ if __name__ == '__main__':
                 labels = list(scans1d.keys())[0]
             else:
                 labels = args.labels
-            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,otherscans1d=[mergeresults.get("scans",{})],axis_options=args.options,append=readfile(args.append))
+            writescans1d(args.atlas,labels[0],scans1d,args.output,getPercentages(args,1),args.drawpoints,args.ymax,args.rangex,otherscans1d=[mergeresults.get("scans",{})],axis_options=args.options,append=readfile(args.append))
             if args.hepdata:
                 from RooFitUtils.hepdatawriter import writescans as scans2hepdata
                 scans2hepdata(scans1d)

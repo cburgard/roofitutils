@@ -240,7 +240,9 @@ def collectresult_json(results,filename,label,**kwargs):
                     key = tuple(map(str,scan["label"].split(",")))
                 else:
                     key = tuple(scan["label"])
-                scans[key] = {label:{}}
+                if not key in scans.keys():
+                    scans[key] = {}
+                scans[key][label] = {}
                 for point in scan["points"]:
                     if point["minimizer"]["status"] != 0 and point["minimizer"]["status"] != 1:
                         continue

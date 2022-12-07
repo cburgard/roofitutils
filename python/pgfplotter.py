@@ -333,7 +333,7 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
 def writecorrmatrix(atlas,parslist,allcorrs,outfilename):
     writematrix(atlas,parslist,parslist,allcorrs,outfilename,minval=-1,maxval=1,rotatelabels=45,axlabel="$\\rho(X,Y)$",flip=True,showall=True)
 
-def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,plotlabels=[],otherscans1d=[],axis_options=[],append=None):
+def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoints=False,ymax=None,rangex=None,plotlabels=[],otherscans1d=[],axis_options=[],append=None):
     from RooFitUtils.util import make1dscan
 
     for otherscan in otherscans1d:
@@ -357,7 +357,10 @@ def writescans1d(atlas,par,allscans,outfilename,percent_thresholds=None,drawpoin
         outfile.write("    xlabel=${0:s}$, ylabel=$-2\\ \\ln \\Lambda$,\n".format(par.strip("$")))
         outfile.write("    every axis x label/.style={at={(axis description cs:1.0,-0.1)},anchor=north east},\n")
         outfile.write("    every axis y label/.style={at={(axis description cs:-0.1,1.0)},rotate=90,anchor=south east},\n")
-        outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))
+        if rangex:
+            outfile.write("    xmin={0:f},xmax={1:f}\n".format(*rangex))
+        else:
+            outfile.write("    xmin={0:f},xmax={1:f}\n".format(min(allvals),max(allvals)))            
         outfile.write("]\n")
         if atlas: writeATLAS(outfile,atlas,inside=True,labels=plotlabels)
         for pnamelist,curve in allscans.items():
@@ -378,10 +381,11 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
     """write a single 1d sncan to a pgfplots tex file"""
     from math import isnan
     from RooFitUtils.interpolate import findminimum,findcrossings
-    from RooFitUtils.util import graphrescale,formatPDG
+    from RooFitUtils.util import graphrescale,formatPDG,parsedict
     # obtaining the - 2 log Lambda(x), where Lambda = LL(x)/LL(x0)
     nllmin = findminimum(allpoints)
     points = graphrescale(allpoints,nllmin,2)
+    style = parsedict(options)
     outfile.write("\\addplot["+options+",very thick,mark=none,smooth] coordinates {\n")
     for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
     outfile.write("};\n")
@@ -389,9 +393,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
         outfile.write("\\addplot[draw=none,mark=x] coordinates {\n")
         for x,y in points:  outfile.write("    ({0:f},{1:f})\n".format(x,y))
         outfile.write("};\n")
-    outfile.write("\\addplot[gray,densely dashed,thick] {1};\n")
-    outfile.write("\\addplot[gray,densely dashed,thick] {4};\n")
-
+ 
     if percent_thresholds:
         xmin,ymax = points[0]
         xmax = xmin
@@ -410,7 +412,11 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                 #    outfile.write("\\draw["+thresholdColors[i]+"] (axis cs:"+str(cv+up  )+",0) -- (axis cs:"+str(cv+up  )+","+str(t)+");\n")
                 if i == 0:
                     s = "{:s} = {:f}".format(parname,cv)
-                    outfile.write("\\addlegendentry{{${:s} = {:s}$}}".format(parlabel.strip("$"),formatPDG(cv,up,down)))
+                    if "title" in style.keys():
+                        title = style["title"]
+                    else:
+                        title = parlabel.strip("$"),formatPDG                        
+                    outfile.write("\\addlegendentry{{${:s} = {:s}$}}".format(title,formatPDG(cv,up,down)))
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
 
