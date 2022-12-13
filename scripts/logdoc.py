@@ -40,19 +40,21 @@ def printsummary(messages):
     for category in sorted(messages.keys()):
         print("  {:s}: {:d}".format(category,len(messages[category])))
 
-def printdetails(messages,printcategories):
+def printdetails(messages,printcategories,printmax):
     # print a summary
-    printed = False
+    printed = 0
     for category in printcategories:
         if category in messages.keys():
             print("the following messages were encountered in category "+category+":")
             for message in messages[category]:
-                printed = True
+                if printed > printmax:
+                    break
+                printed = printed + 1
                 print(category)
                 printelem(message,1)
         else:
             print("no messages were encountered in category "+category)            
-    return printed
+    return printed > 0
             
 def main(args):
     from RooFitUtils.util import println
@@ -68,7 +70,7 @@ def main(args):
         println()
 
     # detailed category printouts
-    printed = printdetails(messages,args.printcategories)
+    printed = printdetails(messages,args.printcategories,args.printmax)
     
     println()
 
@@ -104,6 +106,7 @@ if __name__ == "__main__":
     printing.add_argument("--diagnose",action="store_true",dest="diagnose",default=True,help="attempt a diagnosis of the messages")
     printing.add_argument("--no-diagnose",action="store_false",dest="diagnose",default=True,help="do not attempt a diagnosis of all messages")
     printing.add_argument("--print",dest="printcategories",nargs="+",type=str,default=[],metavar="CATEGORY",help="names of the categories for which you would like to have more information. accepts the category names as given in the summary.")
+    printing.add_argument("--print-only",dest="printmax",type=int,default=0,metavar="NUM_MESSAGES",help="maximum number of messages to be printed")
     advanced = parser.add_argument_group("Advanced Usage")    
     advanced.add_argument("--debug",dest="debugcategory",type=str,default=None,help="debugging functionality - intended for developer use only")
     advanced.add_argument("--write-json",dest="jsonfile",metavar="report.json",default=None,help="print the log in a JSON format")

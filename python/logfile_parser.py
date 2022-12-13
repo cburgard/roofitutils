@@ -84,14 +84,6 @@ def make_parser():
         })),
     },minimization)
 
-    createnll = extend({
-        "slavecalc":Parser(r"RooAbsTestStatistic::initSimMode: creating slave calculator #(?P<calcNum>) for state (?P<PdfName>.+) \(?P<N>\d+ dataset entries\)"),
-        "constraints":Parser(r".*INFO:Minization --  Including the following contraint terms in minimization:.*"),
-        "createdall":Parser(r".*INFO:Fitting -- RooAbsTestStatistic::initSimMode: created 32 slave calculators"),
-        "integrator":Parser(r"INFO:NumericIntegration -- RooRealIntegral::init\(.*\)"),
-        "largeLH":Parser("WARNING:Eval -- RooAbsPdf::getLogVal\((<?<pname>.+)\) WARNING: large likelihood value: (.*)")
-    })
-    
     minos = extend({
         "mnminos":Parser(r".*MnMinos Determination of (?P<direction>\w+) Minos error for parameter (?P<parno>\d+)"),
         "mncross":       Parser(r".*MnFunctionCross: parameter 0 set to (?P<val>"+NUM+")",MetaParser(minimization)),
@@ -112,6 +104,11 @@ def make_parser():
         "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),
         "stars":Parser("[*]+"),        
     },minimization)
+
+    parameters = extend({
+        "header":Parser(r".*NO.*NAME.*VALUE.*STEP SIZE.*LIMITS"),
+        "parameter":Parser(r" *(?P<paramno>\d+) *(?P<paramname>\w+) *(?P<value>"+NUM+") *(?P<stepsize>"+NUM+") *(?P<lowedge>"+NUM+") *(?P<highedge>"+NUM+")")
+    })
     
     parser = MetaParser({
         "intro":Parser(r"RooFit v(?P<Version>[\d.]+) -- Developed by Wouter Verkerke and David Kirkby",MetaParser({
@@ -127,11 +124,22 @@ def make_parser():
                 "floatPar":Parser(r"(?P<parname>.*)\s+(?P<val>"+NUM+")\s*[+]/[-]\s*(?P<err>"+NUM+")")
             }))
         })),
+        "slavecalc":Parser(r"RooAbsTestStatistic::initSimMode: creating slave calculator \#(?P<calcNum>\d+) for state (?P<PdfName>.+).*\((?P<N>\d+).*dataset entries\)"),
+        "constraints":Parser(r".*INFO:Minization --  Including the following contraint terms in minimization:.*"),
+        "createdall":Parser(r".*INFO:Fitting -- RooAbsTestStatistic::initSimMode: created 32 slave calculators"),
+        "integrator":Parser(r".*INFO:NumericIntegration -- RooRealIntegral::init\((?P<intname1>.*)\) using numeric integrator (?P<inttype>.*) to calculate Int\((?P<intname2>.*)\)"),
+        "largeLH":Parser(r".*WARNING:Eval -- RooAbsPdf::getLogVal\((?P<pname>.+)\) WARNING: large likelihood value: (?P<value>.*)"),
         "minos":      Parser(r".*GetMinosError for parameter (?P<parno>\d+) (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
         "minos2":     Parser(r".*GetMinosError - Run MINOS (?P<direction>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
         "minos2bidir": Parser(r".*GetMinosError - Run MINOS (?P<direction1>\w+) and (?P<direction2>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
+        "stars":Parser("[*]+"),
+        "migrad":Parser(r".*START MIGRAD MINIMIZATION.*STRATEGY *(?P<strategy>\d).*CONVERGENCE WHEN EDM.*LT.*(?P<edm>"+NUM+").*",MetaParser(minos_migrad)),        
+        "funccall":Parser(r"FIRST CALL TO USER FUNCTION AT NEW START POINT, WITH IFLAG=(?P<iflag>)"),
+        "strategy":Parser(r"NOW USING STRATEGY *(?P<strategy>\d): MAKE SURE MINIMUM TRUE, ERRORS CORRECT"),
+        "parameters":Parser(r".*PARAMETER DEFINITIONS:",MetaParser(parameters)),
+        "fitting": Parser(r".*INFO:Fitting -- RooAddition::defaultErrorLevel\((?P<nllname>.*)\) Summation contains a RooNLLVar, using its error level"),
         "minosrerun":Parser(r".*Minuit2Minimizer::GetMinosError : Run now again Minos from the new found Minimum",MetaParser(minos)),
-        "createnll":Parser(r".*INFO:Minization -- createNLL picked up cached consraints from workspace with 216 entries",MetaParser(createnll)),
+        "createnll":Parser(r".*INFO:Minization -- createNLL picked up cached con[str]*aints from workspace with 216 entries"),
         "minimization":Parser(r"Minuit2Minimizer: Minimize with max-calls (?P<MaxCalls>\d+) convergence for edm < (?P<Edm>"+NUM+") strategy (?P<Strategy>\d)",MetaParser(minimization)),
         "quickfit-snapshot":Parser(r"REGTEST: Loading snapshot (?P<Snapshot>.*)"),        
         "quickfit-preparing":Parser(r"Preparing parameters of interest\s*:\s*(?P<poiset>.*)",MetaParser({
