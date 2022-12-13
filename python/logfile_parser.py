@@ -83,6 +83,14 @@ def make_parser():
             "parameter":Parser(r"(?P<Pos>\d+)\s+\|\s+(?P<Name>.*)\s+\|\s+(?P<type>\w+)\s+\|\s+(?P<Value>"+NUM+")\s+\|\s+(?P<Error>"+NUM+")")
         })),
     },minimization)
+
+    createnll = extend({
+        "slavecalc":Parser(r"RooAbsTestStatistic::initSimMode: creating slave calculator #(?P<calcNum>) for state (?P<PdfName>.+) \(?P<N>\d+ dataset entries\)"),
+        "constraints":Parser(r".*INFO:Minization --  Including the following contraint terms in minimization:.*"),
+        "createdall":Parser(r".*INFO:Fitting -- RooAbsTestStatistic::initSimMode: created 32 slave calculators"),
+        "integrator":Parser(r"INFO:NumericIntegration -- RooRealIntegral::init\(.*\)"),
+        "largeLH":Parser("WARNING:Eval -- RooAbsPdf::getLogVal\((<?<pname>.+)\) WARNING: large likelihood value: (.*)")
+    })
     
     minos = extend({
         "mnminos":Parser(r".*MnMinos Determination of (?P<direction>\w+) Minos error for parameter (?P<parno>\d+)"),
@@ -123,6 +131,7 @@ def make_parser():
         "minos2":     Parser(r".*GetMinosError - Run MINOS (?P<direction>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
         "minos2bidir": Parser(r".*GetMinosError - Run MINOS (?P<direction1>\w+) and (?P<direction2>\w+) error for parameter #(?P<parno>\d+) : (?P<parname>.+) using max-calls (?P<maxcalls>\d+), tolerance (?P<tolerance>\d+)",MetaParser(minos)),
         "minosrerun":Parser(r".*Minuit2Minimizer::GetMinosError : Run now again Minos from the new found Minimum",MetaParser(minos)),
+        "createnll":Parser(r".*INFO:Minization -- createNLL picked up cached consraints from workspace with 216 entries",MetaParser(createnll)),
         "minimization":Parser(r"Minuit2Minimizer: Minimize with max-calls (?P<MaxCalls>\d+) convergence for edm < (?P<Edm>"+NUM+") strategy (?P<Strategy>\d)",MetaParser(minimization)),
         "quickfit-snapshot":Parser(r"REGTEST: Loading snapshot (?P<Snapshot>.*)"),        
         "quickfit-preparing":Parser(r"Preparing parameters of interest\s*:\s*(?P<poiset>.*)",MetaParser({
