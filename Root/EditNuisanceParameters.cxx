@@ -907,8 +907,6 @@ int editWorkspace(RooWorkspace *ws, RooCustomizer &cust, const RooAbsPdf *&pdf,
   std::cout << "Replace " << nr << " " << termtype << " in " << Print(*pdf, 1)
             << ". Save original in " << pdf->GetName() << "_" << suffix << "."
             << std::endl;
-  if (verbose >= 2)
-    cust.Print("v");
   if (nr <= 0)
     return 0;
   const RooAbsArg *updpdf = cust.build(verbose >= 3);
