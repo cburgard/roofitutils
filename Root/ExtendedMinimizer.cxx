@@ -1029,7 +1029,8 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineDouble("eps", "Eps", 0, fEps);
   pc.defineString("mintype", "Minimizer", 0, fMinimizerType.c_str());
   pc.defineString("minalg", "Minimizer", 1, fMinimizerAlgo.c_str());
-  pc.defineObject("minosSet", "Minos", 0, 0);
+  pc.defineObject("minosObjSet", "Minos", 0, 0);
+  pc.defineSet("minosSet", "Minos", 0, 0);  
   pc.defineObject("condSet", "Cond", 0, 0);
   pc.defineSet("cPars", "Constrain", 0, 0);
 
@@ -1073,7 +1074,10 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fReuseNLL = pc.getInt("renll");
   fChi2 = pc.getInt("usechi2");  
   fEps = pc.getDouble("eps");
-  fMinosSet = static_cast<RooArgSet *>(pc.getObject("minosSet"));
+  RooArgSet* minosSet = NULL;
+  minosSet = static_cast<RooArgSet *>(pc.getObject("minosObjSet"));
+  minosSet = pc.getSet("minosSet",minosSet);
+  if(minosSet) fMinosSet = minosSet;
   fCondSet = static_cast<RooArgSet *>(pc.getObject("condSet"));
   fMinimizerType = std::string(pc.getString("mintype", "Minuit2"));
   fMinimizerAlgo = std::string(pc.getString("minalg", "Migrad"));
