@@ -415,7 +415,7 @@ def writescan1d(parname,parlabel,allpoints,options,outfile,percent_thresholds,dr
                     if "title" in style.keys():
                         title = style["title"]
                     else:
-                        title = parlabel.strip("$"),formatPDG                        
+                        title = parlabel.strip("$")
                     outfile.write("\\addlegendentry{{${:s} = {:s}$}}".format(title,formatPDG(cv,up,down)))
                 s = s + ", {:.3f}% CL = +{:f} -{:f}".format(100*percent_thresholds[i],abs(up),abs(down))
        # print(s)
