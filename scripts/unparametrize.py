@@ -64,8 +64,19 @@ def main(args):
     pois = find_elements(workspace.allVars(),args.POIs)    
 
     parametrization = {}
-    
+
     from ROOT import RooPolyFunc,RooArgSet
+    allnps = RooArgSet()
+    allobs = RooArgSet()
+    if modelConfig:
+        allnps.add(modelConfig.GetNuisanceParameters())
+        allobs.add(modelConfig.GetObservables())        
+    else:
+        for np in pdf.getParameters(pois):
+            if np.isConstant():
+                allobs.add(np)
+            else:
+                allnps.add(np)
     cmd = "EDIT::" + pdf.GetName()+"_unparametrized" + "(" + pdf.GetName()
     for xs in xsecs:
         poilist = RooArgSet()
@@ -75,8 +86,11 @@ def main(args):
         if not len(poilist):
             continue
         param = RooPolyFunc.taylorExpand(str(xs.GetName()+"_parametrization"),str(xs.GetTitle()),xs,poilist)
-        parametrization[xs.GetName()] = get_parametrization(param)
+        local_parametrization =  get_parametrization(param)
+        local_parametrization["SM"] = xs.getVal()
+        parametrization[xs.GetName()+"_raw"] = local_parametrization
         nps = xs.getParameters(poilist)
+        allnps.add(nps)
         unparam = []
         if len(nps) > 0:
             for np in nps:
@@ -95,15 +109,24 @@ def main(args):
     newpdf = workspace.factory(cmd)
     
     if args.write_yml:
-        yml = {"name":pdf.GetName(),"parametrization":parametrization}
+        yml = {"name":pdf.GetName(),"parameterisation":parametrization,"coefficient terms":[p.GetName() for p in pois]+["SM"],"observables":[xs.GetName()+"_raw" for xs in xsecs]}
         import yaml
         with open(args.write_yml,"wt") as outfile:
             documents = yaml.dump(yml, outfile)
             
     if args.write_root:
-        from ROOT import RooWorkspace
+        from ROOT import RooWorkspace,RooStats
         ws = RooWorkspace(workspace.GetName())
         ws.Import(newpdf)
+        mc = RooStats.ModelConfig("ModelConfig")
+        mc.SetWS(ws)
+        mc.SetPdf(newpdf)
+        mc.SetNuisanceParameters(allnps)
+        mc.SetObservables(allobs)        
+        mc.SetParametersOfInterest(pois)
+        ws.Import(mc)
+        for data in workspace.allData():
+            ws.Import(data)
         ws.writeToFile(args.write_root)
 
         
