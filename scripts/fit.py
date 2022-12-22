@@ -97,7 +97,7 @@ if __name__ == "__main__":
     arglist.append(roofit.add_argument( "--initial-error", "--initError"     , type=bool,    dest="setInitialError"            , help="Pre-set the initial error.", default=False ))
     arglist.append(roofit.add_argument( "--optimize"      , type=int,     dest="constOpt"                   , help="Optimize constant terms." , default=2))
     arglist.append(roofit.add_argument( "--log-level", "--logLevel", "--loglevel"      , type=str,     dest="loglevel"                   , help="Verbosity.", choices=["DEBUG","INFO","WARNING","ERROR"], default="ERROR" ))
-    arglist.append(roofit.add_argument( "--fixAllNP"      , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
+    arglist.append(roofit.add_argument( "--fixAllNP", "--fixAllNPs" , action='store_true',    dest="fixAllNP"                   , help="Fix all NP.", default=False ))
     arglist.append(roofit.add_argument( "--correlation-matrix", "--correlationMatrix", action='store_true',   dest="correlationMatrix",help="option to save correlation matrix", default=False ))
     arglist.append(roofit.add_argument( "--binned"        , action='store_true',    dest="binnedLikelihood"           , help="Binned likelihood.", default=True ))
     arglist.append(roofit.add_argument( "--unbinned"      , action='store_false',   dest="binnedLikelihood"           , help="Unbinned likelihood.", default=False ))
