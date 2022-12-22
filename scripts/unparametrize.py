@@ -20,9 +20,9 @@ def linearize(func,p,e):
     cplus = func.getVal()
     p.setVal(v-e)    
     cminus = func.getVal()
-    p.setVal(v)
+    p.setVal(v)        
     name = func.GetName()+"_lin_"+p.GetName()
-    formula = "{:s}>0 ? 1 + {:g}*{:s} : 1 + {:g}*{:s}".format(p.GetName(),cplus/c,p.GetName(),cminus/c,p.GetName())
+    formula = "{:s}>0 ? 1 + {:s}*{:g} : 1 - {:s}*{:g}".format(p.GetName(),p.GetName(),cplus/c-1,p.GetName(),cminus/c-1)
     return RooFormulaVar(name,name,formula,p)
 
 
@@ -38,7 +38,7 @@ def get_parametrization(polyfunc):
         for v in polyfunc.variables():
             e = polyfunc.getExponent(term,v)
             if e.getVal() == 1:
-                parametrization[v.GetName()] = coef.getVal()/unity.getVal()
+                parametrization[v.GetName()] = coef.getVal()
     return parametrization
 
 def main(args):
