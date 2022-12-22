@@ -193,10 +193,11 @@ def fit(args,model,minimizer):
 
 
     # Collect POIs
-    pois = model.GetParametersOfInterest()
     if args.get("pois",None):
         poinames = args["pois"]
+        pois = [ model.GetWorkspace().var(p) for p in poinames ]
     else:
+        pois = model.GetParametersOfInterest()
         poinames = names(pois)
     for poi in poinames:
         p = model.configureParameter(poi)
