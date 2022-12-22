@@ -294,7 +294,13 @@ void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::string &fixNam
 
 void RooFitUtils::ExtendedModel::fixNuisanceParameters(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
-  if(fModelConfig) floatParameters(parsed,fModelConfig->GetNuisanceParameters());
+  if(fModelConfig){
+    fixParameters(parsed,fModelConfig->GetNuisanceParameters());
+  } else {
+    RooArgSet allVars(fWorkspace->allVars());
+    fixParameters(parsed,&allVars);
+
+  }
 }
 
 // _____________________________________________________________________________
