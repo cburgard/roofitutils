@@ -59,15 +59,16 @@ def main(args):
     if not pdf:
         print("workspace does not have a ModelConfig named '"+args.model+"' or a pdf named '"+args.pdf+"', please specify!")
         exit(1)
-
+      
     xsecs = find_elements(workspace.allFunctions(),args.XS)
     pois = find_elements(workspace.allVars(),args.POIs)    
 
     parametrization = {}
 
-    from ROOT import RooPolyFunc,RooArgSet
+    from ROOT import RooPolyFunc,RooArgSet,RooAbsPdf
     allnps = RooArgSet()
     allobs = RooArgSet()
+    allconstraints = []
     if modelConfig:
         allnps.add(modelConfig.GetNuisanceParameters())
         allobs.add(modelConfig.GetObservables())        
@@ -77,6 +78,9 @@ def main(args):
                 allobs.add(np)
             else:
                 allnps.add(np)
+                for c in np.clients():
+                    if c.InheritsFrom(RooAbsPdf.Class()):
+                        allconstraints.append(c)
     cmd = "EDIT::" + pdf.GetName()+"_unparametrized" + "(" + pdf.GetName()
     newpois = []
     for xs in xsecs:
@@ -109,9 +113,27 @@ def main(args):
     cmd += ")"
 
     newpdf = workspace.factory(cmd)
-    
+    localobs = RooArgSet()
+    globalobs = RooArgSet()    
+    for obs in allobs:
+        glob = False
+        for c in allconstraints:
+            if c.dependsOn(obs):
+                glob = True
+        if glob:
+            globalobs.add(obs)
+        else:
+            localobs.add(obs)
+        
+
+    if args.extend and not newpdf.canBeExtended():
+        from ROOT import RooExtendPdf
+        name = newpdf.GetName()+"_ext"
+        extpdf = RooExtendPdf(name,name,newpdf,1.)
+        newpdf = extpdf
+
     if args.write_yml:
-        yml = {"name":pdf.GetName(),"parameterisation":parametrization,"coefficient terms":[p.GetName() for p in pois]+["SM"],"observables":[xs.GetName()+"_raw" for xs in xsecs]}
+        yml = {"name":pdf.GetName(),"parameterisation":parametrization,"coefficient terms":[p.GetName() for p in pois]+["SM"],"observables":newpois}
         import yaml
         with open(args.write_yml,"wt") as outfile:
             documents = yaml.dump(yml, outfile)
@@ -124,7 +146,8 @@ def main(args):
         mc.SetWS(ws)
         mc.SetPdf(newpdf)
         mc.SetNuisanceParameters(allnps)
-        mc.SetObservables(allobs)        
+        mc.SetObservables(localobs)
+        mc.SetGlobalObservables(globalobs)        
         mc.SetParametersOfInterest(",".join(newpois))
         for poi in newpois:
             ws.var(poi).setConstant(False)
@@ -132,7 +155,12 @@ def main(args):
         for data in workspace.allData():
             ws.Import(data)
 
+        ws.Print()
+        exit(0)
+        
         if not ws.data("asimovData"):
+            import ROOT
+#            changeMsgLvl = ROOT.RooHelpers.LocalChangeMsgLevel(ROOT.RooFit.ERROR)
             from RooFitUtils.util import createAsimov
             createAsimov(ws,mc,"asimovData")
             
@@ -140,7 +168,8 @@ def main(args):
         allVars.add(mc.GetParametersOfInterest())
         allVars.add(mc.GetNuisanceParameters())        
         ws.snapshot("AllVars_Nominal",allVars)
-            
+
+        print("writing "+args.write_root)
         ws.writeToFile(args.write_root)
 
         
@@ -152,6 +181,7 @@ if __name__ == "__main__":
     parser.add_argument("--workspace","-w",help="name of the workspace in the input file",required=True)
     parser.add_argument("--model",default="ModelConfig",help="name of the ModelConfig object")
     parser.add_argument("--pdf",default="simPdf",help="name of the top-level pdf in the workspace")
+    parser.add_argument("--extend",action="store_true",help="extend the pdf if need be")
     parser.add_argument("--POIs",nargs="+",required=True)
     parser.add_argument("--write-yml",type=str,default=None)
     parser.add_argument("--write-root",type=str,default=None)        

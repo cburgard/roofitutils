@@ -484,7 +484,6 @@ def createAsimov(ws,mc,asmName):
     import ROOT
     allParams = ROOT.RooArgSet()
     if mc.GetGlobalObservables():
-        allParams.add(mc.GetGlobalObservables())
         globs = mc.GetGlobalObservables().snapshot()
     else:
         globs = ROOT.RooArgSet()
