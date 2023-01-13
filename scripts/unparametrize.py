@@ -78,6 +78,7 @@ def main(args):
             else:
                 allnps.add(np)
     cmd = "EDIT::" + pdf.GetName()+"_unparametrized" + "(" + pdf.GetName()
+    newpois = []
     for xs in xsecs:
         poilist = RooArgSet()
         for p in pois:
@@ -104,6 +105,7 @@ def main(args):
         else:
             replacement = workspace.factory("{:s}_raw[{:g}]".format(xs.GetName(),xs.getVal()))
         cmd += ","+xs.GetName()+"="+replacement.GetName()
+        newpois.append(xs.GetName()+"_raw")
     cmd += ")"
 
     newpdf = workspace.factory(cmd)
@@ -123,10 +125,22 @@ def main(args):
         mc.SetPdf(newpdf)
         mc.SetNuisanceParameters(allnps)
         mc.SetObservables(allobs)        
-        mc.SetParametersOfInterest(pois)
+        mc.SetParametersOfInterest(",".join(newpois))
+        for poi in newpois:
+            ws.var(poi).setConstant(False)
         ws.Import(mc)
         for data in workspace.allData():
             ws.Import(data)
+
+        if not ws.data("asimovData"):
+            from RooFitUtils.util import createAsimov
+            createAsimov(ws,mc,"asimovData")
+            
+        allVars = RooArgSet()
+        allVars.add(mc.GetParametersOfInterest())
+        allVars.add(mc.GetNuisanceParameters())        
+        ws.snapshot("AllVars_Nominal",allVars)
+            
         ws.writeToFile(args.write_root)
 
         

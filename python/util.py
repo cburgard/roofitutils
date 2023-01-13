@@ -483,11 +483,17 @@ def mergescans1d(scan1,scan2):
 def createAsimov(ws,mc,asmName):
     import ROOT
     allParams = ROOT.RooArgSet()
-    allParams.add(mc.GetGlobalObservables())
-    allParams.add(mc.GetObservables())
-    allParams.add(mc.GetNuisanceParameters())
-    allParams.add(mc.GetParametersOfInterest())
-    globs = mc.GetGlobalObservables().snapshot()
+    if mc.GetGlobalObservables():
+        allParams.add(mc.GetGlobalObservables())
+        globs = mc.GetGlobalObservables().snapshot()
+    else:
+        globs = ROOT.RooArgSet()
+    if mc.GetObservables():
+        allParams.add(mc.GetObservables())
+    if mc.GetNuisanceParameters():
+        allParams.add(mc.GetNuisanceParameters())
+    if mc.GetParametersOfInterest():
+        allParams.add(mc.GetParametersOfInterest())
     asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mc,allParams,globs)
     asimovData.SetName(asmName)
     getattr(ws,"import")(asimovData)

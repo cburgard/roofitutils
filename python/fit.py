@@ -273,16 +273,17 @@ def fit(args,model,minimizer):
             with open(outFileName,'w') as out:
                 writeResult(out,result,args.get("correlationMatrix",True))
             print("wrote output to "+outFileName)
-        if args.get("writeResult",False):
-            outpath,outfile = os.path.split(outFileName)
-            fitresfile = os.path.join(outpath,os.path.splitext(outfile)[0]+".root")
-            result.min.fit.SaveAs(fitresfile)
-        if args.get("printResult",True):
-            for poi in makelist(pois):
-                p = result.min.fit.floatParsFinal().find(poi)
-                if p:
-                    print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
-        if not args.get("writeResult",False) and not outFileName:
+            if args.get("writeResult",False):
+                import os
+                outpath,outfile = os.path.split(outFileName)
+                fitresfile = os.path.join(outpath,os.path.splitext(outfile)[0]+".root")
+                result.min.fit.SaveAs(fitresfile)
+            if args.get("printResult",True):
+                for poi in makelist(pois):
+                    p = result.min.fit.floatParsFinal().find(poi)
+                    if p:
+                        print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
+        if not args.get("writeResult",False):
             print("no output requested")
     else:
         print("received invalid result")
