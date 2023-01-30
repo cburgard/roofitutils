@@ -105,7 +105,7 @@ if __name__ == '__main__':
         if not scale:
             from RooFitUtils.util import roundAutoUp
             scale = roundAutoUp(1./max(map(lambda x: max(map(abs,x)),rankings[poiname].values())))
-        writerankinghead(args,outfile,allpars,scale)
+        writerankinghead(args,outfile,allpars,scale,poiname)
         for np in range(0,npar):
             for poi,ranking in rankings.items():
                 if allpars[np] in ranking.keys():
