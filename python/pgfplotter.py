@@ -606,14 +606,16 @@ def writepullnumbers(args,results,outfile,parname,ypos,hoffset,numbers=False):
         outfile.write(" {};")
 
 def writerankinghead(args,outfile,allpars,zoom=10):
+    from RooFitUtils.util import roundAutoUp,sign
     npar = len(allpars)
-    from math import floor,ceil
     from numpy import arange
     outfile.write("% top axis\n")
     outfile.write("  \\draw[blue] (" +str(int(args.range[0])-0.1)+ "," +str(-0.5-npar)+ ") -- (" +str(int(args.range[1])+0.1)+ "," +str(-0.5-npar)+ ") node [pos=1,anchor=north east,yshift=1.1cm]{$\Delta\mu$};\n")
     ii = 0
-    for x in arange(floor(args.range[0]),ceil(args.range[1])+.1,step=0.5):
-        outfile.write("  \\draw[blue] (" +str(x)+ "," + str(-0.5-npar) + ") -- (" +str(x)+ "," +str(-0.5-0.2-npar)+ ") node [axlbl,above=3pt]{" +str(x/zoom)+ "};\n")
+    x0,x1 = round(args.range[0]/zoom,1),round(args.range[1]/zoom,1)
+    step = round(0.2*abs(x1-x0),1)
+    for x in arange(x0,x1+step,step=step):
+        outfile.write("  \\draw[blue] (" +str(zoom*x)+ "," + str(-0.5-npar) + ") -- ++ (0,0.2) node [axlbl,above=3pt]{" + "{:.1f}".format(x)+ "};\n")
         ii = ii + 1
 
 def writeparametershead(args,outfile):

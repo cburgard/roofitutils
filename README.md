@@ -110,9 +110,19 @@ Use some batch submission of your choice to submit the jobs defined in
     breakdown/jobs.txt
     impacts/job.txt
 
+If you don't have a batch system at hand, you can also just execute
+these `.txt` files as bash scripts to run the jobs sequentially on
+your machine.
+
 After your jobs finish, plot a full breakdown and impact plot including parameter pulls with
 
+    scripts/plotpulls.py -i red "breakdown/*nominal*.json" --impacts mu "breakdown/*.json" --range -2 2 --numbers --atlas True --output breakdown.tex
+
+or
+
     scripts/plotpulls.py -i red "impacts/*nominal*.json" --impacts mu "impacts/*.json" --range -2 2 --scaleimpacts 5 --numbers --atlas True --output impacts.tex
+
+Once done, you can compile these files with `pdflatex` to look at your plots.
 
 ### Pruning
 

@@ -493,7 +493,13 @@ def createAsimov(ws,mc,asmName):
         allParams.add(mc.GetNuisanceParameters())
     if mc.GetParametersOfInterest():
         allParams.add(mc.GetParametersOfInterest())
-    asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mc,allParams,globs)
+    if mc.GetPdf().InheritsFrom(ROOT.RooSimultaneous.Class()):
+        asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mc,allParams,globs)
+    else:
+        print("generating asimov data")
+#        asimovData = mc.GetPdf().generate(mc.GetObservables(),ROOT.RooFit.ExpectedData(),ROOT.RooFit.NumEvents(1))
+        asimovData = mc.GetPdf().generate(mc.GetObservables(),ROOT.RooFit.ExpectedData())
+        print("done")
     asimovData.SetName(asmName)
     getattr(ws,"import")(asimovData)
 
@@ -585,6 +591,10 @@ def roundAutoUp(m):
     from math import log10
     unit = int(log10(m))
     return pow(10,unit) * (int(m / pow(10,unit))+1)
+
+def sign(m):
+    if m < 0: return -1
+    return 1
     
 def formatPDG(x,xup,xdn,lap=False,show="v+-"):
     from math import isnan

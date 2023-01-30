@@ -154,20 +154,18 @@ def main(args):
         ws.Import(mc)
         for data in workspace.allData():
             ws.Import(data)
-
-        ws.Print()
-        exit(0)
         
-        if not ws.data("asimovData"):
-            import ROOT
-#            changeMsgLvl = ROOT.RooHelpers.LocalChangeMsgLevel(ROOT.RooFit.ERROR)
-            from RooFitUtils.util import createAsimov
-            createAsimov(ws,mc,"asimovData")
+#        if not ws.data("asimovData"):
+#            import ROOT
+##            changeMsgLvl = ROOT.RooHelpers.LocalChangeMsgLevel(ROOT.RooFit.ERROR)
+#            from RooFitUtils.util import createAsimov
+#            ROOT.RooMsgService.instance().addStream(ROOT.RooFit.DEBUG, Topic = ROOT.RooFit.Generation)
+#            createAsimov(ws,mc,"asimovData")
             
         allVars = RooArgSet()
         allVars.add(mc.GetParametersOfInterest())
         allVars.add(mc.GetNuisanceParameters())        
-        ws.snapshot("AllVars_Nominal",allVars)
+        ws.saveSnapshot("AllVars_Nominal",allVars)
 
         print("writing "+args.write_root)
         ws.writeToFile(args.write_root)
