@@ -273,16 +273,19 @@ def fit(args,model,minimizer):
             with open(outFileName,'w') as out:
                 writeResult(out,result,args.get("correlationMatrix",True))
             print("wrote output to "+outFileName)
-            if args.get("writeResult",False):
-                import os
-                outpath,outfile = os.path.split(outFileName)
-                fitresfile = os.path.join(outpath,os.path.splitext(outfile)[0]+".root")
-                result.min.fit.SaveAs(fitresfile)
-            if args.get("printResult",True):
-                for poi in makelist(pois):
-                    p = result.min.fit.floatParsFinal().find(poi)
-                    if p:
-                        print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
+            if result.min.fit:
+                if args.get("writeResult",False):
+                    import os
+                    outpath,outfile = os.path.split(outFileName)
+                    fitresfile = os.path.join(outpath,os.path.splitext(outfile)[0]+".root")
+                    result.min.fit.SaveAs(fitresfile)
+                if args.get("printResult",True):
+                    for poi in makelist(pois):
+                        p = result.min.fit.floatParsFinal().find(poi)
+                        if p:
+                            print("{:s} = {:g} +{:g} -{:g}".format(poi.GetName(),poi.getVal(),abs(poi.getErrorHi()),abs(poi.getErrorLo())))
+            else:
+                print("invalid fit result!")
         if not args.get("writeResult",False):
             print("no output requested")
     else:
@@ -434,9 +437,10 @@ def createBreakdownJobs(args,arglist):
         pars = []
         for ex in group:
             regex = re.compile(ex)
-            for parameter in model.GetNuisanceParameters():
-                if regex.match(parameter.GetName()):
-                    pars.append(parameter)
+            if model.GetNuisanceParameters():
+                for parameter in model.GetNuisanceParameters():
+                    if regex.match(parameter.GetName()):
+                        pars.append(parameter)
         groupname = "_".join([ ex.replace("_","").replace("*","") for ex in group])
         groups[groupname] = names(pars)
     outpath = args["writeSubmit"]
@@ -445,12 +449,12 @@ def createBreakdownJobs(args,arglist):
     with open(pjoin(outpath,outfile),"w") as jobs:
         options["--findSigma"] = ""
         if "-o" in options.keys(): del options["-o"]        
-        options["--output"]=pjoin(outpath,"breakdown.nominal.txt")
+        options["--output"]=pjoin(outpath,"breakdown.nominal.json")
         cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])
         jobs.write(submitCommand+" "+cmd+"\n")
         for groupname,parnames in groups.items():
             options["--fix"] = " ".join(parnames)
-            options["--output"]=pjoin(outpath,"breakdown."+groupname+".txt")
+            options["--output"]=pjoin(outpath,"breakdown."+groupname+".json")
             cmd = " ".join([k+" "+stringify(v) for k,v in options.items()])                    
             jobs.write(submitCommand+" "+cmd+"\n")
     print("wrote "+args["writeSubmit"])

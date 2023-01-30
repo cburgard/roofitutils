@@ -462,7 +462,7 @@ def collectimpacts(rankings,files,poiname):
 def collectbreakdowns(rankings,files,poiname):
     filenames = collectfilenames(files)
     import re
-    fpat = re.compile(r"breakdown\.([^/^.]*)\.txt")
+    fpat = re.compile(r"breakdown\.([^/^.]*)\.json")
     from os.path import basename
     results = {}
     allvars = []
@@ -472,17 +472,18 @@ def collectbreakdowns(rankings,files,poiname):
         if not match: continue
         name = match.group(1)
         collectresult(results,filename,name)
+    if not "MLE" in results.keys():
+        raise RuntimeError("unable to retrieve result")
+        return allvars
     fits = results["MLE"]
-    if not poiname in fits.keys():
-        raise RuntimeError("did not find any impact results!")            
-    if not "nominal" in fits[poiname].keys():
+    if not "nominal" in fits.keys():
         raise RuntimeError("cannot create ranking without nominal result!")
     if not poiname in rankings.keys():
         rankings[poiname] = {}
-    for key in fits[poiname].keys():
+    for key in fits.keys():
         if key == "nominal": continue
-        upvar = + (pow(fits[poiname]["nominal"][1],2) - pow(fits[poiname][key][1],2))
-        dnvar = - (pow(fits[poiname]["nominal"][2],2) - pow(fits[poiname][key][2],2))
+        upvar = + (pow(fits["nominal"][poiname]["eUp"],2) - pow(fits[key][poiname]["eUp"],2))
+        dnvar = - (pow(fits["nominal"][poiname]["eDn"],2) - pow(fits[key][poiname]["eDn"],2))
         rankings[poiname][key] = (upvar,dnvar)
         allvars.append(key)
     return allvars

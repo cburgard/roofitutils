@@ -8,7 +8,7 @@ def sortparameters(parset,rankings):
         count = 0
         for ranking in rankings.values():
             if par not in ranking.keys():
-                print('ERROR Information for the parameter ', par,' was not found in the specified output directory!')
+                continue
             else:
                 score += 0
                 if not isnan(ranking[par][0]): score += ranking[par][0]*ranking[par][0]
