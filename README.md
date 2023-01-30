@@ -86,8 +86,17 @@ After your jobs finish, plot a simple, 1D likelihood scan with
 Create breakdown job definitions with
 
     python scripts/fit.py --input workspace.root --fit --data asimovData --breakdown "ATLAS_*" --breakdown "theo_*" --breakdown "gamma_*" --writeSubmit breakdown
-    
-Create impact job definitions with
+
+This will _group_ parameters together, one group per `--breakdown`
+argument, and evaluate their combined influence of the POI(s) by
+calculating the difference in quadrature between a fit with these
+parameters set constant and the full fit.
+
+If you are instead interested in evaluating a ranking by fixing the
+nuisance parameters to their +/-1 sigma values and re-fitting to
+evaluate the influence on the central value of the POI, you can use
+the `impact` mechanism. Similarly, you can create impact job
+definitions with
 
     python scripts/fit.py --input workspace.root --fit --data asimovData --impacts "ATLAS_*" "theo_*"  "gamma_*" --writeSubmit impacts
     

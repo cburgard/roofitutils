@@ -55,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument("--top-N",dest="topN",type=int,help="plot only top N ranked NPs",default=15)
     parser.add_argument('-i','--input',action='append',nargs="+",metavar=('drawoptions','file.json'),help="json files with the input information",default=[])
     parser.add_argument('--impacts',action='append',nargs="+",metavar=('POI','file.json'),help="json files with the input information for ranking the nuisance parameters",default=[])
-    parser.add_argument('--breakdown',action='append',nargs="+",metavar=('POI','file.txt'),help="text files with the input information for ranking the nuisance parameters",default=[])
+    parser.add_argument('--breakdown',action='append',nargs="+",metavar=('POI','file.json'),help="text files with the input information for ranking the nuisance parameters",default=[])
     parser.add_argument('--blacklist',nargs="+",metavar="NP",help="parameters and groups to avoid showing",default=[])    
     parser.add_argument('--whitelist',nargs="+",metavar="NPw",help="parameters to show",default=[])
     parser.add_argument("--atlas",type=str,help="ATLAS plot label, will enable ATLAS style if used",required=False,default=None)
