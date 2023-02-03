@@ -12,7 +12,12 @@ def find_elements(thelist,theregexlist):
                 elems.add(obj)
     return elems
 
-def linearize(func,p,e):
+def sign(v):
+    if v>0: return 1
+    elif v<0: return -1
+    return 0
+
+def linearize(func,p,e,symmetrize=None):
     from ROOT import RooFormulaVar
     c = func.getVal()
     v = p.getVal()
@@ -20,9 +25,27 @@ def linearize(func,p,e):
     cplus = func.getVal()
     p.setVal(v-e)    
     cminus = func.getVal()
-    p.setVal(v)        
+    p.setVal(v)
+    dplus = cplus/c-1
+    dminus = cminus/c-1
+    if symmetrize == "max":
+        if abs(dplus) >= abs(dminus):
+            dminus = -dplus
+        else:
+            dplus = -dminus
+    elif symmetrize == "avg":
+        avg = 0.5*(abs(dplus)+abs(dminus))
+        if abs(dplus) >= abs(dminus):
+            dplus = sign(dplus) * avg
+            dminus = -dplus
+        else:
+            dminus = sign(dminus) * avg
+            dplus = -dminus
     name = func.GetName()+"_lin_"+p.GetName()
-    formula = "{:s}>0 ? 1 + {:s}*{:g} : 1 - {:s}*{:g}".format(p.GetName(),p.GetName(),cplus/c-1,p.GetName(),cminus/c-1)
+    if abs(dplus) == abs(dminus):
+        formula = "1 + {:s}*{:g}".format(p.GetName(),dplus)
+    else:
+        formula = "{:s}>0 ? 1 + {:s}*{:g} : 1 - {:s}*{:g}".format(p.GetName(),p.GetName(),dplus,p.GetName(),dminus)
     return RooFormulaVar(name,name,formula,p)
 
 
@@ -99,7 +122,7 @@ def main(args):
         unparam = []
         if len(nps) > 0:
             for np in nps:
-                lin = linearize(xs,np,1)
+                lin = linearize(xs,np,1,args.symmetrize)
                 workspace.Import(lin)
                 unparam.append(lin.GetName())
         else:
@@ -181,6 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--pdf",default="simPdf",help="name of the top-level pdf in the workspace")
     parser.add_argument("--extend",action="store_true",help="extend the pdf if need be")
     parser.add_argument("--POIs",nargs="+",required=True)
+    parser.add_argument("--symmetrize",choices=["none","max","avg"],default="none")
     parser.add_argument("--write-yml",type=str,default=None)
     parser.add_argument("--write-root",type=str,default=None)        
     parser.add_argument("--XS",nargs="+",required=True)
