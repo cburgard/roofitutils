@@ -1,5 +1,6 @@
 
 import os
+import math
 
 latex_aliases = {}
 
@@ -482,8 +483,8 @@ def collectbreakdowns(rankings,files,poiname):
         rankings[poiname] = {}
     for key in fits.keys():
         if key == "nominal": continue
-        upvar = + (pow(fits["nominal"][poiname]["eUp"],2) - pow(fits[key][poiname]["eUp"],2))
-        dnvar = - (pow(fits["nominal"][poiname]["eDn"],2) - pow(fits[key][poiname]["eDn"],2))
+        upvar = + math.sqrt(pow(fits["nominal"][poiname]["eUp"],2) - pow(fits[key][poiname]["eUp"],2))
+        dnvar = - math.sqrt(pow(fits["nominal"][poiname]["eDn"],2) - pow(fits[key][poiname]["eDn"],2))
         rankings[poiname][key] = (upvar,dnvar)
         allvars.append(key)
     return allvars
