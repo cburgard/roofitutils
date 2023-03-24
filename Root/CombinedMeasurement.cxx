@@ -102,15 +102,19 @@ void RooFitUtils::CombinedMeasurement::CollectMeasurements() {
   // measurements
   // to possibly add to correlation scheme
   std::map<std::string, RooArgSet *> tmpAllNuisanceParameters;
+  std::map<std::string, RooArgSet *> tmpAllObservables;  
   for (auto measItr = fMeasurements.begin(); measItr != fMeasurements.end();
        ++measItr) {
     Measurement *meas = measItr->second;
     meas->initialise();
     RooArgSet *thisNuisanceParameters = meas->GetNuisanceParameters();
+    RooArgSet *thisObservables = meas->GetObservables();    
     tmpAllNuisanceParameters[meas->GetName()] = thisNuisanceParameters;
+    tmpAllObservables[meas->GetName()] = thisObservables;
   }
 
-  DetermineAutoCorrelations(tmpAllNuisanceParameters);
+  DetermineAutoCorrelations(tmpAllNuisanceParameters,true);
+  //  DetermineAutoCorrelations(tmpAllObservables,false);  
 
   // actual collection of measurements and channels which includes
   // regularisation
@@ -135,17 +139,17 @@ void RooFitUtils::CombinedMeasurement::CollectMeasurements() {
 // nuisance parameters.
 // TODO implementation for other constraint types.
 void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations(
-    std::map<std::string, RooArgSet *> &tmpAllNuisanceParameters) {
+								 std::map<std::string, RooArgSet *> &tmpAllVars, bool useConstraints) {
   bool enableAutoCorrelation = fCorrelationScheme->GetAutoCorrelation();
-  std::map<std::string, std::set<std::string>> tmpAllNuisanceParameterMap;
+  std::map<std::string, std::set<std::string>> tmpAllVarMap;
 
   // Loop over all sets, containing the nuisance parameters of a single
   // measurement
   for (std::map<std::string, RooArgSet *>::iterator it =
-           tmpAllNuisanceParameters.begin();
-       it != tmpAllNuisanceParameters.end(); ++it) {
+           tmpAllVars.begin();
+       it != tmpAllVars.end(); ++it) {
     std::string thisMeasurementName = it->first;
-    RooArgSet *thisNuisanceParameters = it->second;
+    RooArgSet *thisVars = it->second;
 
     // Get the existing RenamingMap for this Measurement
     RenamingMap thisRenamingMap =
@@ -154,7 +158,7 @@ void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations(
         thisRenamingMap.GetRenamingMap();
 
     // Loop over all nuisance parameters in the set
-    TIterator *nuiItr = thisNuisanceParameters->createIterator();
+    TIterator *nuiItr = thisVars->createIterator();
     RooRealVar *nextNui;
     while ((nextNui = (RooRealVar *)nuiItr->Next())) {
       std::string nextNuiName = nextNui->GetName();
@@ -167,16 +171,18 @@ void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations(
       // Skip all non-Gaussian and non-Poisson constrained parameters
       // TODO loosen requirement once proper handling of other constraint types
       // is implemented in RenamingMap, etc.
-      RenamingMap::ConstraintType thisConstraintType =
+      if(useConstraints){
+	RenamingMap::ConstraintType thisConstraintType =
           fMeasurements[thisMeasurementName]->DetermineConstraintType(nextNui);
-      if (thisConstraintType != RenamingMap::Gaussian &&
-          thisConstraintType != RenamingMap::Poisson) {
-        continue;
+	if (thisConstraintType != RenamingMap::Gaussian &&
+	    thisConstraintType != RenamingMap::Poisson) {
+	  continue;
+	}
       }
 
       // Add them to the temporary map used for adding them to the
       // CorrelationScheme later
-      tmpAllNuisanceParameterMap[nextNuiName].insert(thisMeasurementName);
+      tmpAllVarMap[nextNuiName].insert(thisMeasurementName);
     }
     delete nuiItr;
   }
@@ -189,8 +195,8 @@ void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations(
   // global observables,
   // constraint types, ...
   for (std::map<std::string, std::set<std::string>>::iterator it =
-           tmpAllNuisanceParameterMap.begin();
-       it != tmpAllNuisanceParameterMap.end(); ++it) {
+           tmpAllVarMap.begin();
+       it != tmpAllVarMap.end(); ++it) {
     std::string thisParameterName = it->first;
     std::set<std::string> thisMeasurements = it->second;
 
