@@ -104,8 +104,6 @@ void RooFitUtils::Channel::RegulariseChannel() {
   fPdf = (RooAbsPdf *)fWorkSpace->pdf(newPdfName.c_str());
 
   // Regularise the Pdf
-  const RooArgSet *obsSet = fData->get();
-
   coutI(ObjectHandling) << "Channel::RegulariseChannel(" << fName
                         << ") started writing local editing command for PDF "
                         << fPdf->GetName() << std::endl;
@@ -247,29 +245,19 @@ void RooFitUtils::Channel::RegulariseChannel() {
 
   // loop over the observables in the dataset for this channel and add to the
   // editing command
+  const RooArgSet *obsSet = fData->get();
   TIterator *obsSetItr = obsSet->createIterator();
   RooRealVar *nextObs;
   while ((nextObs = (RooRealVar *)obsSetItr->Next())) {
-    RooRealVar *fromComb = (RooRealVar *)fWorkSpace->var(
-        (std::string(nextObs->GetName()) + "_" + fParentMeasurement).c_str());
-    // RooAbsArg* fromComb =
-    // (RooAbsArg*)fWorkSpace->var((string(nextObs->GetName())).c_str());
+    TString newname = TString(nextObs->GetName()) + "_" + fParentMeasurement;
+    RooRealVar *fromComb = (RooRealVar *)fWorkSpace->var(newname.Data());
     if (!fromComb) {
-      coutW(ObjectHandling)
-          << "Channel::RegulariseChannel(" << fName << ") variable "
-          << std::string(nextObs->GetName()) << " is not in workspace "
-          << fWorkSpace->GetName() << "." << std::endl;
-      continue;
+      RooRealVar* oldVar = fWorkSpace->var(nextObs->GetName());
+      if(!oldVar) continue;
+      oldVar->SetName(newname);
+      fromComb = oldVar;
     }
-
-    if (!fPdf->dependsOn(*fromComb))
-      continue;
-
-    fWorkSpace->import(*nextObs, RooFit::Silence());
-    tmpObservables->add(*(RooAbsArg *)fWorkSpace->obj(nextObs->GetName()));
-    editStr << "," << nextObs->GetName() << "_" + fParentMeasurement + "="
-            << nextObs->GetName();
-    nrEdits++;
+    if(fPdf->dependsOn(*fromComb)) tmpObservables->add(*fromComb);
   }
   delete obsSetItr;
   SetObservables(tmpObservables);

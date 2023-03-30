@@ -108,7 +108,7 @@ public:
   // ____________________________________________________________________________|__________
 protected:
   void DetermineAutoCorrelations(
-      std::map<std::string, RooArgSet *> &tmpAllNuisanceParameters);
+				 std::map<std::string, RooArgSet *> &tmpAllNuisanceParameters, bool useConstraints = true);
   void UnfoldConstraints(RooArgSet &initial, RooArgSet &final, RooArgSet &obs,
                          RooArgSet &nuis, int &counter);
 
