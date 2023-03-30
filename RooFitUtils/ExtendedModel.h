@@ -43,9 +43,8 @@ public:
   RooArgSet *GetParameterSet() { return &fAllParams; }
   RooArgSet *GetObservables() { return fObs; }
   RooArgSet *GetPenalty() { return fPenalty && fPenalty->getSize() > 0 ? fPenalty : 0; }
-  void addPenalty(RooFormulaVar *x) {   
+  void addPenalty(RooAbsReal *x) {   
 	fPenalty->add(*x);
-	fPenalty->Print();
   }
 
   

@@ -118,7 +118,7 @@ if __name__ == "__main__":
     
     
     advanced = parser.add_argument_group("Advanced Features")
-    arglist.append(advanced.add_argument( "--penalty"       , type=str,     dest="penalty"                    , help="Penalty terms", metavar=("Penalty","vars"), default=None,nargs=2,action="append"))
+    arglist.append(advanced.add_argument( "--penalty"       , type=str,     dest="penalty"                    , help="Penalty terms", metavar=("Penalty","vars"), default=None,nargs="+",action="append"))
     arglist.append(advanced.add_argument( "--penaltyfile"   , type=str,     dest="penaltyfile"                , help="Penalty terms", metavar=("Penalty"), default=None))
 
     arglist.append(advanced.add_argument("--find-sigma", '--findSigma',                     dest='findSigma', action='store_true' , help="Search for crossings to identify the 1-sigma-band.", default=False ))

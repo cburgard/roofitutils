@@ -63,14 +63,17 @@ def buildModel(args):
         if npens > 0:
             for ipens in range(0, npens):
                 pars = ROOT.RooArgList()
-                allpars = args["penalty"][0][1].split(",")
-                for par in allpars[0:len(allpars)]:
-                    par = par.strip(" ") 
-                    par = par.strip("\"") 
-                    pars.add(ws.obj(par))
-        
-                name = "penalty_"+str(ipens)
-                penaltyform = ROOT.RooFormulaVar(name, args["penalty"][ipens][0], pars)
+                if len(args["penalty"][ipens]) == 1:
+                    penaltyform = model.GetWorkspace().obj(args["penalty"][ipens][0])
+                else:
+                    allpars = args["penalty"][0][1].split(",")
+                    for par in allpars[0:len(allpars)]:
+                        par = par.strip(" ") 
+                        par = par.strip("\"") 
+                        pars.add(ws.obj(par))
+            
+                    name = "penalty_"+str(ipens)
+                    penaltyform = ROOT.RooFormulaVar(name, args["penalty"][ipens][0], pars)
                 model.addPenalty(penaltyform)
 
     if args.get("penaltyfile",None):
@@ -160,7 +163,11 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.PrintLevel(args.get("printLevel",ROOT.Math.MinimizerOptions.DefaultPrintLevel())),
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
-
+    
+    argelems.append(ROOT.RooFit.BatchMode("cpu"))
+    
+    if model.GetPenalty():
+        argelems.append(ROOT.RooFit.ExternalConstraints(model.GetPenalty()))
     if globs and globs.getSize() > 0:
         argelems.append(ROOT.RooFit.GlobalObservables(globs))
     elif nuis:

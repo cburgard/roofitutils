@@ -114,16 +114,14 @@ void RooFitUtils::ExtendedModel::initialise() {
   }
 
   // Fixes for known features
-  if (fBinnedLikelihood) {
-    coutP(InputArguments) << "Activating binned likelihood evaluation"
-                          << std::endl;
+  coutP(InputArguments) << (fBinnedLikelihood ? "Activating" : "Deactivating") << " binned likelihood evaluation"  << std::endl;
+  {
     RooFIter iter = fWorkspace->components().fwdIterator();
     RooAbsArg *arg;
     while ((arg = iter.next())) {
       if (arg->IsA() == RooRealSumPdf::Class()) {
-        arg->setAttribute("BinnedLikelihood");
-        coutI(InputArguments) << "Activating binned likelihood attribute for "
-                              << arg->GetName() << std::endl;
+	arg->setAttribute("BinnedLikelihood",fBinnedLikelihood);
+	coutP(InputArguments) << (fBinnedLikelihood ? "Activating" : "Deactivating") << " binned likelihood attribute for " << arg->GetName() << std::endl;
       }
     }
   }

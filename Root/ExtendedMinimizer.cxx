@@ -754,8 +754,8 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
 
 RooFitUtils::ExtendedMinimizer::~ExtendedMinimizer() {
   // Destructor
-  clearContents(this->fNllCmdList,true);
-  clearContents(this->fFitCmdList,true);
+//  clearContents(this->fNllCmdList,true);
+//  clearContents(this->fFitCmdList,true);
 //  if(fNll) delete fNll;
 //  if(fMinimizer) delete fMinimizer;
 }
@@ -894,20 +894,6 @@ void RooFitUtils::ExtendedMinimizer::setup() {
       } else {
 	fNll = fPdf->createNLL(*fData, fNllCmdList);
       }
-
-      //here goes the penalty 
-      if (fPenaltyMini){
-        std::string s("fNLL");
-        RooArgSet fnset = RooArgSet();
-        for (auto pen:*fPenaltyMini){
-          s = s +"+"+pen->GetName();
-          fnset.add(*pen);
-        }
-        fnset.add(*fNll);    
-        RooAbsReal* nllpen = new RooAddition("fNll_pen", TString(s), fnset);
-        fNll = nllpen;
-      }
-
       nllval = fNll->getVal();
     } catch (std::exception& ex){
       throw ex;
@@ -990,6 +976,10 @@ int RooFitUtils::ExtendedMinimizer::parseNllConfig(const A &cmdList) {
 			 "OffsetLikelihood",true);
   } else {
     std::cout << "cannot change Nll config with preexisting Nll!" << std::endl;
+  }
+  if(fPenaltyMini){
+    fOwnedArgs.push_back(RooFit::ExternalConstraints(*fPenaltyMini));
+    fNllCmdList.Add(&(fOwnedArgs[fOwnedArgs.size()-1]));
   }
   return fNllCmdList.GetSize();
 }
