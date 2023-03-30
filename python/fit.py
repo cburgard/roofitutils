@@ -164,15 +164,13 @@ def buildMinimizer(args,model):
                 ROOT.RooFit.Hesse(args.get("hesse",True)),
                 ROOT.RooFit.Save()]
     
-    argelems.append(ROOT.RooFit.BatchMode("cpu"))
-    
     if model.GetPenalty():
         argelems.append(ROOT.RooFit.ExternalConstraints(model.GetPenalty()))
     if globs and globs.getSize() > 0:
         argelems.append(ROOT.RooFit.GlobalObservables(globs))
     elif nuis:
         argelems.append(ROOT.RooFit.Constrain(nuis))
-    if args.get("batchMode"):
+    if args.get("batchMode") and ROOT.RooFit.BatchMode:
         argelems.append(ROOT.RooFit.BatchMode(args.get("batchMode")))
     if args.get("findSigma",False):
         argelems.append(ROOT.RooFitUtils.ExtendedMinimizer.FindSigma(poiset))
