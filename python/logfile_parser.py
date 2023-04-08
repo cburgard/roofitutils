@@ -10,20 +10,23 @@ def make_parser():
     TIME=r"\d+:\d+:\d+"
 
     minimum = {
-            "NLL":      Parser(r"FVAL\s+= (?P<VAL>"+NUM+")"),
-            "Edm":      Parser(r"Edm\s+= (?P<VAL>"+NUM+")"),
-            "Nfcn":     Parser(r"Nfcn\s+= (?P<VAL>"+NUM+")"),
-            "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
-            "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),            
-            "FloatParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\+/-\s+(?P<err>"+NUM+")"),
-            "FloatParameterNoErr":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")"),        
-            "ConstParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)"),            
-        }
-
-
+        "MinVal":Parser(r"\s*Minimum value\s*[:=]\s*(?P<val>"+NUM+")"),        
+        "Edm":   Parser(r"\s*Edm\s*[:=]\s*(?P<val>"+NUM+")"),
+        "NLL":   Parser(r"FVAL\s+= (?P<val>"+NUM+")"),
+        "Nfcn":  Parser(r"Nfcn\s+= (?P<val>"+NUM+")"),
+        "Timing":             Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+")"),
+        "Timing+Slices":      Parser(r"Real time (?P<RealTime>"+TIME+"), CP time (?P<CPTime>"+NUM+"), (?P<Slices>\d+) slices"),            
+        "FloatParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\+/-\s+(?P<err>"+NUM+")"),
+        "FloatParameterNoErr":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")"),        
+        "ConstParameter":Parser(r"(?P<name>\w+)\s+=\s+(?P<val>"+NUM+")\s+\(fixed\)"),            
+    }
+    
+    
     hessestate = {
-        "MinVal":Parser(r"\s*Minimum value\s*:\s*(?P<val>"+NUM+")"),
-        "Edm":Parser(r"\s*Edm\s*:\s*(?P<val>"+NUM+")"),
+        "MinVal":Parser(r"\s*Minimum value\s*[:=]\s*(?P<val>"+NUM+")"),                
+        "Edm":   Parser(r"\s*Edm\s*[:=]\s*(?P<val>"+NUM+")"),
+        "MatrixRow":   Parser(r"\s*[[]+(?P<content>[0123456789,. \t]+[]]*)"),
+        "MatrixRowContd":   Parser(r"\s*\.\.\.\.\s*"),
         "InternalParameters":Parser(r"\s*Internal parameters\s*:",MetaParser({
             "value":Parser(r"\s*(?P<value>"+NUM+")")
         })),
@@ -38,12 +41,13 @@ def make_parser():
     }
     
     minimization = {
+        "ComputingSeed":Parser(r".*MnSeedGenerator Computing seed using NumericalGradient calculator"),
         "DefaultOptionChange":Parser(r"Minuit2Minimizer::Minuit\s+-\s+Changing default.*options",MetaParser({
             "StorageLevel":       Parser(r"StorageLevel\s+:\s+(?P<StorageLevel>\d+)"),
         })),
         "InitialState1":       Parser(r"MnSeedGenerator: for initial parameters FCN\s*=\s*(?P<initFCN>"+NUM+")"),
         "InitialState1a":      Parser(r"(?P<source>.*): Initial state[:]?\s*-\s*FCN\s*=\s*(?P<FCN>"+NUM+")\s*Edm\s*=\s*(?P<Edm>"+NUM+")\s*NCalls\s*=\s*(?P<NCalls>"+NUM+")"),
-        "InitialState2":       Parser(r"Info in <Minuit2>: MnSeedGenerator Initial state:"),# FCN =\s+(?P<FCN>"+NUM+")"),#\s+Edm =\s+(?P<Edm>"+NUM+")\s+NCalls =\s+(?P<NCalls>"+NUM+")"),
+        "InitialState2":       Parser(r".*MnSeedGenerator Initial state.*",MetaParser(hessestate)),
         "StartIteration":     Parser(r".*VariableMetric.*\s*[Ss]tart iterating until Edm is < (?P<Eps>"+NUM+")[ with call limit = (?P<CallLimit>\d+)]?"),
         "lowTolerance":       Parser(r".*VariableMetric.*\s*Tolerance is not sufficient, continue the minimization",MetaParser({
             "edminfo":            Parser(r"Info in\s*(?P<Label>\w+)\s*Edm\s*is\s*:\s*edm[val]*\s*=\s*(?P<edm>"+NUM+")")
