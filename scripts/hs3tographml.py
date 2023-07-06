@@ -1,4 +1,14 @@
 def collect_strings(d,skipName):
+    """
+    Recursively collects unique strings from a dictionary.
+
+    Args:
+        d (dict): The input dictionary.
+        skipName (bool): Whether to skip collecting strings from the "name" key.
+
+    Returns:
+        set: A set of unique strings collected from the dictionary.
+    """
     values = set()
     for k,v in d.items():
         if skipName and k == "name": continue        
@@ -14,20 +24,40 @@ def collect_strings(d,skipName):
             values.add(str(v))
     return values
     
-def fill_graph(model,dist,elements):
-    name = dist["name"]
+def fill_graph(model,element,elements):
+    """
+    Fills a graph model recursively with the provided element and all its dependents
+
+    Args:
+        model (dict): The graph model.
+        element (dict): The current element.
+        elements (dict): Dictionary of elements.
+
+    Returns:
+        None
+    """
+    name = element["name"]
     if name in model.keys():
         return
     model[name] = set()
-    values = collect_strings(dist,True)
+    values = collect_strings(element,True)
 
     for k in elements.keys():
         for v in values:
             if k in v:
-                model[dist["name"]].add(k)
+                model[element["name"]].add(k)
                 fill_graph(model,elements[k],elements)
 
 def main(args):
+    """
+    The main entry point of the program.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments.
+
+    Returns:
+        None
+    """
     import json
 
     with open(args.infile, 'r') as f:
