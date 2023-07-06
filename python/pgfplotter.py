@@ -224,7 +224,7 @@ def guessanchor(angle):
     else:
         return "north east"
     
-def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None,centralval=None):
+def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=None,maxval=None,rotatelabels=90,plotlabels=[],showall=False,flip=False,axlabel=None,centralval=None,xlabels=None,ylabels=None):
     """write a correlation matrix to a pgfplots tex file"""
     from RooFitUtils.util import flipped,parsegroups,parsepois,flattened
     from RooFitUtils.io import texify
@@ -234,8 +234,10 @@ def writematrix(atlas,xcoords_orig,ycoords_orig,allvalues,outfilename,minval=Non
     xcoords_orig = parsepois(xcoords_orig)
     ygroups = parsegroups(ycoords_orig)
     ycoords_orig = parsepois(ycoords_orig)
-    xlabels = [ texify(i) for i in xcoords_orig ]
-    ylabels = [ texify(i) for i in flipped(ycoords_orig,flip) ]
+    if not xlabels:
+        xlabels = [ texify(i) for i in xcoords_orig ]
+    if not ylabels:
+        ylabels = [ texify(i) for i in flipped(ycoords_orig,flip) ]
     xcoords = [ i.replace("_","") for i in xcoords_orig]
     ycoords = [ i.replace("_","") for i in flipped(ycoords_orig,flip) ]
     if centralval:
