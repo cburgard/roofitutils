@@ -1,15 +1,21 @@
 #!/bin/env python
 
-def find_elements(thelist,theregexlist):
+def find_elements(thelist,theregexlist,theantiregexlist=[]):
     import re
     from ROOT import RooArgList
     elems = RooArgList()
-    for expr in theregexlist:
-        rex = re.compile(expr)
-        for obj in thelist:
-            matched = rex.match(obj.GetName())
-            if matched:
-                elems.add(obj)
+    rexlist = [re.compile(e) for e in theregexlist]
+    antirexlist = [re.compile(e) for e in theantiregexlist]
+    for obj in thelist:
+        matched = False
+        for rex in rexlist:
+            if rex.match(obj.GetName()):
+                matched = True
+        for rex in antirexlist:
+            if rex.match(obj.GetName()):
+                matched = False
+        if matched:
+            elems.add(obj)
     return elems
 
 def sign(v):
@@ -84,7 +90,7 @@ def main(args):
         exit(1)
       
     xsecs = find_elements(workspace.allFunctions(),args.XS)
-    pois = find_elements(workspace.allVars(),args.POIs)    
+    pois = find_elements(workspace.allVars(),args.POIs,args.noPOIS)    
 
     parametrization = {}
 
@@ -204,6 +210,7 @@ if __name__ == "__main__":
     parser.add_argument("--pdf",default="simPdf",help="name of the top-level pdf in the workspace")
     parser.add_argument("--extend",action="store_true",help="extend the pdf if need be")
     parser.add_argument("--POIs",nargs="+",required=True)
+    parser.add_argument("--no-POIs",nargs="+",dest="noPOIS",required=False)    
     parser.add_argument("--symmetrize",choices=["none","max","avg"],default="none")
     parser.add_argument("--write-yml",type=str,default=None)
     parser.add_argument("--write-root",type=str,default=None)        
