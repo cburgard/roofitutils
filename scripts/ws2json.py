@@ -10,6 +10,12 @@ def main(args):
     for lib in args.libraries:
         ROOT.gSystem.Load(lib)
 
+    try:
+        ROOT.RooFit.JSONIO.setupKeys()
+    except:
+        print("unable to find default keys, skipping")
+        pass
+
     ws = None
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.FATAL)    
         

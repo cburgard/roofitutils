@@ -1,3 +1,5 @@
+#!/bin/env python
+
 def collect_strings(d,skipName):
     """
     Recursively collects unique strings from a dictionary.
@@ -64,16 +66,15 @@ def main(args):
         data = json.load(f)
 
     likelihood = None
-    if not args.likelihood:
-        print("please select a likelihood with the -l/--likelihood option, available options for this model are:")
-    for lh in data["likelihoods"]:
-        if args.likelihood:
-            if lh["name"] == args.likelihood:
-                likelihood = lh
-        else:
-            print("  "+lh["name"])    
-    if not likelihood:
-        print("no likelihood selected, exiting")
+    if "likelihoods" in data.keys():
+        if not args.likelihood:
+            print("please select a likelihood with the -l/--likelihood option, available options for this model are:")
+        for lh in data["likelihoods"]:
+            if args.likelihood:
+                if lh["name"] == args.likelihood:
+                    likelihood = lh
+            else:
+                print("  "+lh["name"])
 
     elements = {}
     for e in data["functions"]:
@@ -87,17 +88,21 @@ def main(args):
     model = {}
 
     dists = []
-    for dist in likelihood["distributions"]:
-        dists.append(dist)
+    if likelihood:
+        for dist in likelihood["distributions"]:
+            dists.append(dist)
+            for d in data["distributions"]:
+                if d["name"] == dist:
+                    fill_graph(model,d,elements)
+        for dist in likelihood["aux_distributions"]:
+            dists.append(dist)
+            for d in data["distributions"]:
+                if d["name"] == dist:
+                    fill_graph(model,d,elements)        
+    else:
         for d in data["distributions"]:
-            if d["name"] == dist:
-                fill_graph(model,d,elements)
-    for dist in likelihood["aux_distributions"]:
-        dists.append(dist)
-        for d in data["distributions"]:
-            if d["name"] == dist:
-                fill_graph(model,d,elements)        
-
+            fill_graph(model,d,elements)
+        
     import xml.etree.ElementTree as ET
     data = ET.Element("graphml")
     data.set("xmlns","http://graphml.graphdrawing.org/xmlns")
@@ -108,8 +113,10 @@ def main(args):
     graph.set("edgedefault","directed")
 
     # nodes
-    lh = ET.SubElement(graph,"node")
-    lh.set("id",likelihood["name"])
+    if likelihood:
+        lh = ET.SubElement(graph,"node")
+        lh.set("id",likelihood["name"])
+        
     for name in model.keys():
         node = ET.SubElement(graph,"node")
         node.set("id",str(name))
@@ -120,10 +127,12 @@ def main(args):
             edge = ET.SubElement(graph,"edge")
             edge.set("source",str(server))
             edge.set("target",str(client))
-    for dist in dists:
-        edge = ET.SubElement(graph,"edge")
-        edge.set("source",str(dist))
-        edge.set("target",str(likelihood["name"]))        
+            
+    if likelihood:
+        for dist in dists:
+            edge = ET.SubElement(graph,"edge")
+            edge.set("source",str(dist))
+            edge.set("target",str(likelihood["name"]))        
 
     with open(args.outfile,"wb") as outfile:
         tree.write(outfile, encoding='utf-8', xml_declaration = True)
