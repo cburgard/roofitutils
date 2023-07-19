@@ -72,7 +72,7 @@ public:
   void profileParameters(const std::string &profileName);
   void profileParameters(const std::vector<std::string> &profileName);
   RooRealVar * parseParameter(const std::string &pname);
-  RooRealVar *configureParameter(const std::string &pname);
+  RooArgSet configureParameter(const std::string &pname);
   void setInitialErrors();
 
   // _____________________________________________________________________________

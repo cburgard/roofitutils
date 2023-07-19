@@ -93,11 +93,7 @@ def buildModel(args):
             penaltyform = ROOT.RooFormulaVar(name, lineparts[0], pars)
             model.addPenalty(penaltyform)
 
-    if args.get("fixAllNP",False):          model.fixNuisanceParameters()
     if args.get("setInitialError",False):   model.setInitialErrors()
-    if args.get("fixParameters",None):      model.fixParameters(",".join(args["fixParameters"]))
-    if args.get("floatParameters",None):    model.floatParameters(",".join(args["floatParameters"]))
-    if args.get("randomizeParameters",None):model.randomizeParameters(",".join(args["randomizeParameters"]))        
 
     model.fixParametersOfInterest()
     model.profileParameters(",".join(args.get("profile",[])))
@@ -137,10 +133,11 @@ def buildMinimizer(args,model):
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
         p = model.configureParameter(poi)
-        if not p:
+        if not p.size() > 0:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
-        p.setConstant(False)
-        poiset.add(p)
+        for v in p:
+            v.setConstant(False)
+            poiset.add(v)
     pdf = model.GetPdf()
 
     findSigma = args.get("findSigma",False)
@@ -206,10 +203,15 @@ def fit(args,model,minimizer):
         poinames = names(pois)
     for poi in poinames:
         p = model.configureParameter(poi)
-
-        if not p:
+        if not p.size() > 0:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
-        p.setConstant(False)
+        for v in p:
+            v.setConstant(False)
+
+    if args.get("fixAllNP",False):          model.fixNuisanceParameters()
+    if args.get("fixParameters",None):      model.fixParameters(",".join(args["fixParameters"]))
+    if args.get("floatParameters",None):    model.floatParameters(",".join(args["floatParameters"]))
+    if args.get("randomizeParameters",None):model.randomizeParameters(",".join(args["randomizeParameters"]))        
 
     if args.get("fit",True):
         start = time()

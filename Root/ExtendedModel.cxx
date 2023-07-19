@@ -539,17 +539,30 @@ RooRealVar * RooFitUtils::ExtendedModel::parseParameter(const std::string &pname
 
 // _____________________________________________________________________________
 
-RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
+RooArgSet RooFitUtils::ExtendedModel::configureParameter(const std::string &pname) {
   // Fix a parameter at the specified value and/or apply ranges and boundaries
   TString thisName(pname.c_str());
 
+  RooArgSet retval;
+  
   int sign = 0;double origVal=0;bool useRange = false;double lo = 0;double hi = 0;bool useBoundary = false;double boundary = 0;
+  if(thisName.Contains("*")){
+    for(auto* var:this->fWorkspace->allVars()){
+      if(RooFitUtils::matches(var->GetName(),pname)){
+	static_cast<RooRealVar*>(var)->setConstant(0);
+	retval.add(*var);
+      }
+    }
+    return retval;
+  }
+  
   RooRealVar* thisPoi = this->parseParameter(pname,origVal,sign,useRange,lo,hi,useBoundary,boundary);
   if(!thisPoi){
     coutE(ObjectHandling) << "Parameter " << thisName << " doesn't exist!"
                           << std::endl;
-    return NULL;
+    return retval;
   }
+  retval.add(*thisPoi);
   
   if(useRange){
     thisPoi->setRange(lo, hi);
@@ -589,7 +602,7 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
 //                        << " in [" << thisPoi->getMin() << ","
 //                        << thisPoi->getMax() << "]" << std::endl;
 
-  return thisPoi;
+  return retval;
 }
 
 // _____________________________________________________________________________
@@ -597,9 +610,9 @@ RooRealVar * RooFitUtils::ExtendedModel::configureParameter(const std::string &p
 void RooFitUtils::ExtendedModel::profileParameters(const std::vector<std::string> &parsed) {
   // Fix a subset of the nuisance parameters at the specified values
   for (const auto& parname:parsed){
-    RooRealVar *thisPoi = this->configureParameter(parname);
-    if (thisPoi) {
-      coutI(ObjectHandling) << "Profiling parameter " << thisPoi->GetName() << std::endl;
+    auto poi = this->configureParameter(parname);
+    if (poi.size()>0) {
+      coutI(ObjectHandling) << "Profiling parameter " << poi.first()->GetName() << std::endl;
     }
   }
 }
@@ -608,124 +621,134 @@ void RooFitUtils::ExtendedModel::profileParameters(const std::vector<std::string
 
 void RooFitUtils::ExtendedModel::setInitialErrors() {
   // Set initial errors of model parameters depending on constraint terms
-  RooArgSet *AllConstraints = new RooArgSet();
+  if(fPOIs){
+    for (RooLinkedListIter it = fPOIs->iterator();
+	 RooRealVar *poi = dynamic_cast<RooRealVar *>(it.Next());) {
+      poi->setError(0.* (poi->getMax() - poi->getMin()));
+    }
+  }
+
+  if(fNuis){
+    RooArgSet *AllConstraints = new RooArgSet();
 
 #ifndef HAS_NO_RooNameSet
-  if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
-                           RooNameSet(*fData->get()).content()))) {
-    // Retrieve constraints from cache
-    const RooArgSet *constr = fWorkspace->set(
-        Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
-             RooNameSet(*fData->get()).content()));
+    if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
+			     RooNameSet(*fData->get()).content()))) {
+      // Retrieve constraints from cache
+      const RooArgSet *constr = fWorkspace->set(
+						Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
+						     RooNameSet(*fData->get()).content()));
 #else
-  if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
-                           RooHelpers::getColonSeparatedNameString(*fData->get()).c_str()))) {
-    // Retrieve constraints from cache
-    const RooArgSet *constr = fWorkspace->set(
-        Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
-             RooHelpers::getColonSeparatedNameString(*fData->get()).c_str()));
+      if (fWorkspace->set(Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
+			       RooHelpers::getColonSeparatedNameString(*fData->get()).c_str()))) {
+	// Retrieve constraints from cache
+	const RooArgSet *constr = fWorkspace->set(
+						  Form("CACHE_CONSTR_OF_PDF_%s_FOR_OBS_%s", fPdf->GetName(),
+						       RooHelpers::getColonSeparatedNameString(*fData->get()).c_str()));
 #endif    
-    AllConstraints->add(*constr);
-    delete constr;
-  } else {
-    // Load information needed to determine attributes from ModelConfig
-    if(fModelConfig){
-      RooAbsPdf *tmpPdf = (RooAbsPdf *)fModelConfig->GetPdf();
-      RooArgSet *tmpAllNuisanceParameters =
-        (RooArgSet *)fModelConfig->GetNuisanceParameters();
-      RooArgSet *tmpAllObservables = (RooArgSet *)fModelConfig->GetObservables();
+	AllConstraints->add(*constr);
+	delete constr;
+      } else {
+	// Load information needed to determine attributes from ModelConfig
+	if(fModelConfig){
+	  RooAbsPdf *tmpPdf = (RooAbsPdf *)fModelConfig->GetPdf();
+	  RooArgSet *tmpAllNuisanceParameters =
+	    (RooArgSet *)fModelConfig->GetNuisanceParameters();
+	  RooArgSet *tmpAllObservables = (RooArgSet *)fModelConfig->GetObservables();
       
-      // Copies, to keep original sets in place after getAllconstraints call
-      RooArgSet tmpAllNuisanceParameters2 = *tmpAllNuisanceParameters;
-      RooArgSet tmpAllObservables2 = *tmpAllObservables;
-      AllConstraints = tmpPdf->getAllConstraints(
-						 tmpAllObservables2, tmpAllNuisanceParameters2, kFALSE);
-    }
-  }
+	  // Copies, to keep original sets in place after getAllconstraints call
+	  RooArgSet tmpAllNuisanceParameters2 = *tmpAllNuisanceParameters;
+	  RooArgSet tmpAllObservables2 = *tmpAllObservables;
+	  AllConstraints = tmpPdf->getAllConstraints(
+						     tmpAllObservables2, tmpAllNuisanceParameters2, kFALSE);
+	}
+      }
 
-  // Take care of the case where we have a product of constraint terms
-  TIterator *ConstraintItrAll = AllConstraints->createIterator();
-  RooAbsArg *nextConstraint;
-  RooArgSet *tmpAllConstraints = new RooArgSet(AllConstraints->GetName());
-  while ((nextConstraint = (RooAbsArg *)ConstraintItrAll->Next())) {
-    if (nextConstraint->IsA() == RooProdPdf::Class()) {
-      RooArgSet thisComponents;
-      FindUniqueProdComponents((RooProdPdf *)nextConstraint, thisComponents);
-      tmpAllConstraints->add(thisComponents);
-    } else {
-      coutI(ObjectHandling)
-          << "Adding constraint " << nextConstraint->GetName() << std::endl;
-      tmpAllConstraints->add(*nextConstraint);
-    }
-  }
+      // Take care of the case where we have a product of constraint terms
+      TIterator *ConstraintItrAll = AllConstraints->createIterator();
+      RooAbsArg *nextConstraint;
+      RooArgSet *tmpAllConstraints = new RooArgSet(AllConstraints->GetName());
+      while ((nextConstraint = (RooAbsArg *)ConstraintItrAll->Next())) {
+	if (nextConstraint->IsA() == RooProdPdf::Class()) {
+	  RooArgSet thisComponents;
+	  FindUniqueProdComponents((RooProdPdf *)nextConstraint, thisComponents);
+	  tmpAllConstraints->add(thisComponents);
+	} else {
+	  coutI(ObjectHandling)
+	    << "Adding constraint " << nextConstraint->GetName() << std::endl;
+	  tmpAllConstraints->add(*nextConstraint);
+	}
+      }
 
-  for (RooLinkedListIter it = fNuis->iterator();
-       RooRealVar *nuip = dynamic_cast<RooRealVar *>(it.Next());) {
-    coutI(ObjectHandling) << "On nuisance parameter " << nuip->GetName();
-    double prefitvariation = 1.0;
 
-    TIterator *ConstraintItr = tmpAllConstraints->createIterator();
-    bool foundConstraint = kFALSE;
-    bool foundGaussianConstraint = kFALSE;
-    while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next()) &&
-           !foundConstraint) {
-      if (nextConstraint->dependsOn(*nuip)) {
-        foundConstraint = kTRUE;
+      for (RooLinkedListIter it = fNuis->iterator();
+	   RooRealVar *nuip = dynamic_cast<RooRealVar *>(it.Next());) {
+	coutI(ObjectHandling) << "On nuisance parameter " << nuip->GetName();
+	double prefitvariation = 1.0;
 
-        // Loop over global observables to match nuisance parameter and
-        // global observable in case of a constrained nuisance parameter
-        TIterator *GlobsItr = fGlobs->createIterator();
-        RooRealVar *nextGlobalObservable;
-        bool foundGlobalObservable = kFALSE;
-        while ((nextGlobalObservable = (RooRealVar *)GlobsItr->Next()) &&
-               !foundGlobalObservable) {
-          if (nextConstraint->dependsOn(*nextGlobalObservable)) {
-            foundGlobalObservable = kTRUE;
+	TIterator *ConstraintItr = tmpAllConstraints->createIterator();
+	bool foundConstraint = kFALSE;
+	bool foundGaussianConstraint = kFALSE;
+	while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next()) &&
+	       !foundConstraint) {
+	  if (nextConstraint->dependsOn(*nuip)) {
+	    foundConstraint = kTRUE;
 
-            // find constraint width in case of a Gaussian
-            if (nextConstraint->IsA() == RooGaussian::Class()) {
-              foundGaussianConstraint = kTRUE;
-              double oldSigmaVal = 1.0;
-              TIterator *ServerItr = nextConstraint->serverIterator();
-              RooRealVar *nextServer;
-              bool foundSigma = kFALSE;
-              while ((nextServer = (RooRealVar *)ServerItr->Next()) &&
-                     !foundSigma) {
-                if (nextServer != nextGlobalObservable && nextServer != nuip) {
-                  oldSigmaVal = nextServer->getVal();
-                  foundSigma = kTRUE;
-                }
-              }
+	    // Loop over global observables to match nuisance parameter and
+	    // global observable in case of a constrained nuisance parameter
+	    TIterator *GlobsItr = fGlobs->createIterator();
+	    RooRealVar *nextGlobalObservable;
+	    bool foundGlobalObservable = kFALSE;
+	    while ((nextGlobalObservable = (RooRealVar *)GlobsItr->Next()) &&
+		   !foundGlobalObservable) {
+	      if (nextConstraint->dependsOn(*nextGlobalObservable)) {
+		foundGlobalObservable = kTRUE;
 
-              if (AlmostEqualUlpsAndAbs(oldSigmaVal, 1.0, 0.001, 4)) {
-                oldSigmaVal = 1.0;
-              }
+		// find constraint width in case of a Gaussian
+		if (nextConstraint->IsA() == RooGaussian::Class()) {
+		  foundGaussianConstraint = kTRUE;
+		  double oldSigmaVal = 1.0;
+		  TIterator *ServerItr = nextConstraint->serverIterator();
+		  RooRealVar *nextServer;
+		  bool foundSigma = kFALSE;
+		  while ((nextServer = (RooRealVar *)ServerItr->Next()) &&
+			 !foundSigma) {
+		    if (nextServer != nextGlobalObservable && nextServer != nuip) {
+		      oldSigmaVal = nextServer->getVal();
+		      foundSigma = kTRUE;
+		    }
+		  }
 
-              if (!foundSigma) {
-                coutI(ObjectHandling)
-                    << "Sigma for pdf " << nextConstraint->GetName()
-                    << " not found. Using 1.0." << std::endl;
-              } else {
-                coutI(ObjectHandling)
-                    << "Using " << oldSigmaVal << " for sigma of pdf "
-                    << nextConstraint->GetName() << std::endl;
-              }
+		  if (AlmostEqualUlpsAndAbs(oldSigmaVal, 1.0, 0.001, 4)) {
+		    oldSigmaVal = 1.0;
+		  }
 
-              prefitvariation = oldSigmaVal;
-            }
-          }
-        }
-        delete GlobsItr;
+		  if (!foundSigma) {
+		    coutI(ObjectHandling)
+		      << "Sigma for pdf " << nextConstraint->GetName()
+		      << " not found. Using 1.0." << std::endl;
+		  } else {
+		    coutI(ObjectHandling)
+		      << "Using " << oldSigmaVal << " for sigma of pdf "
+		      << nextConstraint->GetName() << std::endl;
+		  }
+
+		  prefitvariation = oldSigmaVal;
+		}
+	      }
+	    }
+	    delete GlobsItr;
+	  }
+	}
+	delete ConstraintItr;
+
+	if (foundGaussianConstraint) {
+	  coutP(ObjectHandling)
+	    << "Changing error of " << nuip->GetName() << " from "
+	    << nuip->getError() << " to " << prefitvariation << std::endl;
+	  nuip->setError(prefitvariation);
+	  nuip->removeRange();
+	}
       }
     }
-    delete ConstraintItr;
-
-    if (foundGaussianConstraint) {
-      coutP(ObjectHandling)
-          << "Changing error of " << nuip->GetName() << " from "
-          << nuip->getError() << " to " << prefitvariation << std::endl;
-      nuip->setError(prefitvariation);
-      nuip->removeRange();
-    }
   }
-}
