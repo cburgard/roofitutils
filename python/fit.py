@@ -135,7 +135,7 @@ def buildMinimizer(args,model):
         p = model.configureParameter(poi)
         if not p.getSize() > 0:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
-        for v in p:
+        for v in makelist(p):
             v.setConstant(False)
             poiset.add(v)
     pdf = model.GetPdf()
@@ -205,7 +205,7 @@ def fit(args,model,minimizer):
         p = model.configureParameter(poi)
         if not p.getSize() > 0:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
-        for v in p:
+        for v in makelist(p):
             v.setConstant(False)
 
     if args.get("fixAllNP",False):          model.fixNuisanceParameters()
