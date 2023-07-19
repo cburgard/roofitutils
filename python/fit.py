@@ -133,7 +133,7 @@ def buildMinimizer(args,model):
         poinames = [ p.GetName() for p in makelist(pois) ]
     for poi in poinames:
         p = model.configureParameter(poi)
-        if not p.size() > 0:
+        if not p.getSize() > 0:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         for v in p:
             v.setConstant(False)
@@ -203,7 +203,7 @@ def fit(args,model,minimizer):
         poinames = names(pois)
     for poi in poinames:
         p = model.configureParameter(poi)
-        if not p.size() > 0:
+        if not p.getSize() > 0:
             raise(RuntimeError("unable to find parameter '{0:s}'".format(poi)))
         for v in p:
             v.setConstant(False)
