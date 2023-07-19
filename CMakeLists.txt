@@ -11,6 +11,8 @@ else()
   set(HAS_PARENT 1)
 endif()
 
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+
 IF(${HAS_PARENT})
   message("announcing RooFitUtils")
   set(HAS_RooFitUtils 1 PARENT_SCOPE)
