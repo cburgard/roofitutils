@@ -611,7 +611,7 @@ void RooFitUtils::ExtendedModel::profileParameters(const std::vector<std::string
   // Fix a subset of the nuisance parameters at the specified values
   for (const auto& parname:parsed){
     auto poi = this->configureParameter(parname);
-    if (poi.size()>0) {
+    if (poi.getSize()>0) {
       coutI(ObjectHandling) << "Profiling parameter " << poi.first()->GetName() << std::endl;
     }
   }
