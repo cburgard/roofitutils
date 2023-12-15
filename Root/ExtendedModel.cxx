@@ -53,6 +53,27 @@ namespace {
   }
 }
 
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,30,0)
+namespace RooHelpers {
+  std::string getColonSeparatedNameString(RooArgSet const &argSet, char delim = ':')
+  {
+    
+    RooArgList tmp(argSet);
+    tmp.sort();
+    
+    std::string content;
+    for (auto const &arg : tmp) {
+      content += arg->GetName();
+      content += delim;
+    }
+    if (!content.empty()) {
+      content.pop_back();
+    }
+    return content;
+  }
+}
+#endif
+  
 // _____________________________________________________________________________
 
 RooFitUtils::ExtendedModel::ExtendedModel(
