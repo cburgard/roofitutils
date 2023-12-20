@@ -16,6 +16,10 @@
 #define HAS_NO_RooNameSet
 #endif
 
+#if ROOT_VERSION_CODE > ROOT_VERSION(6,26,0)
+#include "RooFitHS3/RooJSONFactoryWSTool.h"
+#endif
+
 #include "RooFitUtils/ExtendedModel.h"
 #include "RooFitUtils/Log.h"
 #include "RooFitUtils/Utils.h"
@@ -39,6 +43,15 @@
 
 ClassImp(RooFitUtils::ExtendedModel)
 
+namespace {
+  bool hasEnding (std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+      return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+      return false;
+    }
+  }
+}
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6,30,0)
 namespace RooHelpers {
@@ -61,8 +74,6 @@ namespace RooHelpers {
 }
 #endif
   
-
-
 // _____________________________________________________________________________
 
 RooFitUtils::ExtendedModel::ExtendedModel(
@@ -92,45 +103,57 @@ RooFitUtils::ExtendedModel::~ExtendedModel() {
 void RooFitUtils::ExtendedModel::initialise() {
   // Load all model information from specified file
   coutP(InputArguments) << "Opening file " << fFileName << std::endl;
-  fFile = TFile::Open(fFileName.c_str());
-  if (!fFile || !fFile->IsOpen()) {
-    if (fFile) {
-      delete fFile;
-      fFile = NULL;
+
+  if(::hasEnding(fFileName,".root")){
+    fFile = TFile::Open(fFileName.c_str());
+    if (!fFile || !fFile->IsOpen()) {
+      if (fFile) {
+	delete fFile;
+	fFile = NULL;
+      }
+      throw std::runtime_error(
+			       TString::Format("unable to open file '%s'", fFileName.c_str()).Data());
     }
-    throw std::runtime_error(
-        TString::Format("unable to open file '%s'", fFileName.c_str()).Data());
+    TObject *ws = fFile->Get(fWsName.c_str());
+    if (!ws) {
+      std::stringstream ss;
+      ss << "unable to load object '" << fWsName << "', available keys are \n";
+      TList *keys = fFile->GetListOfKeys();
+      TKey* thekey = 0;
+      bool onlyOne = true;
+      for (int i = 0; i < keys->GetEntries(); ++i) {
+	TKey *k = dynamic_cast<TKey *>(keys->At(i));
+	if (!k || strcmp(k->GetClassName(),"RooWorkspace")>0)
+	  continue;
+	if(thekey) onlyOne=false;
+	thekey = k;
+	ss << "    '" << k->GetName() << "' (" << k->GetClassName() << ")\n";
+      }
+      if(thekey && onlyOne){
+	ws = thekey->ReadObj();
+	coutW(InputArguments) << "unable to load object '" << fWsName << "', but found only one RooWorkspace in the file - using '" << ws->GetName() << "' instead!" << std::endl;
+      }
+      if(!thekey) ss << "    (none)";
+      if(!ws){
+	throw std::runtime_error(ss.str());
+      }
+    }
+    fWorkspace = dynamic_cast<RooWorkspace *>(ws);
+    
+  } else if(::hasEnding(fFileName,".json")){
+#if ROOT_VERSION_CODE > ROOT_VERSION(6,26,0)
+    fWorkspace = new RooWorkspace("workspace");
+    RooJSONFactoryWSTool tool(*fWorkspace);
+    tool.importJSON(fFileName);
+#else
+    throw std::runtime_error("unable to read JSON files in this ROOT version!");
+#endif
   }
   
   if(!fPenalty) {
     fPenalty = new RooArgSet();
   }
 
-  TObject *ws = fFile->Get(fWsName.c_str());
-  if (!ws) {
-    std::stringstream ss;
-    ss << "unable to load object '" << fWsName << "', available keys are \n";
-    TList *keys = fFile->GetListOfKeys();
-    TKey* thekey = 0;
-    bool onlyOne = true;
-    for (int i = 0; i < keys->GetEntries(); ++i) {
-      TKey *k = dynamic_cast<TKey *>(keys->At(i));
-      if (!k || strcmp(k->GetClassName(),"RooWorkspace")>0)
-        continue;
-      if(thekey) onlyOne=false;
-      thekey = k;
-      ss << "    '" << k->GetName() << "' (" << k->GetClassName() << ")\n";
-    }
-    if(thekey && onlyOne){
-      ws = thekey->ReadObj();
-      coutW(InputArguments) << "unable to load object '" << fWsName << "', but found only one RooWorkspace in the file - using '" << ws->GetName() << "' instead!" << std::endl;
-    }
-    if(!thekey) ss << "    (none)";
-    if(!ws){
-      throw std::runtime_error(ss.str());
-    }
-  }
-  fWorkspace = dynamic_cast<RooWorkspace *>(ws);
   if (!fWorkspace) {
     throw std::runtime_error(
         TString::Format("object '%s' is not a workspace", fWsName.c_str())

@@ -67,6 +67,29 @@ def main(args):
     for arg in args.export_defs:
         ROOT.RooFit.JSONIO.loadExportKeys(arg)
 
+    if args.force_rename:
+        for var in ws.allVars():
+            if not var.InheritsFrom(ROOT.RooConstVar().Class()) and "." in var.GetName():
+                var.SetName(var.GetName().replace(".","_"))
+        for func in ws.allFunctions():
+            if "." in func.GetName():
+                func.SetName(func.GetName().replace(".","_"))
+        for pdf in ws.allPdfs():
+            if "." in pdf.GetName():
+                pdf.SetName(pdf.GetName().replace(".","_"))
+        for data in ws.allData():
+            if "." in data.GetName():
+                data.SetName(data.GetName().replace(".","_"))
+            for var in data.get():
+                if "." in var.GetName():
+                    var.SetName(var.GetName().replace(".","_"))
+        for data in ws.allEmbeddedData():
+            if "." in data.GetName():
+                data.SetName(data.GetName().replace(".","_"))
+            for var in data.get():
+                if "." in var.GetName():
+                    var.SetName(var.GetName().replace(".","_"))                                    
+                    
     if args.print:
         ws.Print()
 
@@ -82,6 +105,8 @@ def main(args):
                 obj.SetExternalConstraints(extConstraints)
         
     tool = ROOT.RooJSONFactoryWSTool(ws)
+    if not args.use_lists:
+        tool.useListsInsteadOfDicts = args.use_lists
 
     tool.exportJSON(args.outfile)
 
@@ -94,8 +119,11 @@ if __name__ == "__main__":
     parser.add_argument("--load-exporters",nargs="+",type=str,help="load some exporters",dest="export_defs",default=[])    
     parser.add_argument("--load-libraries",nargs="+",type=str,help="load some libraries",dest="libraries",default=[])
     parser.add_argument("--recover",action="store_true",dest="recover_file",default=False,help="recover corrupted file")
+    parser.add_argument("--force-rename",action="store_true",dest="force_rename",default=False,help="change forbidden names")    
     parser.add_argument("--print",action="store_true",dest="print",default=False,help="print the workspace once loaded")
     parser.add_argument("--patch-model-config",dest="patchMC",default=None,help="Model Config to be patched")
     parser.add_argument("--register-external-constraint",dest="extConstraint",nargs="+",default=[])
+    parser.add_argument("--use-lists",dest="use_lists",action="store_true",default=True)
+    parser.add_argument("--use-dicts",dest="use_lists",action="store_false")    
 
     main(parser.parse_args())    
