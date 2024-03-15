@@ -163,9 +163,7 @@ void RooFitUtils::ExtendedModel::initialise() {
   // Fixes for known features
   coutP(InputArguments) << (fBinnedLikelihood ? "Activating" : "Deactivating") << " binned likelihood evaluation"  << std::endl;
   {
-    RooFIter iter = fWorkspace->components().fwdIterator();
-    RooAbsArg *arg;
-    while ((arg = iter.next())) {
+    for(auto* arg : fWorkspace->components()){
       if (arg->IsA() == RooRealSumPdf::Class()) {
 	arg->setAttribute("BinnedLikelihood",fBinnedLikelihood);
 	coutP(InputArguments) << (fBinnedLikelihood ? "Activating" : "Deactivating") << " binned likelihood attribute for " << arg->GetName() << std::endl;
@@ -177,9 +175,7 @@ void RooFitUtils::ExtendedModel::initialise() {
     coutP(InputArguments)
         << "Tagging CMS main measurements to reduce memory consumption"
         << std::endl;
-    RooFIter iter = fWorkspace->components().fwdIterator();
-    RooAbsArg *arg;
-    while ((arg = iter.next())) {
+    for(auto* arg : fWorkspace->components()){
       if (arg->IsA() == RooAddPdf::Class() &&
           TString(arg->GetName()).BeginsWith(fTagAsMeasurement.c_str())) {
         arg->setAttribute("MAIN_MEASUREMENT");
@@ -487,9 +483,8 @@ void RooFitUtils::ExtendedModel::randomizeParameters(const std::vector<std::stri
   TRandom rnd;
   TObject* obj;
   for(const auto&pat:parsed){
-    RooFIter itr(params->fwdIterator());
     int found = 0;
-    while((obj = itr.next())){
+    for(auto* obj: *params){
       if(RooFitUtils::matches(obj->GetName(),pat)){
         RooRealVar *par = dynamic_cast<RooRealVar *>(obj);
         if(par){
@@ -669,8 +664,8 @@ void RooFitUtils::ExtendedModel::profileParameters(const std::vector<std::string
 void RooFitUtils::ExtendedModel::setInitialErrors() {
   // Set initial errors of model parameters depending on constraint terms
   if(fPOIs){
-    for (RooLinkedListIter it = fPOIs->iterator();
-	 RooRealVar *poi = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto* it : *fPOIs){
+      RooRealVar *poi = dynamic_cast<RooRealVar *>(it);
       poi->setError(0.* (poi->getMax() - poi->getMin()));
     }
   }
@@ -712,10 +707,8 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
       }
 
       // Take care of the case where we have a product of constraint terms
-      TIterator *ConstraintItrAll = AllConstraints->createIterator();
-      RooAbsArg *nextConstraint;
       RooArgSet *tmpAllConstraints = new RooArgSet(AllConstraints->GetName());
-      while ((nextConstraint = (RooAbsArg *)ConstraintItrAll->Next())) {
+      for(auto* nextConstraint : *AllConstraints){
 	if (nextConstraint->IsA() == RooProdPdf::Class()) {
 	  RooArgSet thisComponents;
 	  FindUniqueProdComponents((RooProdPdf *)nextConstraint, thisComponents);
@@ -727,27 +720,24 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 	}
       }
 
-
-      for (RooLinkedListIter it = fNuis->iterator();
-	   RooRealVar *nuip = dynamic_cast<RooRealVar *>(it.Next());) {
+      for(auto* it : fNuis){
+	RooRealVar *nuip = dynamic_cast<RooRealVar *>(it);
 	coutI(ObjectHandling) << "On nuisance parameter " << nuip->GetName();
 	double prefitvariation = 1.0;
 
-	TIterator *ConstraintItr = tmpAllConstraints->createIterator();
 	bool foundConstraint = kFALSE;
 	bool foundGaussianConstraint = kFALSE;
-	while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next()) &&
-	       !foundConstraint) {
+	for(auto* next : tmpAllConstraints){
+	  RooAbsReal* nextConstraint = static_cast<RooAbsReal*>(next);
+	  if(foundConstraint) break;
 	  if (nextConstraint->dependsOn(*nuip)) {
 	    foundConstraint = kTRUE;
 
 	    // Loop over global observables to match nuisance parameter and
 	    // global observable in case of a constrained nuisance parameter
-	    TIterator *GlobsItr = fGlobs->createIterator();
-	    RooRealVar *nextGlobalObservable;
 	    bool foundGlobalObservable = kFALSE;
-	    while ((nextGlobalObservable = (RooRealVar *)GlobsItr->Next()) &&
-		   !foundGlobalObservable) {
+	    for(auto* next : fGlobs){
+	      RooRealVar *nextGlobalObservable = static_cast<RooRealVar*>(next);
 	      if (nextConstraint->dependsOn(*nextGlobalObservable)) {
 		foundGlobalObservable = kTRUE;
 
@@ -755,11 +745,10 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 		if (nextConstraint->IsA() == RooGaussian::Class()) {
 		  foundGaussianConstraint = kTRUE;
 		  double oldSigmaVal = 1.0;
-		  TIterator *ServerItr = nextConstraint->serverIterator();
-		  RooRealVar *nextServer;
 		  bool foundSigma = kFALSE;
-		  while ((nextServer = (RooRealVar *)ServerItr->Next()) &&
-			 !foundSigma) {
+		  for(auto* next : nextConstraint->servers()){
+		    RooRealVar* nextServer = dynamic_cast<RooRealVar*>(next);
+		    if(foundSigma) break;
 		    if (nextServer != nextGlobalObservable && nextServer != nuip) {
 		      oldSigmaVal = nextServer->getVal();
 		      foundSigma = kTRUE;
@@ -784,10 +773,8 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 		}
 	      }
 	    }
-	    delete GlobsItr;
 	  }
 	}
-	delete ConstraintItr;
 
 	if (foundGaussianConstraint) {
 	  coutP(ObjectHandling)

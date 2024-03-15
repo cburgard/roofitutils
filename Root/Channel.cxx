@@ -196,9 +196,8 @@ void RooFitUtils::Channel::RegulariseChannel() {
   // RooArgSet* tmpNuisanceParameters = new
   // RooArgSet(fNuisanceParameters->GetName());
   RooArgSet *tmpNuisanceParameters = new RooArgSet("NuisanceParameters");
-  TIterator *nuiItr = fNuisanceParameters->createIterator();
-  RooRealVar *nextNui;
-  while ((nextNui = (RooRealVar *)nuiItr->Next())) {
+  for(auto* next : *fNuisanceParameters){
+    RooRealVar* nextNui = static_cast<RooRealVar*>(next);
     std::stringstream argName;
 
     if (thisRenamedNuis[(nextNui->GetName())] == "") {
@@ -240,15 +239,12 @@ void RooFitUtils::Channel::RegulariseChannel() {
       tmpNuisanceParameters->add(*nextNui);
     }
   }
-  delete nuiItr;
   SetNuisanceParameters(tmpNuisanceParameters);
 
   // loop over the observables in the dataset for this channel and add to the
   // editing command
   const RooArgSet *obsSet = fData->get();
-  TIterator *obsSetItr = obsSet->createIterator();
-  RooRealVar *nextObs;
-  while ((nextObs = (RooRealVar *)obsSetItr->Next())) {
+  for(auto* nextObs : *obsSet){
     TString newname = TString(nextObs->GetName()) + "_" + fParentMeasurement;
     RooRealVar *fromComb = (RooRealVar *)fWorkSpace->var(newname.Data());
     if (!fromComb) {
@@ -259,7 +255,6 @@ void RooFitUtils::Channel::RegulariseChannel() {
     }
     if(fPdf->dependsOn(*fromComb)) tmpObservables->add(*fromComb);
   }
-  delete obsSetItr;
   SetObservables(tmpObservables);
 
   // that should be all to edit for now
@@ -287,9 +282,8 @@ void RooFitUtils::Channel::RegulariseChannel() {
                         << ") adding global observables for model "
                         << fParentMeasurement << std::endl;
 
-  TIterator *obsItr = fGlobalObservables->createIterator();
-  RooRealVar *nextGlob;
-  while ((nextGlob = (RooRealVar *)obsItr->Next())) {
+  for(auto* next : *fGlobalObservables){
+    RooRealVar* nextGlob = static_cast<RooRealVar*>(next);
     std::stringstream argName;
     if (thisRenamedGlobs[nextGlob->GetName()] == "") {
       argName << nextGlob->GetName() << "_" + fParentMeasurement;
@@ -326,7 +320,6 @@ void RooFitUtils::Channel::RegulariseChannel() {
     nextGlob->setAttribute("GLOBAL_OBSERVABLE");
     tmpGlobalObservables->add(*nextGlob);
   }
-  delete obsItr;
   SetGlobalObservables(tmpGlobalObservables);
   fGlobalObservables->setAttribAll("GLOBAL_OBSERVABLE");
 }

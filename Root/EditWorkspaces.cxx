@@ -397,9 +397,7 @@ RooArgSet copyset(RooWorkspace &w, const RooArgSet *in, const Rename &rename,
   if (!in || in->getSize() <= 0)
     return out;
   INFO("Copy %d %s", in->getSize(), listtype);
-  RooFIter it = in->fwdIterator();
-  RooAbsArg *a;
-  while ((a = it.next())) {
+  for(auto* a : *in){
     TString newname = a->GetName();
     bool renamed = rename.rename(newname, false, false, false);
     RooAbsArg *b = w.arg(newname);
@@ -448,11 +446,11 @@ RooCmdArg renameVariable(const RooAbsCollection *components,
                          std::vector<std::string> *newTitle = 0) {
   if (!rename.size())
     return RooCmdArg();
-  RooFIter it = components->fwdIterator();
-  RooAbsArg *a;
   TString from = ",", to = ",";
   bool docont = false;
-  for (int ind = 0; (a = it.next()); ind++) {
+  int ind = 0;
+  for(auto a : *components){
+    ++ind;
     if (cont && ind < *cont)
       continue; // skip to where we left off
     TString oldname = a->GetName(), newname = oldname;
@@ -677,11 +675,9 @@ int editws(const RooWorkspace *w, RooWorkspace &wout, const char *mcname,
   const RooArgSet &aout = wout.components();
   RooArgSet ain = w->components();
   ain.sort();
-  RooFIter ita = ain.fwdIterator();
-  RooAbsArg *a;
   TPRegexp re("_orig\\d*(?:_\\d+)?$");
   std::map<std::string, int> orig;
-  while ((a = ita.next())) {
+  for(auto a : ain){
     if (!aout.find(ren.renamed(a->GetName(), false, false, false))) {
       TObjArray *m = re.MatchS(a->GetName());
       if (m->GetEntries() == 1)

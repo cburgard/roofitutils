@@ -92,9 +92,7 @@ void RooFitUtils::Measurement::initialise() {
 
   if (fBinnedLikelihood) {
     // Activate binned likelihood calculation for binned models
-    RooFIter iter = fWorkSpace->components().fwdIterator();
-    RooAbsArg *arg;
-    while ((arg = iter.next())) {
+    for(auto* arg : fWorkSpace->components()){
       if (arg->IsA() == RooRealSumPdf::Class()) {
         arg->setAttribute("BinnedLikelihood");
         coutP(InputArguments) << "Measurement::initialise(" << fName
@@ -137,8 +135,8 @@ void RooFitUtils::Measurement::initialise() {
     coutE(InputArguments) << "Measurement::initialise(" << fName
                           << ") could not find list of POIs " << std::endl;
   } else {
-    for (RooLinkedListIter it = pois->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto* it : *pois){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       // v->setVal(1.0);
       v->setConstant(1);
     }
@@ -164,22 +162,18 @@ void RooFitUtils::Measurement::initialise() {
     coutI(InputArguments) << "Measurement::initialise(" << fName
                           << ") Trying to find top-level RooSimultaneous."
                           << std::endl;
-
-    RooArgList pdfList = ((RooProdPdf *)fPdf)->pdfList();
-    TIterator *pdfItr = pdfList.createIterator();
-    RooAbsArg *nextArg;
-    while ((nextArg = (RooAbsArg *)pdfItr->Next())) {
+    
+    for(auto* nextArg : static_cast<RooProdPdf*>(fPdf)->pdfList()){
       if (nextArg->IsA() == RooSimultaneous::Class()) {
         coutI(InputArguments)
-            << "Measurement::initialise(" << fName << ") Found RooSimultaneous "
-            << nextArg->GetName() << std::endl;
+	  << "Measurement::initialise(" << fName << ") Found RooSimultaneous "
+	  << nextArg->GetName() << std::endl;
         thisSim = (RooSimultaneous *)nextArg;
         thisSim->SetName(fPdf->GetName());
         thisSim->SetTitle(fPdf->GetTitle());
         break;
       }
     }
-    delete pdfItr;
     // handle if no RooSimultaneous is found...
     //TODO: this may not be the cleanest way to deal with the situation, if someone has a better way, please improve!
     if (!thisSim) { //we still don't have a RooSimultaneous, so let's create a minimal one
@@ -236,10 +230,8 @@ void RooFitUtils::Measurement::initialise() {
       tmpAllObservables2, tmpAllNuisanceParameters2, kFALSE);
 
   // Take care of the case where we have a product of constraint terms
-  TIterator *ConstraintItr = AllConstraints->createIterator();
-  RooAbsArg *nextConstraint;
   fConstraints = new RooArgSet(AllConstraints->GetName());
-  while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next())) {
+  for(auto* nextConstraint : *AllConstraints){
     if (nextConstraint->IsA() == RooProdPdf::Class()) {
       RooArgSet thisComponents;
       FindUniqueProdComponents((RooProdPdf *)nextConstraint, thisComponents);
@@ -248,7 +240,6 @@ void RooFitUtils::Measurement::initialise() {
       fConstraints->add(*nextConstraint);
     }
   }
-  delete ConstraintItr;
 
   // Make the fPdf the physics pdf of the model
   fPdf = (RooSimultaneous *)thisSim;
@@ -346,9 +337,8 @@ void RooFitUtils::Measurement::CollectChannels() {
     // Attach all (necessary) constraints to the current channel to make it
     // stand-alone
     RooArgSet thistmpNuisanceParameters;
-    TIterator *NuisItr = fNuisanceParameters->createIterator();
-    RooRealVar *nextNuisanceParameter;
-    while ((nextNuisanceParameter = (RooRealVar *)NuisItr->Next())) {
+    for(auto* next : *fNuisanceParameters){
+      RooRealVar* nextNuisanceParameter = dynamic_cast<RooRealVar*>(next);
       if (thisPdf->dependsOn(*nextNuisanceParameter)) {
         thistmpNuisanceParameters.add(*nextNuisanceParameter);
       }
@@ -356,12 +346,9 @@ void RooFitUtils::Measurement::CollectChannels() {
 
     RooArgSet *tmpComp = new RooArgSet();
     tmpComp->add(*thisPdf);
-    TIterator *ConstraintItr = fConstraints->createIterator();
-    RooAbsArg *nextConstraint;
-    while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next())) {
-      delete NuisItr;
-      NuisItr = thistmpNuisanceParameters.createIterator();
-      while ((nextNuisanceParameter = (RooRealVar *)NuisItr->Next())) {
+    for(auto* nextConstraint : *fConstraints){
+      for(auto* next : *fNuisanceParameters){
+	RooRealVar* nextNuisanceParameter = dynamic_cast<RooRealVar*>(next);	
         if (nextConstraint->dependsOn(*nextNuisanceParameter)) {
           tmpComp->add(*nextConstraint);
           coutI(ObjectHandling)
@@ -407,19 +394,19 @@ void RooFitUtils::Measurement::CollectChannels() {
     RooArgSet *thisGlobalObservables = thisChannel->GetGlobalObservables();
     RooArgSet *thisNuisanceParameters = thisChannel->GetNuisanceParameters();
 
-    for (RooLinkedListIter it = thisObservables->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto* it : *thisObservables){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       tmpObservables->add(*v);
     }
 
-    for (RooLinkedListIter it = thisGlobalObservables->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto* it : *thisGlobalObservables){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       tmpGlobalObservables->add(*v);
     }
     fGlobalObservables->setAttribAll("GLOBAL_OBSERVABLE");
 
-    for (RooLinkedListIter it = thisNuisanceParameters->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto* it : *thisNuisanceParameters){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       tmpNuisanceParameters->add(*v);
     }
 
@@ -428,8 +415,6 @@ void RooFitUtils::Measurement::CollectChannels() {
     delete tmpComp;
     delete prodPdf;
     // delete thisProdPdf;
-    delete NuisItr;
-    delete ConstraintItr;
   }
 
   SetObservables(tmpObservables);
@@ -461,9 +446,7 @@ void RooFitUtils::Measurement::FindUniqueProdComponents(RooProdPdf *Pdf,
                           << " is fundamental." << std::endl;
     Components.add(pdfList);
   } else {
-    TIterator *pdfItr = pdfList.createIterator();
-    RooAbsArg *nextArg;
-    while ((nextArg = (RooAbsArg *)pdfItr->Next())) {
+    for(auto* nextArg : pdfList){
       RooProdPdf *Pdf = (RooProdPdf *)nextArg;
       if (std::string(Pdf->ClassName()) != "RooProdPdf") {
         coutI(ObjectHandling)
@@ -474,7 +457,6 @@ void RooFitUtils::Measurement::FindUniqueProdComponents(RooProdPdf *Pdf,
       }
       FindUniqueProdComponents(Pdf, Components);
     }
-    delete pdfItr;
   }
   counter = 0;
 }
@@ -484,11 +466,9 @@ void RooFitUtils::Measurement::FindUniqueProdComponents(RooProdPdf *Pdf,
 RooFitUtils::RenamingMap::ConstraintType
 RooFitUtils::Measurement::DetermineConstraintType(RooRealVar *Parameter) {
   std::string tmpConstraintType = "unconstrained";
-  TIterator *ConstraintItr = fConstraints->createIterator();
-  RooAbsArg *nextConstraint;
   bool foundConstraint = kFALSE;
-  while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next()) &&
-         !foundConstraint) {
+  for(auto* nextConstraint:*fConstraints){
+    if(foundConstraint) break;
     if (nextConstraint->dependsOn(*Parameter)) {
       foundConstraint = kTRUE;
 
@@ -497,7 +477,6 @@ RooFitUtils::Measurement::DetermineConstraintType(RooRealVar *Parameter) {
       tmpConstraintType = (thisConstraintType.ReplaceAll("Roo", "")).Data();
     }
   }
-  delete ConstraintItr;
 
   if (tmpConstraintType == "Gaussian")
     return RenamingMap::Gaussian;

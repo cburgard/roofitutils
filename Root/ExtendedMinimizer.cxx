@@ -204,9 +204,7 @@ namespace {
 namespace {
   int countFloatParams(RooArgSet* args){
     int n = 0;
-    RooAbsArg* obj;
-    RooFIter itr(args->fwdIterator());
-    while((obj = itr.next())){
+    for(auto* obj : *args){
       RooRealVar* v = dynamic_cast<RooRealVar*>(obj);
       if(!v) continue;
       if(!v->isConstant()) ++n;
@@ -644,9 +642,7 @@ namespace {
 	       bool setConstant = false) {
     if (!snap)
       return;
-    RooAbsArg *obj;
-    RooFIter itr(vars.fwdIterator());
-    while ((obj = itr.next())) {
+    for(auto* obj : vars){
       RooRealVar *v = dynamic_cast<RooRealVar *>(obj);
       if (!v)
 				continue;

@@ -261,8 +261,8 @@ std::set<std::pair<double,std::string>> RooFitUtils::AbsMeasurement::OrderNuisan
 			  << ") Estimating ranks for " << nhi - nlo + 1 
                           << " nuisance parameters." << std::endl;
 
-    for (RooLinkedListIter it = pars.iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for (auto* it:pars){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       std::string name = v->GetName();
       ++itrpos;
       if (itrpos  <= nlo || itrpos > nhi + 1) continue;
@@ -287,15 +287,13 @@ std::set<std::pair<double,std::string>> RooFitUtils::AbsMeasurement::OrderNuisan
 
       std::vector<double> poisfracErr;
       std::map<std::string, int> index_red;
-      for (std::vector<TString>::const_iterator itr = PoiList.begin(),
-           end = PoiList.end(); itr != end; ++itr) {
- 
-        int thisIndex = tmp_pars.index(itr->Data());
+      for (auto itr:PoiList){ 
+        int thisIndex = tmp_pars.index(itr.Data());
 	double thisErr = sqrt(tmp_cov[thisIndex][thisIndex]);
- 	index_red[itr->Data()] = thisIndex;
+ 	index_red[itr.Data()] = thisIndex;
 
-	double diff = initErr[itr->Data()] - thisErr;
-	double fracErr = diff/(initErr[itr->Data()]);
+	double diff = initErr[itr.Data()] - thisErr;
+	double fracErr = diff/(initErr[itr.Data()]);
 	poisfracErr.push_back(std::abs(fracErr));
       }
 
@@ -412,19 +410,17 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
   std::map<std::string, double> initErrSig;
 
   // loop over the pois to prune and extract the necessary info.
-  for (std::vector<TString>::const_iterator itr = PoiList.begin(),
-                                            end = PoiList.end();
-       itr != end; ++itr) {
-    int thisIndex = pars.index(itr->Data());
+  for (auto itr: PoiList){
+    int thisIndex = pars.index(itr.Data());
     double thisInitErr = sqrt(cov[thisIndex][thisIndex]);
     double thisBestFit = ((RooRealVar *)pars.at(thisIndex))->getVal();
     std::pair<double, double> tmpVals =
         std::make_pair(thisBestFit, thisInitErr);
 
-    index[itr->Data()] = thisIndex;
-    initErr[itr->Data()] = thisInitErr;
-    initErrSig[itr->Data()] = tmpVals.second;
-    bestFit[itr->Data()] = thisBestFit;
+    index[itr.Data()] = thisIndex;
+    initErr[itr.Data()] = thisInitErr;
+    initErrSig[itr.Data()] = tmpVals.second;
+    bestFit[itr.Data()] = thisBestFit;
 
     coutI(ObjectHandling) << "AbsMeasurement::PruneNuisanceParameters(" << fName
                           << ") Harvest parameter (" << thisIndex
@@ -488,8 +484,8 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
         ++x;
       }
       std::list<std::string> nuis_names;
-      for (RooLinkedListIter it = tmp_pars.iterator();
-        RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());){
+      for (auto it: tmp_pars){
+        RooRealVar *v = dynamic_cast<RooRealVar *>(it);
         std::string varname = v->GetName();
         bool found = (std::find(pruneNPnames.begin(), pruneNPnames.end(), varname) != pruneNPnames.end());
         if (found) nuis_names.push_back(varname);
@@ -500,11 +496,11 @@ std::set<std::string> RooFitUtils::AbsMeasurement::PruneNuisanceParameters(
       RemoveParameter(tmp_hesse, tmp_pars, nuis_names);
       TMatrixDSym tmp_cov = tmp_hesse.Invert();
       std::map<std::string, int> index_red;
-      for (std::vector<TString>::const_iterator itr = PoiList.begin(), end = PoiList.end(); itr != end; ++itr) {
-        int thisIndex = tmp_pars.index(itr->Data());
+      for (auto itr:PoiList){
+        int thisIndex = tmp_pars.index(itr.Data());
         double thisErr = sqrt(tmp_cov[thisIndex][thisIndex]);
-        index_red[itr->Data()] = thisIndex;
-        pois_uncerts[itr->Data()].insert(std::make_pair(thisErr, par2rem));
+        index_red[itr.Data()] = thisIndex;
+        pois_uncerts[itr.Data()].insert(std::make_pair(thisErr, par2rem));
       }
 
       // Loop over the individual POIs to test effect of removing proposed
@@ -647,8 +643,8 @@ void RooFitUtils::AbsMeasurement::RemoveParameter(
   }
 
   RooArgList redpars(pars);
-  for (RooLinkedListIter it = redpars.iterator();
-       RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+  for (auto it:redpars){
+    RooRealVar *v = dynamic_cast<RooRealVar *>(it);
     std::string name = v->GetName();
     int index = redpars.index(name.c_str());
     if (removeRows.find(index) == removeRows.end()) {
@@ -973,8 +969,8 @@ RooDataSet *RooFitUtils::AbsMeasurement::SetDatasetBinning(
                                   pdfi->GetName())
                           << std::endl;
 
-    for (RooLinkedListIter it = obs->iterator(); TObject *o = it.Next();) {
-      RooRealVar *v = dynamic_cast<RooRealVar *>(o);
+    for (auto it:*obs){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       if (!v)
         continue;
       coutI(ObjectHandling) << "AbsMeasurement::SetDatasetBinning(" << fName
@@ -1080,9 +1076,8 @@ RooDataSet *RooFitUtils::AbsMeasurement::SetDatasetBinning(
   }
 
   RooArgSet newObs, *allObs = pdf->getObservables(*data);
-  for (RooFIter it = data->get()->fwdIterator();
-       const RooAbsArg *dsvar = it.next();) {
-    if (RooAbsArg *v = allObs->find(*dsvar))
+  for (auto it:*data->get()){
+    if (RooAbsArg *v = allObs->find(*it))
       newObs.add(*v);
   }
   delete allObs;

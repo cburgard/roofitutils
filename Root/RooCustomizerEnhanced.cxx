@@ -88,18 +88,12 @@ void RooFitUtils::RooCustomizerEnhanced::initialize() {
 
   _masterPdf->leafNodeServerList(&_masterLeafList);
   _masterPdf->branchNodeServerList(&_masterBranchList);
-
-  _masterLeafListIter = _masterLeafList.createIterator();
-  _masterBranchListIter = _masterBranchList.createIterator();
 }
 
 //_____________________________________________________________________________
 
 RooFitUtils::RooCustomizerEnhanced::~RooCustomizerEnhanced() {
   // Destructor
-
-  delete _masterLeafListIter;
-  delete _masterBranchListIter;
 }
 
 //_____________________________________________________________________________
@@ -174,7 +168,6 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
   nodeList.setHashTableSize(1000);
 
   nodeList.add(_masterBranchList);
-  TIterator *nIter = nodeList.createIterator();
 
   RooArgSet *wilds = 0;
   if (_replaceWild.size()) {
@@ -186,8 +179,7 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
   }
 
   //   cout << "loop over " << nodeList.getSize() << " nodes" << std::endl ;
-  while ((node = (RooAbsArg *)nIter->Next())) {
-
+  for(auto* node : nodeList){
     RooAbsArg *ReplaceArg =
         (RooAbsArg *)_replaceArgList.FindObject(node->GetName());
     if (ReplaceArg) {
@@ -210,7 +202,6 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
       masterReplacementNodes.add(*substArg);
     }
   }
-  delete nIter;
 
   // Find branches that are affected and must be cloned
   RooArgSet masterBranchesToBeCloned("masterBranchesToBeCloned");
@@ -250,9 +241,7 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
   RooAbsArg *cloneTopPdf = 0;
   RooArgSet clonedMasterBranches("clonedMasterBranches");
   clonedMasterBranches.setHashTableSize(1000);
-  TIterator *iter = masterBranchesToBeCloned.createIterator();
-  while ((branch = (RooAbsArg *)iter->Next())) {
-
+  for(auto branch : masterBranchesToBeCloned){
     // Affix attribute with old name to clone to support name changing server
     // redirect
     RooAbsArg *clone = (RooAbsArg *)branch->Clone(branch->GetName());
@@ -271,7 +260,7 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
     if (branch == _masterPdf)
       cloneTopPdf = (RooAbsArg *)clone;
   }
-  delete iter;
+
   if (_owning) {
     _cloneBranchList->addOwned(clonedMasterBranches);
   } else {
@@ -279,13 +268,11 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
   }
 
   // Reconnect cloned branches to each other and to cloned nodess
-  iter = clonedMasterBranches.createIterator();
-  while ((branch = (RooAbsArg *)iter->Next())) {
+  for(auto* branch : clonedMasterBranches){
     branch->redirectServers(clonedMasterBranches, kFALSE, kTRUE);
     branch->redirectServers(clonedMasterNodes, kFALSE, kTRUE);
     branch->redirectServers(masterReplacementNodes, kFALSE, kTRUE);
   }
-  delete iter;
 
   return cloneTopPdf ? cloneTopPdf : _masterPdf;
 }

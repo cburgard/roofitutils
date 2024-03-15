@@ -163,10 +163,8 @@ void RooFitUtils::RenamingMap::AddAttributes(
       tmpAllObservables2, tmpAllNuisanceParameters2, kFALSE);
 
   // Take care of the case where we have a product of constraint terms
-  TIterator *ConstraintItr = AllConstraints->createIterator();
-  RooAbsArg *nextConstraint;
   RooArgSet *tmpAllConstraints = new RooArgSet(AllConstraints->GetName());
-  while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next())) {
+  for(auto nextConstraint : *AllConstraints){
     if (nextConstraint->IsA() == RooProdPdf::Class()) {
       RooArgSet thisComponents;
       FindUniqueProdComponents((RooProdPdf *)nextConstraint, thisComponents);
@@ -253,11 +251,9 @@ void RooFitUtils::RenamingMap::AddAttributes(
 
     // loop over all constraint of pdf to determine
     // constraint type of nuisance parameter
-    TIterator *ConstraintItr = tmpAllConstraints->createIterator();
-    RooAbsArg *nextConstraint;
     bool foundConstraint = kFALSE;
-    while ((nextConstraint = (RooAbsArg *)ConstraintItr->Next()) &&
-           !foundConstraint) {
+    for(auto* nextConstraint : *tmpAllConstraints){
+      if(foundConstraint) break;
       if (nextConstraint->dependsOn(*nextNuisanceParameter)) {
         foundConstraint = kTRUE;
         // find name of constraint
@@ -267,14 +263,13 @@ void RooFitUtils::RenamingMap::AddAttributes(
 
         // loop over global observables to match nuisance parameter and
         // global observable in case of a constrained nuisnace parameter
-        TIterator *GlobsItr = tmpAllGlobalObservables->createIterator();
-        RooRealVar *nextGlobalObservable;
-        bool foundGlobalObservable = kFALSE;
-        while ((nextGlobalObservable = (RooRealVar *)GlobsItr->Next()) &&
-               !foundGlobalObservable) {
+	bool foundGlobalObservable = false;
+	for(auto* it : *tmpAllGlobalObservables){
+	  RooRealVar *nextGlobalObservable = static_cast<RooRealVar*>(it);
+	  if(foundGlobalObservable) break;
           if (nextConstraint->dependsOn(*nextGlobalObservable)) {
             foundGlobalObservable = kTRUE;
-
+	    
             // find name of globale observable
             tmpGlobalObservableName = nextGlobalObservable->GetName();
 
@@ -293,11 +288,10 @@ void RooFitUtils::RenamingMap::AddAttributes(
             // find constraint width in case of a Gaussian
             if (nextConstraint->IsA() == RooGaussian::Class()) {
               double oldSigmaVal = 1.0;
-              TIterator *ServerItr = nextConstraint->serverIterator();
-              RooRealVar *nextServer;
-              bool foundSigma = kFALSE;
-              while ((nextServer = (RooRealVar *)ServerItr->Next()) &&
-                     !foundSigma) {
+	      bool foundSigma = false;
+	      for(auto it: nextConstraint->servers()){
+		RooRealVar* nextServer = static_cast<RooRealVar *>(it);
+		if(foundSigma) break;
                 if (nextServer != nextGlobalObservable &&
                     nextServer != nextNuisanceParameter) {
                   oldSigmaVal = nextServer->getVal();
@@ -327,10 +321,8 @@ void RooFitUtils::RenamingMap::AddAttributes(
             }
           }
         }
-        delete GlobsItr;
       }
     }
-    delete ConstraintItr;
 
     // individual observable range
     //   can be specified when defining the correlation scheme
@@ -718,9 +710,7 @@ void RooFitUtils::RenamingMap::FindUniqueProdComponents(RooProdPdf *Pdf,
                           << " is fundamental." << std::endl;
     Components.add(pdfList);
   } else {
-    TIterator *pdfItr = pdfList.createIterator();
-    RooAbsArg *nextArg;
-    while ((nextArg = (RooAbsArg *)pdfItr->Next())) {
+    for(auto* nextArg : pdfList){
       RooProdPdf *Pdf = (RooProdPdf *)nextArg;
       if (std::string(Pdf->ClassName()) != "RooProdPdf") {
         coutI(ObjectHandling)
@@ -731,7 +721,6 @@ void RooFitUtils::RenamingMap::FindUniqueProdComponents(RooProdPdf *Pdf,
       }
       FindUniqueProdComponents(Pdf, Components);
     }
-    delete pdfItr;
   }
   counter = 0;
 }

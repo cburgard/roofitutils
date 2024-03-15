@@ -54,10 +54,8 @@ RooFitUtils::CombinedMeasurement::CombinedMeasurement(
   fAsimovData = NULL;
 
   fParametersOfInterestString = "";
-  TIterator *poiItr = fParametersOfInterest->createIterator();
-  RooRealVar *nextPOI;
-  while ((nextPOI = (RooRealVar *)poiItr->Next())) {
-    fParametersOfInterestString += "," + std::string(nextPOI->GetName());
+  for(auto it:*fParametersOfInterest){
+    fParametersOfInterestString += "," + std::string(it->GetName());
   }
 
   fPdfName = fPdf->GetName();
@@ -158,11 +156,10 @@ void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations(
         thisRenamingMap.GetRenamingMap();
 
     // Loop over all nuisance parameters in the set
-    TIterator *nuiItr = thisVars->createIterator();
-    RooRealVar *nextNui;
-    while ((nextNui = (RooRealVar *)nuiItr->Next())) {
+    for(auto* next : *thisVars){
+      RooRealVar* nextNui = dynamic_cast<RooRealVar*>(next);
       std::string nextNuiName = nextNui->GetName();
-
+      
       // Skip the parameter if it was already added explicitly
       if (tmpRenamingMap.find(nextNuiName) != tmpRenamingMap.end()) {
         continue;
@@ -184,7 +181,6 @@ void RooFitUtils::CombinedMeasurement::DetermineAutoCorrelations(
       // CorrelationScheme later
       tmpAllVarMap[nextNuiName].insert(thisMeasurementName);
     }
-    delete nuiItr;
   }
 
   // Loop over all nuisance parameters not yet added to the CorrelationScheme
@@ -276,13 +272,13 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements() {
     RooArgSet *thisNuisanceParameters =
         thisMeasurement->GetNuisanceParameters();
 
-    for (RooLinkedListIter it = thisObservables->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto it : *thisObservables){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       fObservables->add(*v);
     }
 
-    for (RooLinkedListIter it = thisGlobalObservables->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for (auto it : thisGlobalObservables){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       TString thisName = v->GetName();
       if (thisName.BeginsWith("PRUNED_")) {
         continue;
@@ -291,8 +287,8 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements() {
     }
     fGlobalObservables->setAttribAll("GLOBAL_OBSERVABLE");
 
-    for (RooLinkedListIter it = thisNuisanceParameters->iterator();
-         RooRealVar *v = dynamic_cast<RooRealVar *>(it.Next());) {
+    for(auto it : *thisNuisanceParameters){
+      RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       TString thisName = v->GetName();
       if (thisName.BeginsWith("PRUNED_")) {
         continue;
@@ -498,19 +494,17 @@ void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest(
 
   // Move old POIs to nuisance parameter in case they still exist and are not a
   // POI any longer
-  TIterator *PoiItr = oldParametersOfInterest->createIterator();
-  RooRealVar *nextParameterOfInterest;
-  while ((nextParameterOfInterest = (RooRealVar *)PoiItr->Next())) {
+  for(auto next : oldParametersOfInterest){
+    RooRealVar* nextParameterOfInterest = static_cast<RooRealVar*>(next);
     if (tmpWorkspace->var(nextParameterOfInterest->GetName()) &&
         !fParametersOfInterest->find(*nextParameterOfInterest)) {
       coutP(ObjectHandling)
-          << "CombinedMeasurement::DefineParametersOfInterest(" << fName
-          << ") transferring old POI " << nextParameterOfInterest->GetName()
-          << " to nuisance parameters" << std::endl;
+	<< "CombinedMeasurement::DefineParametersOfInterest(" << fName
+	<< ") transferring old POI " << nextParameterOfInterest->GetName()
+	<< " to nuisance parameters" << std::endl;
       fNuisanceParameters->add(*nextParameterOfInterest);
     }
   }
-  delete PoiItr;
 
   allParametersOfInterestArray->Delete();
   delete allParametersOfInterestArray;
@@ -685,11 +679,10 @@ void RooFitUtils::CombinedMeasurement::UnfoldConstraints(RooArgSet &initial,
     final.Print("v");
     exit(-1);
   }
-
-  TIterator *itr = initial.createIterator();
-  RooAbsPdf *thisPdf;
-  while ((thisPdf = (RooAbsPdf *)itr->Next())) {
-    RooArgSet nuis_tmp = nuis;
+  
+  for ( auto* next : initial ){
+    RooAbsPdf* thisPdf = static_cast<RooAbsPdf*>(next);
+    RooArgSet nuis_tmp(nuis);
     RooArgSet constraint_set(*thisPdf->getAllConstraints(obs, nuis_tmp, false));
     if (thisPdf->IsA() != RooGaussian::Class() &&
         thisPdf->IsA() != RooLognormal::Class() &&
@@ -702,7 +695,6 @@ void RooFitUtils::CombinedMeasurement::UnfoldConstraints(RooArgSet &initial,
       final.add(*thisPdf);
     }
   }
-  delete itr;
 }
 
 // ____________________________________________________________________________|__________
@@ -757,22 +749,18 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
   UnfoldConstraints(constraint_set_tmp, constraint_set, mc_obs, mc_nuis_tmp,
                     counter_tmp);
 
-  TIterator *cIter = constraint_set.createIterator();
   RooAbsArg *arg;
-  while ((arg = (RooAbsArg *)cIter->Next())) {
-    RooAbsPdf *pdf = (RooAbsPdf *)arg;
+  for(auto* arg : constraint_set){
+    RooAbsPdf *pdf = static_cast<RooAbsPdf *>(arg);
     if (!pdf) continue;
 
-    TIterator *nIter = mc_nuis.createIterator();
     RooRealVar *thisNui = NULL;
-    RooAbsArg *nui_arg;
-    while ((nui_arg = (RooAbsArg *)nIter->Next())) {
+    for(auto nui_arg : mc_nuis){
       if (pdf->dependsOn(*nui_arg)) {
         thisNui = (RooRealVar *)nui_arg;
         break;
       }
     }
-    delete nIter;
 
     // Need this incase the observable isn't fundamental.
     // In this case, see which variable is dependent on the nuisance parameter
@@ -781,21 +769,15 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
     if(components){
       components->remove(*pdf);
       if (components->getSize()) {
-        TIterator *itr1 = components->createIterator();
-        RooAbsArg *arg1;
-        while ((arg1 = (RooAbsArg *)itr1->Next())) {
-          TIterator *itr2 = components->createIterator();
-          RooAbsArg *arg2;
-          while ((arg2 = (RooAbsArg *)itr2->Next())) {
+	for(auto arg1 : *components){
+	  for(auto arg2 : *components){
             if (arg1 == arg2)
               continue;
             if (arg2->dependsOn(*arg1)) {
               components->remove(*arg1);
             }
           }
-          delete itr2;
         }
-        delete itr1;
       }
       if (components->getSize() > 1) {
         coutE(ObjectHandling)
@@ -807,16 +789,13 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
       }
     }
 
-    TIterator *gIter = mc_globs.createIterator();
-    RooRealVar *thisGlob = NULL;
-    RooAbsArg *glob_arg;
-    while ((glob_arg = (RooAbsArg *)gIter->Next())) {
+    RooRealVar* thisGlob;
+    for(auto glob_arg : mc_globs){
       if (pdf->dependsOn(*glob_arg)) {
         thisGlob = (RooRealVar *)glob_arg;
         break;
       }
     }
-    delete gIter;
 
     if (!thisNui || !thisGlob) {
       coutW(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName
@@ -835,7 +814,6 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
     nui_list.add(*thisNui);
     glob_list.add(*thisGlob);
   }
-  delete cIter;
 
   // Save the snapshots of nominal parameters
   coutP(ObjectHandling) << "CombinedMeasurement::MakeSnapshots(" << fName
@@ -993,8 +971,7 @@ void RooFitUtils::CombinedMeasurement::PrintCollection(
   }
 
   int irow = 1;
-  for (RooLinkedListIter it = collection->iterator();
-       RooAbsArg *arg = dynamic_cast<RooAbsArg *>(it.Next());) {
+  for(auto arg: collection){
     firstCol[irow] = arg->GetName();
     int icol = 0;
     std::string description = arg->GetTitle();

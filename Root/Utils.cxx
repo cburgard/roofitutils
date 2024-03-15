@@ -206,9 +206,7 @@ void RooFitUtils::FindUniqueProdComponents(RooProdPdf *Pdf,
                               << pdfList.at(0)->GetName() << " is fundamental.";
     Components.add(pdfList);
   } else {
-    TIterator *pdfItr = pdfList.createIterator();
-    RooAbsArg *nextArg;
-    while ((nextArg = (RooAbsArg *)pdfItr->Next())) {
+    for(auto* nextArg : pdfList){
       RooProdPdf *Pdf = (RooProdPdf *)nextArg;
       if (std::string(Pdf->ClassName()) != "RooProdPdf") {
         LOG(RooFitUtils::logINFO)
@@ -219,7 +217,6 @@ void RooFitUtils::FindUniqueProdComponents(RooProdPdf *Pdf,
       }
       FindUniqueProdComponents(Pdf, Components);
     }
-    delete pdfItr;
   }
   counter = 0;
 }
@@ -443,9 +440,7 @@ namespace {
   template<class listT, class stringT> void getParameterNames(const listT* l,std::vector<stringT>& names){
     // extract the parameter names from a list
     if(!l) return;
-    RooAbsArg* obj;
-    RooFIter itr(l->fwdIterator());
-    while((obj = itr.next())){
+    for(auto* obj : *l){
       names.push_back(obj->GetName());
     }
   }

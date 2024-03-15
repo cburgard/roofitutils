@@ -172,7 +172,7 @@ std::string Print(const RooAbsArg &a, Int_t level = 2) {
 std::string Print(const RooAbsCollection &c, Int_t level = 0) {
   std::ostringstream os;
   int index = 0;
-  for (RooFIter it = c.fwdIterator(); RooAbsArg *a = it.next();) {
+  for(auto a : c){
     if (level <= 1) {
       if (index > 0)
         os << ", ";
@@ -191,9 +191,7 @@ Bool_t isSubset(const RooAbsCollection &set, const RooAbsCollection &sub,
   if (sub.getSize() <= 0)
     return kFALSE; // empty subset -> false (more useful, if not mathematically
                    // true)
-  RooFIter it = sub.fwdIterator();
-  const RooAbsArg *a;
-  while ((a = it.next())) {
+  for(auto a : sub){
     if (!(matchByNameOnly ? set.contains(*a) : set.containsInstance(*a)))
       return kFALSE;
   }
@@ -407,7 +405,7 @@ public:
     std::vector<int> c = _interpCode;
 
     std::vector<bool> rem(n);
-    for (RooFIter it = remove.fwdIterator(); RooAbsArg *a = it.next();) {
+    for(auto a : remove){
       Int_t i = p.index(a);
       if (i < 0)
         ERROR("FlexibleInterpVarInspector::edit(%s) ERROR: parameter %s not "
@@ -471,7 +469,7 @@ public:
     if (_nominal != o._nominal)
       return kFALSE;
     Int_t j = 0;
-    for (RooFIter it = params->fwdIterator(); RooAbsArg *a = it.next(); j++) {
+    for(auto a : *params){
       Int_t i = index(*a);
       if (i < 0)
         return kFALSE; // just in case
@@ -491,7 +489,7 @@ int flexmerge(RooCustomizer &cust, const RooAbsPdf &pdf,
   // optimise by combining FlexibleInterpVar terms
   const RooArgSet *comp = pdf.getComponents();
   RooArgList fiv;
-  for (RooFIter it = comp->fwdIterator(); RooAbsArg *a = it.next();) {
+  for(auto* a : *comp){
     if (dynamic_cast<const RooStats::HistFactory::FlexibleInterpVar *>(a))
       fiv.add(*a);
   }
@@ -581,7 +579,7 @@ int npsplit_response(RooWorkspace *ws, RooCustomizer &cust,
   // nor any of the global observables (constraint terms).
   RooArgList terms, clients;
   std::vector<RooArgList> clientTerms;
-  for (RooFIter it = comp->fwdIterator(); RooAbsArg *a = it.next();) {
+  for(auto a : *comp){
     RooArgSet fp;
     if (const RooProdPdf *p1 = dynamic_cast<const RooProdPdf *>(a))
       fp.add(p1->pdfList());
@@ -591,7 +589,7 @@ int npsplit_response(RooWorkspace *ws, RooCustomizer &cust,
       continue;
     RooArgSet ft, ftnew;
     RooArgList oldnp1 = oldnp;
-    for (RooFIter ip = fp.fwdIterator(); RooAbsArg *t = ip.next();) {
+    for(auto* t : fp){
       if (newtermClass && t->IsA() != newtermClass)
         continue;
       int iv, ndep = 0;
@@ -719,7 +717,7 @@ int npsplit_response(RooWorkspace *ws, RooCustomizer &cust,
   }
   std::map<double, int> ndup;
   std::vector<std::map<std::pair<double, double>, int>> dup(np);
-  for (RooFIter it = comp->fwdIterator(); RooAbsArg *a = it.next();) {
+  for(auto a : *comp){
     const FlexibleInterpVarInspector *f =
         FlexibleInterpVarInspector::inspect(a);
     if (!f)
@@ -825,10 +823,9 @@ int npsplit_constraint(RooWorkspace *ws, RooCustomizer &cust,
                        const char *selectClients = 0, int verbose = 1,
                        const char *suffix = "_NEW") {
   int nrep = 0;
-  for (RooFIter it = oldconstraints.fwdIterator(); RooAbsArg *a = it.next();) {
+  for(auto a : oldconstraints){
     RooArgSet clients;
-    TIterator *ia = a->clientIterator();
-    while (TObject *o = ia->Next()) {
+    for(auto* o : a->clients()){
       const RooAbsArg *client = dynamic_cast<RooAbsArg *>(o);
       if (!pdf.dependsOn(*client))
         continue; // could be hanging around from previous edit
@@ -837,7 +834,6 @@ int npsplit_constraint(RooWorkspace *ws, RooCustomizer &cust,
             *client,
             kTRUE); // work round duplicates returned by clientIterator()
     }
-    delete ia;
     if (selectClients && *selectClients) {
       TString sel = selectClients, suf = suffix;
       TPRegexp(",").Substitute(sel, suf + "*"); // also include recreated terms
@@ -852,7 +848,7 @@ int npsplit_constraint(RooWorkspace *ws, RooCustomizer &cust,
       delete selClients;
     }
     int nc = 0;
-    for (RooFIter ic = clients.fwdIterator(); RooAbsArg *client = ic.next();) {
+    for(auto* client : clients){
       if (!(client && pdf.dependsOnValue(*client)))
         continue;
       nc++;
@@ -1260,7 +1256,7 @@ CustIFace_npsplit::ReplaceConstraint(RooFactoryWSTool &ft,
         dep.add(*c);
         delete c;
       } else {
-        for (RooFIter it = allPdfs.fwdIterator(); RooAbsArg *p = it.next();) {
+	for(auto* p : allPdfs){
           std::string c = p->ClassName();
           if ((c == "RooGaussian" || c == "RooLognormal" || c == "RooGamma" ||
                c == "RooPoisson" || c == "RooBifurGauss") &&
