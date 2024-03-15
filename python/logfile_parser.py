@@ -77,7 +77,9 @@ def make_parser():
             "gdel":Parser(r"Info: gdel = (?P<gdel>"+NUM+")"),
             "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")")            
         })),
-        "NegativeG2":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser(hessestate))}
+        "NegativeG2_info1":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser(hessestate)),
+        "NegativeG2_info2":         Parser(r".*: NegativeG2LineSearch Doing a NegativeG2LineSearch since one of the G2 component is negative",MetaParser(hessestate))
+    }
 
     minos_migrad = extend({
         "parameter_fixed":Parser(r"\s*- parameter (?P<paridx>\d+) fixed to (?P<val>"+NUM+")"),
@@ -115,6 +117,15 @@ def make_parser():
     })
     
     parser = MetaParser({
+        "jit_warnings":Parser(r".*input_line_.*:\w*(?P<warning>.*)",MetaParser({
+            "code_line":Parser(r"(?P<code>.*;)"),
+            "root_deprecation":Parser(r"\w*R__DEPRECATED\((?P<deprecation>.*)\).*"),
+            "root_deprecation_version":Parser(r"\w*R__DEPRECATED_(?P<version>.*)"),            
+            "root_join":Parser(r"\w*_R__JOIN.*_(?P<message>.*)"),
+            "define":Parser(r"\w*#.*define.*"),
+            "marker":Parser(r"\w*\^\w*"),
+            "path":Parser(r"/.*:.*")
+        })),
         "intro":Parser(r"RooFit v(?P<Version>[\d.]+) -- Developed by Wouter Verkerke and David Kirkby",MetaParser({
             "copyright":Parser(r"Copyright \(C\) (?P<Years>[\d-]+) NIKHEF, University of California & Stanford University"),
             "rights":Parser(r"All rights reserved, please read http://roofit.sourceforge.net/license.txt")
