@@ -77,6 +77,7 @@ def make_parser():
             "gdel":Parser(r"Info: gdel = (?P<gdel>"+NUM+")"),
             "posdef":Parser(r"Info in matrix forced pos-def by adding to diagonal : padd = (?P<padd>"+NUM+")")            
         })),
+        "computing_seed":  Parser(r".*: MnSeedGenerator Computing seed using NumericalGradient calculator"),
         "NegativeG2_info1":         Parser(r".*MnSeedGenerator[:]? Negative G2 found - new state:",MetaParser(hessestate)),
         "NegativeG2_info2":         Parser(r".*: NegativeG2LineSearch Doing a NegativeG2LineSearch since one of the G2 component is negative",MetaParser(hessestate))
     }
