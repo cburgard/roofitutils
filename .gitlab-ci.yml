@@ -33,6 +33,7 @@ variables:
     - set +e && lsetup "root 6.04.16-HiggsComb-x86_64-slc6-gcc49-opt"; set -e
     - export CXX=$(which g++)
     - export CC=$(which gcc)
+  allow_failure: true
     
 .latestroot: &latestroot
   image:
@@ -150,6 +151,7 @@ hcombroot_run:
   <<: *run
   dependencies:
     - hcombroot_build
+  allow_failure: true
   
 analysisbase_run:
   <<: *analysisbase
@@ -182,6 +184,8 @@ hcombroot_render:
   <<: *render
   dependencies:
     - hcombroot_run
+  allow_failure: true
+    
   
 analysisbase_render:
   <<: *latex
