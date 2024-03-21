@@ -20,7 +20,7 @@ variables:
     - set +e && lsetup "python pilot-default" && set -e
     - set +e && lsetup cmake; set -e
     - set +e && lsetup "root recommended"; set -e    
-    - export CMAKE_PREFIX_PATH=$JSONMCPP__HOME:$CMAKE_PREFIX_PATH
+    - export CMAKE_PREFIX_PATH=$JSONMCPP__HOME:$VDT__HOME:$CMAKE_PREFIX_PATH
     - export CXX=$(which g++)
     - export CC=$(which gcc)
     
