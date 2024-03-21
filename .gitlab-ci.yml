@@ -12,20 +12,20 @@ variables:
 
 .latex: &latex
   image: gitlab-registry.cern.ch/cburgard/latex:latest
-    
+
 .atlasroot: &atlasroot
-  <<: *cvmfs  
+  <<: *cvmfs
   before_script:
     - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
     - set +e && lsetup "python pilot-default" && set -e
     - set +e && lsetup cmake; set -e
-    - set +e && lsetup "root recommended"; set -e    
+    - set +e && lsetup "root recommended"; set -e
     - export CMAKE_PREFIX_PATH=$JSONMCPP__HOME:$VDT__HOME:$CMAKE_PREFIX_PATH
     - export CXX=$(which g++)
     - export CC=$(which gcc)
-    
+
 .hcombroot: &hcombroot
-  <<: *cvmfs  
+  <<: *cvmfs
   before_script:
     - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
     - set +e && lsetup "python pilot-default" && set -e
@@ -33,8 +33,7 @@ variables:
     - set +e && lsetup "root 6.04.16-HiggsComb-x86_64-slc6-gcc49-opt"; set -e
     - export CXX=$(which g++)
     - export CC=$(which gcc)
-  allow_failure: true
-    
+
 .latestroot: &latestroot
   image:
     name: rootproject/root:latest
@@ -42,16 +41,19 @@ variables:
   before_script:
     - apt-get update
     - apt-get install -y python-is-python3
-    
+
 .atlstats: &atlstats
-  image: 
+  image:
     name: atlasamglab/stats-base:latest
     entrypoint: [""]
-  
+
 .analysisbase: &analysisbase
-  image: atlas/analysisbase:21.2.270
+  <<: *cvmfs
+  image: gitlab-registry.cern.ch/atlas/athena/analysisbase:21.2.270
   before_script:
     - source /home/atlas/release_setup.sh
+    - set +e && source ${ATLAS_LOCAL_ROOT_BASE}/user/atlasLocalSetup.sh; set -e
+    - set +e && lsetup "python pilot-default" && set -e
 
 ##################################################################################
 # stages
@@ -73,18 +75,18 @@ stages:
     - cd build
     - cmake ..
     - make
-    
+
 .run: &run
   stage: run
   script:
     - cd build
     - source setup.sh
-    - bash ../scripts/getpip.sh    
+    - bash ../scripts/getpip.sh
     - ctest --output-on-failure
   artifacts:
     expire_in: 3mo
     paths:
-      - "*.root"      
+      - "*.root"
       - "*.txt"
       - "*.tex"
       - "*.json"
@@ -96,8 +98,7 @@ stages:
   artifacts:
     expire_in: 3mo
     paths:
-      - "*.pdf"      
-
+      - "*.pdf"
 
 ##################################################################################
 # jobs
@@ -111,19 +112,18 @@ latestroot_build:
 
 atlasroot_build:
   <<: *atlasroot
-  <<: *build  
+  <<: *build
 
 hcombroot_build:
   <<: *hcombroot
   <<: *build
-
   script:
     - export CXX=$(which g++)
     - mkdir build
     - cd build
-    - cmake -DCMAKE_MODULE_PATH=$ROOTSYS/etc/cmake .. 
+    - cmake -DCMAKE_MODULE_PATH=$ROOTSYS/etc/cmake ..
     - make
-  
+
 analysisbase_build:
   <<: *analysisbase
   <<: *build
@@ -132,7 +132,7 @@ atlstats_build:
   <<: *atlstats
   <<: *build
 
-# run  
+# run
 
 atlasroot_run:
   <<: *atlasroot
@@ -151,21 +151,20 @@ hcombroot_run:
   <<: *run
   dependencies:
     - hcombroot_build
-  allow_failure: true
-  
+
 analysisbase_run:
   <<: *analysisbase
   <<: *run
   dependencies:
     - analysisbase_build
-  
+
 atlstats_run:
   <<: *atlstats
   <<: *run
   dependencies:
     - atlstats_build
 
-# render  
+# render
 
 atlasroot_render:
   <<: *latex
@@ -184,19 +183,15 @@ hcombroot_render:
   <<: *render
   dependencies:
     - hcombroot_run
-  allow_failure: true
-    
-  
+
 analysisbase_render:
   <<: *latex
   <<: *render
   dependencies:
     - analysisbase_run
-  
+
 atlstats_render:
   <<: *latex
   <<: *render
   dependencies:
-    - atlstats_run    
-
-    
+    - atlstats_run
