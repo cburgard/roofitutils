@@ -481,7 +481,6 @@ void RooFitUtils::ExtendedModel::floatParameters(const std::vector<std::string> 
 void RooFitUtils::ExtendedModel::randomizeParameters(const std::vector<std::string> &parsed, const RooArgSet* params) {
   // Randomize a subset of the parameters at the specified values
   TRandom rnd;
-  TObject* obj;
   for(const auto&pat:parsed){
     int found = 0;
     for(auto* obj: *params){
@@ -735,11 +734,9 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 
 	    // Loop over global observables to match nuisance parameter and
 	    // global observable in case of a constrained nuisance parameter
-	    bool foundGlobalObservable = kFALSE;
 	    for(auto* next : *fGlobs){
 	      RooRealVar *nextGlobalObservable = static_cast<RooRealVar*>(next);
 	      if (nextConstraint->dependsOn(*nextGlobalObservable)) {
-		foundGlobalObservable = kTRUE;
 
 		// find constraint width in case of a Gaussian
 		if (nextConstraint->IsA() == RooGaussian::Class()) {
