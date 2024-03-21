@@ -158,6 +158,9 @@ public:
   static RooCmdArg Eps(double eps) {
     return RooCmdArg("Eps", 0, 0, eps, 0, 0, 0, 0, 0);
   }
+  static RooCmdArg ErrorLevel(double errorLevel = 0.5) {
+    return RooCmdArg("ErrorLevel", 0, 0, errorLevel, 0, 0, 0, 0, 0);
+  }
   static RooCmdArg NSigma(double nsigma) {
     return RooCmdArg("NSigma", 0, 0, nsigma, 0, 0, 0, 0, 0);
   }
@@ -235,6 +238,7 @@ protected:
   Int_t fMaxCalls;
   Int_t fMaxIterations;  
   Double_t fEps;
+  Double_t fErrorLevel;
   const RooArgSet *fPenaltyMini  = NULL;
   const RooArgSet *fPoiSet  = NULL;
   const RooArgSet *fMinosSet = NULL;
