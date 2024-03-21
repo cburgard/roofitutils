@@ -49,7 +49,7 @@ variables:
     entrypoint: [""]
   
 .analysisbase: &analysisbase
-  image: atlas/analysisbase:21.2.120
+  image: atlas/analysisbase:21.2.270
   before_script:
     - source /home/atlas/release_setup.sh
 
