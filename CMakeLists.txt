@@ -22,7 +22,7 @@ ENDIF()
 include_directories ("${PROJECT_SOURCE_DIR}")
 
 # find ROOT (which we depend on) including all required components
-find_package( ROOT REQUIRED COMPONENTS Core RIO MathCore Matrix HistFactory RooFitCore RooFit Hist RooStats Minuit2 Minuit)
+find_package( ROOT REQUIRED COMPONENTS Core RIO Matrix HistFactory RooFitCore RooFit Hist RooStats Minuit2 Minuit)
 # include the ROOT_USE_FILE to get access to some of the ROOT-specific CMake magic
 FOREACH(incfile ${ROOT_USE_FILE})
   include(${incfile})

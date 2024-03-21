@@ -720,14 +720,14 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 	}
       }
 
-      for(auto* it : fNuis){
+      for(auto* it : *fNuis){
 	RooRealVar *nuip = dynamic_cast<RooRealVar *>(it);
 	coutI(ObjectHandling) << "On nuisance parameter " << nuip->GetName();
 	double prefitvariation = 1.0;
 
 	bool foundConstraint = kFALSE;
 	bool foundGaussianConstraint = kFALSE;
-	for(auto* next : tmpAllConstraints){
+	for(auto* next : *tmpAllConstraints){
 	  RooAbsReal* nextConstraint = static_cast<RooAbsReal*>(next);
 	  if(foundConstraint) break;
 	  if (nextConstraint->dependsOn(*nuip)) {
@@ -736,7 +736,7 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 	    // Loop over global observables to match nuisance parameter and
 	    // global observable in case of a constrained nuisance parameter
 	    bool foundGlobalObservable = kFALSE;
-	    for(auto* next : fGlobs){
+	    for(auto* next : *fGlobs){
 	      RooRealVar *nextGlobalObservable = static_cast<RooRealVar*>(next);
 	      if (nextConstraint->dependsOn(*nextGlobalObservable)) {
 		foundGlobalObservable = kTRUE;

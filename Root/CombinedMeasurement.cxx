@@ -277,7 +277,7 @@ void RooFitUtils::CombinedMeasurement::CombineMeasurements() {
       fObservables->add(*v);
     }
 
-    for (auto it : thisGlobalObservables){
+    for (auto it : *thisGlobalObservables){
       RooRealVar *v = dynamic_cast<RooRealVar *>(it);
       TString thisName = v->GetName();
       if (thisName.BeginsWith("PRUNED_")) {
@@ -494,7 +494,7 @@ void RooFitUtils::CombinedMeasurement::DefineParametersOfInterest(
 
   // Move old POIs to nuisance parameter in case they still exist and are not a
   // POI any longer
-  for(auto next : oldParametersOfInterest){
+  for(auto next : *oldParametersOfInterest){
     RooRealVar* nextParameterOfInterest = static_cast<RooRealVar*>(next);
     if (tmpWorkspace->var(nextParameterOfInterest->GetName()) &&
         !fParametersOfInterest->find(*nextParameterOfInterest)) {
@@ -971,7 +971,7 @@ void RooFitUtils::CombinedMeasurement::PrintCollection(
   }
 
   int irow = 1;
-  for(auto arg: collection){
+  for(auto arg: *collection){
     firstCol[irow] = arg->GetName();
     int icol = 0;
     std::string description = arg->GetTitle();
