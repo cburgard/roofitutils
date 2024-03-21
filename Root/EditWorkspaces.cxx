@@ -105,6 +105,7 @@ int editws(RooWorkspace *w, RooWorkspace *wout,
 #else
 #include "RooFitUtils.h"
 #include <RooFitUtils/EditWorkspaces.h>
+#include "RooFitUtils/Utils.h"
 #endif
 
 #ifdef ROOFITUTILS_DEFINED

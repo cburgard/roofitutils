@@ -1,5 +1,6 @@
 #include "RooFitUtils/Measurement.h"
 #include "RooFitUtils/CombinedMeasurement.h"
+#include "RooFitUtils/Utils.h"
 
 #include "TRegexp.h"
 

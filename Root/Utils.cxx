@@ -577,3 +577,11 @@ bool RooFitUtils::compare(const RooFitResult* r1, const RooFitResult* r2,double 
   exit(0);
   return true;
 }
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,10,0)
+TIterator* clients(const RooAbsArg* arg) { return arg->clientIterator(); }
+TIterator* servers(const RooAbsArg* arg) { return arg->serverIterator(); }
+#else
+const RooAbsArg::RefCountList_t & clients(const RooAbsArg* arg) { return arg->clients(); }
+const RooAbsArg::RefCountList_t & servers(const RooAbsArg* arg) { return arg->servers(); }
+#endif

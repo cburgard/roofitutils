@@ -1,4 +1,5 @@
 #include "RooFitUtils/Channel.h"
+#include "RooFitUtils/Utils.h"
 
 // ____________________________________________________________________________|__________
 // Constructor

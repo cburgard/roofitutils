@@ -41,7 +41,6 @@ namespace RooFitUtils {
   bool compare(const RooFitResult* r1, const RooFitResult* r2, double tol_rel=1e-6);
 }
 
-
 #if ROOT_VERSION_CODE < ROOT_VERSION(6,18,0)
 struct RooAbsCollection_IteratorHelper { //EXCLUDE
   RooFIter itr;
@@ -86,7 +85,17 @@ struct TIterator_IteratorHelper { //EXCLUDE
   bool operator!=(const TObject* other);
   TObject* operator*();
 };
-TIterator_IteratorHelper begin(TObject* it);
-TIterator_IteratorHelper end(TObject* it);
+TIterator_IteratorHelper begin(TIterator* it);
+TIterator_IteratorHelper end(TIterator* it);
+
+
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,10,0)
+TIterator* clients(const RooAbsArg* arg);
+TIterator* servers(const RooAbsArg* arg);
+#else
+const RooAbsArg::RefCountList_t & clients(const RooAbsArg* arg);
+const RooAbsArg::RefCountList_t & servers(const RooAbsArg* arg);
+#endif
+
 
 #endif

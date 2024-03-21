@@ -1,5 +1,6 @@
 #include "RooFitUtils/AbsMeasurement.h"
 #include "RooFitUtils/ExtendedMinimizer.h"
+#include "RooFitUtils/Utils.h"
 #include "TKey.h"
 #include "TArrayI.h"
 #include "TH1.h"

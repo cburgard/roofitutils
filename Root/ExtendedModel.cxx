@@ -746,7 +746,7 @@ void RooFitUtils::ExtendedModel::setInitialErrors() {
 		  foundGaussianConstraint = kTRUE;
 		  double oldSigmaVal = 1.0;
 		  bool foundSigma = kFALSE;
-		  for(auto* next : nextConstraint->servers()){
+		  for(auto* next : servers(nextConstraint)){
 		    RooRealVar* nextServer = dynamic_cast<RooRealVar*>(next);
 		    if(foundSigma) break;
 		    if (nextServer != nextGlobalObservable && nextServer != nuip) {

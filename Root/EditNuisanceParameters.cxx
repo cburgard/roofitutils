@@ -132,6 +132,7 @@ extern std::string *renameSpec;
 }
 #else
 #include "RooFitUtils.h"
+#include "RooFitUtils/Utils.h"
 #endif
 
 #ifdef ROOFITUTILS_DEFINED
@@ -824,13 +825,13 @@ int npsplit_constraint(RooWorkspace *ws, RooCustomizer &cust,
                        const char *suffix = "_NEW") {
   int nrep = 0;
   for(auto a : oldconstraints){
-    RooArgSet clients;
-    for(auto* o : a->clients()){
+    RooArgSet clientlist;
+    for(auto* o : clients(a)){
       const RooAbsArg *client = dynamic_cast<RooAbsArg *>(o);
       if (!pdf.dependsOn(*client))
         continue; // could be hanging around from previous edit
       if (client)
-        clients.add(
+        clientlist.add(
             *client,
             kTRUE); // work round duplicates returned by clientIterator()
     }
@@ -838,17 +839,17 @@ int npsplit_constraint(RooWorkspace *ws, RooCustomizer &cust,
       TString sel = selectClients, suf = suffix;
       TPRegexp(",").Substitute(sel, suf + "*"); // also include recreated terms
       sel = selectClients + ("," + sel + suf + "*");
-      RooAbsCollection *selClients = clients.selectByName(sel);
+      RooAbsCollection *selClients = clientlist.selectByName(sel);
       if (verbose >= 2)
         std::cout << "Select " << Print(*a, 1) << " '" << sel
-                  << "' clients: " << Print(clients) << " -> "
+                  << "' clients: " << Print(clientlist) << " -> "
                   << Print(*selClients) << std::endl;
-      clients.removeAll();
-      clients.add(*selClients);
+      clientlist.removeAll();
+      clientlist.add(*selClients);
       delete selClients;
     }
     int nc = 0;
-    for(auto* client : clients){
+    for(auto* client : clientlist){
       if (!(client && pdf.dependsOnValue(*client)))
         continue;
       nc++;

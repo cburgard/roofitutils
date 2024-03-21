@@ -43,6 +43,7 @@
 //_____________________________________________________________________________
 
 #include "RooFitUtils/RooCustomizerEnhanced.h"
+#include "RooFitUtils/Utils.h"
 #include <iostream>
 #include <stdexcept>
 

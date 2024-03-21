@@ -289,7 +289,7 @@ void RooFitUtils::RenamingMap::AddAttributes(
             if (nextConstraint->IsA() == RooGaussian::Class()) {
               double oldSigmaVal = 1.0;
 	      bool foundSigma = false;
-	      for(auto it: nextConstraint->servers()){
+	      for(auto it: servers(nextConstraint)){
 		RooRealVar* nextServer = static_cast<RooRealVar *>(it);
 		if(foundSigma) break;
                 if (nextServer != nextGlobalObservable &&
