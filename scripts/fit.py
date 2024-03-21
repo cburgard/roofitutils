@@ -90,6 +90,7 @@ if __name__ == "__main__":
     arglist.append(roofit.add_argument( "--mp-strategy", "--mpStrategy"    , type=int,     dest="mpStrategy"                 , help="Multi-Processing strategy.", default=3 ))
     arglist.append(roofit.add_argument( "--offset"        , action='store_true',   dest="offsetting"                 , help="Offset likelihood.", default=True ))
     arglist.append(roofit.add_argument( "--eps"           , type=float,   dest="eps"                        , help="Convergence criterium.", default=0.05 ))
+    arglist.append(roofit.add_argument( "--errorLevel"           , type=float,   dest="errorLevel"                        , help="Error level for fitted parameters (0.5 := 1sigma)", default=0.5 ))
     arglist.append(roofit.add_argument( "--no-offset"     , action='store_false',  dest="offsetting"                 , help="Do not offset likelihood.", default=False ))
     arglist.append(roofit.add_argument( "--reuse-minimizer"        , action='store_true',   dest="reuseMinimizer"                 , help="Allow to reuse the minimizer.", default=False ))
     arglist.append(roofit.add_argument( "--no-reuse-minimizer"     , action='store_false',  dest="reuseMinimizer"                 , help="Do not allow to reuse the minimizer.", default=True ))

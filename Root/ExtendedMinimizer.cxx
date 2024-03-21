@@ -730,7 +730,7 @@ RooFitUtils::ExtendedMinimizer::ExtendedMinimizer(const char *minimizerName,
       fOffset(0), fOptConst(2), fVerbose(0), fSave(0), fTimer(1),
       fPrintLevel(1), fDefaultStrategy(0), fHesse(0), fMinimize(1), fMinos(0),
       fNumee(5), fDoEEWall(1), fRetry(0), fEigen(0), fReuseMinimizer(0),
-      fReuseNLL(0), fChi2(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), // 1sigma 1dof
+      fReuseNLL(0), fChi2(0), fMaxCalls(10000), fMaxIterations(10000), fEps(1.0), fErrorLevel(0.5), // 1sigma 1dof
       fMinimizerType("Minuit2"), fMinimizerAlgo("Migrad") {
   // Constructor
 
@@ -841,6 +841,7 @@ void RooFitUtils::ExtendedMinimizer::writeReproducer(const std::string& name) {
   out << "  mini.setProfile("<<fTimer<<");\n";
   out << "  mini.setStrategy("<<fDefaultStrategy<<");\n";
   out << "  mini.setEps("<<fEps<<");\n";
+  out << "  mini.setErrorLevel("<<fErrorLevel<<");\n";
   out << "  mini.minimize(\"" << fMinimizerType << "\",\"" << fMinimizerAlgo << "\");";
   out << "}\n";
 }
@@ -1013,6 +1014,7 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   pc.defineInt("renll", "ReuseNLL", 0, fReuseNLL);
   pc.defineInt("usechi2", "UseChi2", 0, fChi2);  
   pc.defineDouble("eps", "Eps", 0, fEps);
+  pc.defineDouble("errorLevel", "ErrorLevel", 0, fErrorLevel);
   pc.defineString("mintype", "Minimizer", 0, fMinimizerType.c_str());
   pc.defineString("minalg", "Minimizer", 1, fMinimizerAlgo.c_str());
   pc.defineObject("minosObjSet", "Minos", 0, 0);
@@ -1060,6 +1062,7 @@ int RooFitUtils::ExtendedMinimizer::parseFitConfig(const A &cmdList) {
   fReuseNLL = pc.getInt("renll");
   fChi2 = pc.getInt("usechi2");  
   fEps = pc.getDouble("eps");
+  fErrorLevel = pc.getDouble("errorLevel");
   RooArgSet* minosSet = NULL;
   minosSet = static_cast<RooArgSet *>(pc.getObject("minosObjSet"));
   minosSet = pc.getSet("minosSet",minosSet);
@@ -1126,6 +1129,7 @@ RooFitUtils::ExtendedMinimizer::robustMinimize() {
     fMinimizer->setProfile(fTimer);
     fMinimizer->setStrategy(fDefaultStrategy);
     fMinimizer->setEps(fEps);
+    fMinimizer->setErrorLevel(fErrorLevel);
 
     double nllval = 0.;
     RooFitResult* fitres = 0;

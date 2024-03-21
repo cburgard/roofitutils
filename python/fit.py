@@ -149,6 +149,7 @@ def buildMinimizer(args,model):
     argelems = [ROOT.RooFit.Minimizer(args.get("minimizerType","Minuit2"), args.get("minimizerAlgo","Migrad")),
                 ROOT.RooFit.Strategy(args.get("defaultStrategy",2)),
                 ROOT.RooFitUtils.ExtendedMinimizer.Eps(args.get("eps",1e-3)),
+                ROOT.RooFitUtils.ExtendedMinimizer.ErrorLevel(args.get("errorLevel",0.5)),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseMinimizer(args.get("reuseMinimizer",False)),
                 ROOT.RooFitUtils.ExtendedMinimizer.ReuseNLL(args.get("reuseNll",False)),
                 ROOT.RooFitUtils.ExtendedMinimizer.MaxIterations(50*pdf.getVariables().getSize()),
