@@ -39,7 +39,7 @@ IF(${AnalysisBase_FOUND})
     PRIVATE_LINK_LIBRARIES ${ROOT_LIBRARIES} ${RooFitExtensions_LIBRARIES}
     )
 
-  find_package(PythonInterp REQUIRED)
+  find_package(Python REQUIRED)
   atlas_install_python_modules( python/*.py )
 
   set(EXPORT_PYTHONPATH ${CMAKE_BINARY_DIR}/${BINARY_TAG}/python)

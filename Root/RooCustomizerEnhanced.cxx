@@ -163,7 +163,6 @@ RooAbsArg *RooFitUtils::RooCustomizerEnhanced::doBuild(Bool_t verbose) {
   clonedMasterNodes.setHashTableSize(1000);
 
   _masterLeafListIter->Reset();
-  RooAbsArg *node;
 
   RooArgSet nodeList(_masterLeafList);
   nodeList.setHashTableSize(1000);

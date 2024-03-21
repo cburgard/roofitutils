@@ -102,6 +102,8 @@ int RooFitUtils::fixRooStarMomentMorph(RooWorkspace *workspace) {
       pdf->fixCache();
     }
   }
+#else
+  (void)workspace; // Remove unused parameter warning. We do nothing.
 #endif
   return retval;
 }

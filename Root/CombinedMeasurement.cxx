@@ -749,7 +749,6 @@ void RooFitUtils::CombinedMeasurement::MakeSnapshots(
   UnfoldConstraints(constraint_set_tmp, constraint_set, mc_obs, mc_nuis_tmp,
                     counter_tmp);
 
-  RooAbsArg *arg;
   for(auto* arg : constraint_set){
     RooAbsPdf *pdf = static_cast<RooAbsPdf *>(arg);
     if (!pdf) continue;
