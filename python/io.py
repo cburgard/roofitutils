@@ -41,7 +41,7 @@ def result2dict_extendedResult(result,addcorrmat=True):
     mini_info = {"type":result.min.config.MinimizerType(),"strategy":result.min.strategy,"status":result.min.status}
     d = {"MLE":{"minimizer":mini_info,"nll":result.min.nll, "parameters":[]}}
     for p in result.min.parameters:
-        par={"name":p.name,"val":p.value}
+        par={"name":str(p.name),"val":p.value}
         if isclose(abs(p.errHi),abs(p.errLo)):
             par["err"]=p.errHi
         else:

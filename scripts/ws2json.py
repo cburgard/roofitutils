@@ -16,7 +16,10 @@ def main(args):
         print("unable to find default keys, skipping")
         pass
 
-    ws = None
+    if args.scratch:
+        ws = ROOT.RooWorkspace("workspace")
+    else:
+        ws = None
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.FATAL)    
         
     for infilename in args.infile:
@@ -44,11 +47,53 @@ def main(args):
         if not thisws:
             continue
 
+        if args.force_rename:
+            for var in thisws.allVars():
+                if not var.InheritsFrom(ROOT.RooConstVar().Class()) and "." in var.GetName():
+                    var.SetName(var.GetName().replace(".","_"))
+            for func in thisws.allFunctions():
+                if "." in func.GetName():
+                    func.SetName(func.GetName().replace(".","_"))
+            for pdf in thisws.allPdfs():
+                if "." in pdf.GetName():
+                    pdf.SetName(pdf.GetName().replace(".","_"))
+            for data in thisws.allData():
+                if "." in data.GetName():
+                    data.SetName(data.GetName().replace(".","_"))
+                for var in data.get():
+                    if "." in var.GetName():
+                        var.SetName(var.GetName().replace(".","_"))
+            for data in thisws.allEmbeddedData():
+                if "." in data.GetName():
+                    data.SetName(data.GetName().replace(".","_"))
+                for var in data.get():
+                    if "." in var.GetName():
+                        var.SetName(var.GetName().replace(".","_"))                                    
+        
+
         if ws:
             for pdf in thisws.allPdfs():
-                ws.Import(pdf,ROOT.RooFit.RecycleConflictNodes())
+                if not args.filter or pdf.GetName() in args.filter:
+                    ws.Import(pdf,ROOT.RooFit.RecycleConflictNodes())
             for func in thisws.allFunctions():
-                ws.Import(func,ROOT.RooFit.RecycleConflictNodes())
+                if not args.filter or func.GetName() in args.filter:                
+                    ws.Import(func,ROOT.RooFit.RecycleConflictNodes())
+            for data in thisws.allData():
+                if not args.filter or data.GetName() in args.filter:                                
+                    ws.Import(data,ROOT.RooFit.RecycleConflictNodes())
+            for mc in thisws.allGenericObjects():
+                if mc.InheritsFrom(ROOT.RooStats.ModelConfig.Class()):
+                    newmc = ROOT.RooStats.ModelConfig(mc.GetName(),mc.GetName())
+                    ws.Import(mc.GetPdf(),ROOT.RooFit.RecycleConflictNodes())
+                    pdf = ws.pdf(mc.GetPdf().GetName())
+                    pdfname = mc.GetPdf().GetName()
+                    ws.Import(newmc,False)
+                    inws = ws.obj(mc.GetName())
+                    inws.SetWS(ws)
+                    inws.SetPdf(pdf)
+                    inws.GetPdf().setStringAttribute("combined_data_name","obsData")
+                    inws.SetParametersOfInterest(mc.GetParametersOfInterest())
+                    inws.Print()
         else:
             protect(ws)
             ws = thisws
@@ -67,31 +112,8 @@ def main(args):
     for arg in args.export_defs:
         ROOT.RooFit.JSONIO.loadExportKeys(arg)
 
-    if args.force_rename:
-        for var in ws.allVars():
-            if not var.InheritsFrom(ROOT.RooConstVar().Class()) and "." in var.GetName():
-                var.SetName(var.GetName().replace(".","_"))
-        for func in ws.allFunctions():
-            if "." in func.GetName():
-                func.SetName(func.GetName().replace(".","_"))
-        for pdf in ws.allPdfs():
-            if "." in pdf.GetName():
-                pdf.SetName(pdf.GetName().replace(".","_"))
-        for data in ws.allData():
-            if "." in data.GetName():
-                data.SetName(data.GetName().replace(".","_"))
-            for var in data.get():
-                if "." in var.GetName():
-                    var.SetName(var.GetName().replace(".","_"))
-        for data in ws.allEmbeddedData():
-            if "." in data.GetName():
-                data.SetName(data.GetName().replace(".","_"))
-            for var in data.get():
-                if "." in var.GetName():
-                    var.SetName(var.GetName().replace(".","_"))                                    
-                    
     if args.print:
-        ws.Print()
+        ws.Print("v")
 
     extConstraints = ROOT.RooArgSet()
     for c in args.extConstraint:
@@ -116,6 +138,8 @@ if __name__ == "__main__":
     parser.add_argument("-i",dest="infile",help="the ROOT workspace(s)",nargs="+")
     parser.add_argument("-v","--verbose",action="store_true",help="be more verbose")
     parser.add_argument("-o",dest="outfile",help="the JSON file")
+    parser.add_argument("--scratch",action="store_true",help="start from a fresh workspace")
+    parser.add_argument("--filter",nargs="+",help="allowed names for import")
     parser.add_argument("--load-exporters",nargs="+",type=str,help="load some exporters",dest="export_defs",default=[])    
     parser.add_argument("--load-libraries",nargs="+",type=str,help="load some libraries",dest="libraries",default=[])
     parser.add_argument("--recover",action="store_true",dest="recover_file",default=False,help="recover corrupted file")
