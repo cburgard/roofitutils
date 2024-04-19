@@ -50,7 +50,9 @@ def main(args):
         if args.force_rename:
             for var in thisws.allVars():
                 if not var.InheritsFrom(ROOT.RooConstVar().Class()) and "." in var.GetName():
+                    print("renaming "+var.GetName())
                     var.SetName(var.GetName().replace(".","_"))
+                    print("now "+var.GetName())                    
             for func in thisws.allFunctions():
                 if "." in func.GetName():
                     func.SetName(func.GetName().replace(".","_"))
@@ -93,6 +95,8 @@ def main(args):
                     inws.SetPdf(pdf)
                     inws.GetPdf().setStringAttribute("combined_data_name","obsData")
                     inws.SetParametersOfInterest(mc.GetParametersOfInterest())
+                    inws.SetObservables(mc.GetObservables())
+                    inws.SetGlobalObservables(mc.GetGlobalObservables())                                        
                     inws.Print()
         else:
             protect(ws)
